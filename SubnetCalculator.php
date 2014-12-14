@@ -1,9 +1,24 @@
 <?php
 
 /**
- * Calculates IP address network subnet masks, network and host portions, and provides aggregated reports.
+ * Network calculator for subnet mask and other classless (CIDR) network information.
+ *
+ * Given an IP address and CIDR network size, it calculates the following information:
+ *   - IP address network subnet masks, network and host portions, and provides aggregated reports.
+ *   - Subnet mask 
+ *   - Network portion
+ *   - Host portion
+ *   - Number of IP addresses in the network
+ *   - Number of addressable hosts in the network
+ *   - IP address range
+ *   - Broadcast address
  * Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
- * Reports provided as associative array, JSON, and printed formats.
+ *
+ * Aggregated network calculation reports:
+ *  - Associative array
+ *  - JSON
+ *  - String
+ *  - Printed to STDOUT
  *
  * @author Mark Rogoyski
  */
