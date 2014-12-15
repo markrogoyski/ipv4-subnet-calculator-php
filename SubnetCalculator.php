@@ -132,7 +132,7 @@ class SubnetCalculator {
      * @return array 
      */
     public function getIPAddressQuads() {
-        return $this->quads();
+        return $this->quads;
     }
 
     /** 
@@ -228,7 +228,7 @@ class SubnetCalculator {
      * @return array Array of four elements containing the four quads of the host portion.
      */
     public function getHostPortionQuads() {
-        return explode( '.', $this->subnetCalculation( '%d', '.' ) );
+        return explode( '.', $this->hostCalculation( '%d', '.' ) );
     }
 
     /** 
