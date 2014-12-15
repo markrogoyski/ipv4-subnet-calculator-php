@@ -124,4 +124,13 @@ class SubnetCalculatorTest extends PHPUnit_Framework_TestCase {
     public function testGetHostPortionBinary() {
         $this->assertEquals( $this->sub->getHostPortionBinary(), HOST_BINARY );
     }
+
+    public function testValidateInputExceptionOnBadIPAddress() {
+        $this->setExpectedException('Exception');
+        $sub = new SubnetCalculator( '555.444.333.222', 23 );
+    }
+    public function testValidateInputExceptionOnBadNetworkSize() {
+        $this->setExpectedException('Exception');
+        $sub = new SubnetCalculator( '192.168.112.203', 40 );
+    }
 }
