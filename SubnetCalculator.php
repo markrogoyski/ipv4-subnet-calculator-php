@@ -251,10 +251,12 @@ class SubnetCalculator {
      * Get subnet calculations as an associated array.
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
+     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      * @return string Associated array of subnet calculations.
      */
     public function getSubnetArrayReport() {
         return array(
+            'ip_address_with_network_size' => $this->getIPAddress() . '/' . $this->getNetworkSize(),
             'ip_address' => array(
                 'quads'  => $this->getIPAddress(),
                 'hex'    => $this->getIPAddressHex(),
@@ -274,7 +276,12 @@ class SubnetCalculator {
                 'quads'  => $this->getHostPortion(),
                 'hex'    => $this->getHostPortionHex(),
                 'binary' => $this->getHostPortionBinary()
-            )
+            ),
+            'network_size' => $this->getNetworkSize(),
+            'number_of_ip_addresses' => $this->getNumberIPAddresses(),
+            'number_of_addressable_hosts' => $this->getNumberAddressableHosts(),
+            'ip_address_range' => $this->getIPAddressRange(),
+            'broadcast_address' => $this->getBroadcastAddress(),
         );
     }
 
@@ -282,41 +289,32 @@ class SubnetCalculator {
      * Get subnet calculations as JSON string.
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
+     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      * @return string JSON string of subnet calculations.
      */
     public function getSubnetJSONReport() {
-        $report = array(
-            'ip_address' => array(
-                'quads'  => $this->getIPAddress(),
-                'hex'    => $this->getIPAddressHex(),
-                'binary' => $this->getIPAddressBinary()
-            ),
-            'subnet_mask' => array(
-                'quads'  => $this->getSubnetMask(),
-                'hex'    => $this->getSubnetMaskHex(),
-                'binary' => $this->getSubnetMaskBinary()
-            ),
-            'network_portion' => array(
-                'quads'  => $this->getNetworkPortion(),
-                'hex'    => $this->getNetworkPortionHex(),
-                'binary' => $this->getNetworkPortionBinary()
-            ),
-            'host_portion' => array(
-                'quads'  => $this->getHostPortion(),
-                'hex'    => $this->getHostPortionHex(),
-                'binary' => $this->getHostPortionBinary()
-            )
-        );
-        return json_encode($report);
+        return json_encode($this->getSubnetArrayReport());
     }
 
     /**
      * Print a report of subnet calculations.
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
+     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      */
     public function printSubnetReport() {
         print($this->__tostring());
+    }
+
+    /**
+     * Print a report of subnet calculations.
+     * Contains IP address, subnet mask, network portion and host portion.
+     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
+     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
+     * @return string Subnet Calculator report.
+     */
+    public function getPrintableReport() {
+        return $this->__tostring();
     }
 
     /**
