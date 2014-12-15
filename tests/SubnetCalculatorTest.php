@@ -124,5 +124,4 @@ class SubnetCalculatorTest extends PHPUnit_Framework_TestCase {
     public function testGetHostPortionBinary() {
         $this->assertEquals( $this->sub->getHostPortionBinary(), HOST_BINARY );
     }
-
 }
