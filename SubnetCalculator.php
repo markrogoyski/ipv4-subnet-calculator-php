@@ -204,7 +204,7 @@ class SubnetCalculator {
      * @return string network portion in hex.
      */
     public function getNetworkPortionHex() {
-        return $this->networkCalculation('%02X');     
+        return $this->networkCalculation('%02X');
     }
 
     /** 
@@ -212,7 +212,7 @@ class SubnetCalculator {
      * @return string network portion in binary.
      */
     public function getNetworkPortionBinary() {
-        return $this->networkCalculation('%08b');       
+        return $this->networkCalculation('%08b');
     }
 
     /** 
@@ -220,7 +220,7 @@ class SubnetCalculator {
      * @return string host portion as dotted quads.
      */
     public function getHostPortion() {
-        return $this->hostCalculation( '%d', '.' );     
+        return $this->hostCalculation( '%d', '.' );
     }
 
     /** 
@@ -236,7 +236,7 @@ class SubnetCalculator {
      * @return string host portion in hex.
      */
     public function getHostPortionHex() {
-        return $this->hostCalculation('%02X');         
+        return $this->hostCalculation('%02X');
     }
 
     /** 
@@ -244,7 +244,7 @@ class SubnetCalculator {
      * @return string host portion in binary.
      */
     public function getHostPortionBinary() {
-        return $this->hostCalculation('%08b');      
+        return $this->hostCalculation('%08b');
     }
 
     /** 
