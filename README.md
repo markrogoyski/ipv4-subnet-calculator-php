@@ -191,4 +191,20 @@ Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
 */
+
+// Printing the SubnetCalculator object will print the printable report.
+print($sub);
+/*
+192.168.112.203/23           Quads      Hex                           Binary
+------------------ --------------- -------- --------------------------------
+IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011
+Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000
+Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000
+Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011
+
+Number of IP Addresses:      512
+Number of Addressable Hosts: 510
+IP Address Range:            192.168.112.0 - 192.168.113.255
+Broadcast Address:           192.168.113.255
+*/
 ```
