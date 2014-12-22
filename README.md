@@ -137,8 +137,7 @@ Array
 
     [broadcast_address] => 192.168.113.255
 )
-json
-/*
+*/
 
 // JSON Report
 $sub->getJSONReport();
