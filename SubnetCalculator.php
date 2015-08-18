@@ -391,14 +391,15 @@ class SubnetCalculator {
     /**
      * Validate IP address and network.
      * @param string $ip IP address in dotted quads format.
-     * @param int network Network.
+     * @param int $network_size Network.
+     * @throws Exception IP or network size not valid.
      */
     private function validateInputs( $ip, $network_size ) {
         if (!filter_var( $ip, FILTER_VALIDATE_IP )) {
             throw new Exception("IP address $ip not valid.");
         }
         if ( ( $network_size < 1 ) || ( $network_size > 32 ) ) {
-            throw new Exception("Network size $network not valid.");
+            throw new Exception("Network size $network_size not valid.");
         }
     }
 }
