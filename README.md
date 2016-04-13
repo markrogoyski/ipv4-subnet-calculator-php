@@ -236,3 +236,11 @@ IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
 */
 ```
+
+Unit Tests
+----------
+
+```bash
+$ cd tests
+$ phpunit
+```
