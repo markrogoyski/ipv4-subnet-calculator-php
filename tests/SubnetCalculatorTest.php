@@ -1,6 +1,6 @@
 <?php
 namespace IPv4;
-require_once('../src/SubnetCalculator.php');
+require_once( __DIR__ . '/../src/SubnetCalculator.php' );
 
 // Precalculated constants for network 192.168.112.203/23.
 const IP_ADDRESS               = '192.168.112.203';
