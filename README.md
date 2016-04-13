@@ -1,5 +1,5 @@
-subnet-calculator-php
-=====================
+IPv4 Subnet Calculator (PHP)
+============================
 
 Network calculator for subnet mask and other classless (CIDR) network information.
 
