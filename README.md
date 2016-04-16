@@ -107,7 +107,6 @@ $host_binary = $sub->getHostPortionBinary(); // 00000000000000000000000011001011
 
 #### Printed Report
 ```php
-// Printed Report
 $sub->printSubnetReport();
 /*
 192.168.112.203/23           Quads      Hex                           Binary
@@ -126,7 +125,6 @@ Broadcast Address:           192.168.113.255
 
 #### Array Report
 ```php
-// Array Report
 $sub->getSubnetArrayReport();
 /*
 Array
@@ -176,7 +174,6 @@ Array
 
 #### JSON Report
 ```php
-// JSON Report
 $sub->getJSONReport();
 /*
 {
@@ -215,7 +212,6 @@ $sub->getJSONReport();
 
 #### String Report
 ```php
-// String Report
 $string_report = $sub->getPrintableReport();
 /*
 192.168.112.203/23           Quads      Hex                           Binary
