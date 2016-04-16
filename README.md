@@ -44,7 +44,7 @@ $ php composer.phar install
 ```
 
 Composer will install IPv4 Subnet Calculator inside your vendor folder. Then you can add the following to your
-.php files to use library with Autoloading.
+.php files to the use library with Autoloading.
 
 ```php
 require_once( __DIR__ . '/vendor/autoload.php' );
