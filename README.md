@@ -104,6 +104,8 @@ $host_binary = $sub->getHostPortionBinary(); // 00000000000000000000000011001011
 ```
 
 ### Reports
+
+#### Printed Report
 ```php
 // Printed Report
 $sub->printSubnetReport();
@@ -120,7 +122,10 @@ Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
 */
+```
 
+#### Array Report
+```php
 // Array Report
 $sub->getSubnetArrayReport();
 /*
@@ -167,7 +172,10 @@ Array
     [broadcast_address] => 192.168.113.255
 )
 */
+```
 
+#### JSON Report
+```php
 // JSON Report
 $sub->getJSONReport();
 /*
@@ -203,7 +211,10 @@ $sub->getJSONReport();
     "broadcast_address": "192.168.113.255"
 }
 */
+```
 
+#### String Report
+```php
 // String Report
 $string_report = $sub->getPrintableReport();
 /*
@@ -242,5 +253,5 @@ Unit Tests
 
 ```bash
 $ cd tests
-$ phpunit
+$ phpunit .
 ```
