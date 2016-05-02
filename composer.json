@@ -1,7 +1,7 @@
 {
   "name": "markrogoyski/ipv4-subnet-calculator",
   "type": "library",
-  "description": "Math Library for PHP",
+  "description": "Network calculator for subnet mask and other classless (CIDR) network information.",
   "keywords": ["ipv4", "subnet", "calculator", "network", "cidr", "address", "ip"],
   "homepage": "https://github.com/markrogoyski/ipv4-subnet-calculator-php",
   "require": {
