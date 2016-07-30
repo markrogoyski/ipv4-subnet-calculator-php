@@ -1,6 +1,5 @@
 <?php
 namespace IPv4;
-require_once( __DIR__ . '/../src/SubnetCalculator.php' );
 
 // Precalculated constants for network 192.168.112.203/23.
 const IP_ADDRESS               = '192.168.112.203';
@@ -22,116 +21,141 @@ const HOST                     = '0.0.0.203';
 const HOST_HEX                 = '000000CB';
 const HOST_BINARY              = '00000000000000000000000011001011';
 
-class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase {
+class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
+{
     
-  public function setUp() {
-    $this->sub = new SubnetCalculator( '192.168.112.203', 23 );
-  }
+    public function setUp()
+    {
+        $this->sub = new SubnetCalculator('192.168.112.203', 23);
+    }
 
-  public function testGetIPAddress() {
-    $this->assertEquals( $this->sub->getIPAddress(), IP_ADDRESS );
-  }
+    public function testGetIPAddress()
+    {
+        $this->assertEquals($this->sub->getIPAddress(), IP_ADDRESS);
+    }
 
-  public function testGetNetworkSize() {
-    $this->assertEquals( $this->sub->getNetworkSize(), NETWORK_SIZE );
-  }
+    public function testGetNetworkSize()
+    {
+        $this->assertEquals($this->sub->getNetworkSize(), NETWORK_SIZE);
+    }
 
-  public function testGetNumberIPAddresses() {
-    $this->assertEquals( $this->sub->getNumberIPAddresses(), NUMBER_IP_ADDRESSES );
-  }
+    public function testGetNumberIPAddresses()
+    {
+        $this->assertEquals($this->sub->getNumberIPAddresses(), NUMBER_IP_ADDRESSES);
+    }
 
-  public function testGetNumberAddressableHosts() {
-    $this->assertEquals( $this->sub->getNumberAddressableHosts(), NUMBER_ADDRESSABLE_HOSTS );
-  }
+    public function testGetNumberAddressableHosts()
+    {
+        $this->assertEquals($this->sub->getNumberAddressableHosts(), NUMBER_ADDRESSABLE_HOSTS);
+    }
 
-  public function testGetIPAddressRange() {
-    $this->assertEquals( $this->sub->getIPAddressRange()[0], LOWER_IP_ADDRESS_RANGE );
-    $this->assertEquals( $this->sub->getIPAddressRange()[1], UPPER_IP_ADDRESS_RANGE );
-  }
+    public function testGetIPAddressRange()
+    {
+        $this->assertEquals($this->sub->getIPAddressRange()[0], LOWER_IP_ADDRESS_RANGE);
+        $this->assertEquals($this->sub->getIPAddressRange()[1], UPPER_IP_ADDRESS_RANGE);
+    }
 
-  public function testGetBroadcastAddress() {
-    $this->assertEquals( $this->sub->getBroadcastAddress() ,BROADCAST_ADDRESS );
-  }
+    public function testGetBroadcastAddress()
+    {
+        $this->assertEquals($this->sub->getBroadcastAddress(), BROADCAST_ADDRESS);
+    }
 
-  public function testGetIPAddressQuads() {
-    $this->assertEquals( $this->sub->getIPAddressQuads()[0], explode( '.', IP_ADDRESS )[0] );
-    $this->assertEquals( $this->sub->getIPAddressQuads()[1], explode( '.', IP_ADDRESS )[1] );
-    $this->assertEquals( $this->sub->getIPAddressQuads()[2], explode( '.', IP_ADDRESS )[2] );
-    $this->assertEquals( $this->sub->getIPAddressQuads()[3], explode( '.', IP_ADDRESS )[3] );
-  }
+    public function testGetIPAddressQuads()
+    {
+        $this->assertEquals($this->sub->getIPAddressQuads()[0], explode('.', IP_ADDRESS)[0]);
+        $this->assertEquals($this->sub->getIPAddressQuads()[1], explode('.', IP_ADDRESS)[1]);
+        $this->assertEquals($this->sub->getIPAddressQuads()[2], explode('.', IP_ADDRESS)[2]);
+        $this->assertEquals($this->sub->getIPAddressQuads()[3], explode('.', IP_ADDRESS)[3]);
+    }
 
-  public function testGetIPAddressHex() {
-    $this->assertEquals( $this->sub->getIPAddressHex(), IP_ADDRESS_HEX );
-  }
+    public function testGetIPAddressHex()
+    {
+        $this->assertEquals($this->sub->getIPAddressHex(), IP_ADDRESS_HEX);
+    }
 
-  public function testGetIPAddressBinary() {
-    $this->assertEquals( $this->sub->getIPAddressBinary(), IP_ADDRESS_BINARY );
-  }
+    public function testGetIPAddressBinary()
+    {
+        $this->assertEquals($this->sub->getIPAddressBinary(), IP_ADDRESS_BINARY);
+    }
 
-  public function testGetSubnetMask() {
-    $this->assertEquals( $this->sub->getSubnetMask(), SUBNET_MASK );
-  }
+    public function testGetSubnetMask()
+    {
+        $this->assertEquals($this->sub->getSubnetMask(), SUBNET_MASK);
+    }
 
-  public function testGetSubnetMaskQuads() {
-    $this->assertEquals( $this->sub->getSubnetMaskQuads()[0], explode( '.', SUBNET_MASK )[0] );
-    $this->assertEquals( $this->sub->getSubnetMaskQuads()[1], explode( '.', SUBNET_MASK )[1] );
-    $this->assertEquals( $this->sub->getSubnetMaskQuads()[2], explode( '.', SUBNET_MASK )[2] );
-    $this->assertEquals( $this->sub->getSubnetMaskQuads()[3], explode( '.', SUBNET_MASK )[3] );
-  }
+    public function testGetSubnetMaskQuads()
+    {
+        $this->assertEquals($this->sub->getSubnetMaskQuads()[0], explode('.', SUBNET_MASK)[0]);
+        $this->assertEquals($this->sub->getSubnetMaskQuads()[1], explode('.', SUBNET_MASK)[1]);
+        $this->assertEquals($this->sub->getSubnetMaskQuads()[2], explode('.', SUBNET_MASK)[2]);
+        $this->assertEquals($this->sub->getSubnetMaskQuads()[3], explode('.', SUBNET_MASK)[3]);
+    }
 
-  public function testGetSubnetMaskHex() {
-    $this->assertEquals( $this->sub->getSubnetMaskHex(), SUBNET_MASK_HEX );
-  }
+    public function testGetSubnetMaskHex()
+    {
+        $this->assertEquals($this->sub->getSubnetMaskHex(), SUBNET_MASK_HEX);
+    }
 
-  public function testGetSubnetMaskBinary() {
-    $this->assertEquals( $this->sub->getSubnetMaskBinary(), SUBNET_MASK_BINARY );
-  }
+    public function testGetSubnetMaskBinary()
+    {
+        $this->assertEquals($this->sub->getSubnetMaskBinary(), SUBNET_MASK_BINARY);
+    }
 
-  public function testGetNetworkPortion() {
-    $this->assertEquals( $this->sub->getNetworkPortion(), NETWORK );
-  }
+    public function testGetNetworkPortion()
+    {
+        $this->assertEquals($this->sub->getNetworkPortion(), NETWORK);
+    }
 
-  public function testGetNetworkPortionQuads() {
-    $this->assertEquals( $this->sub->getNetworkPortionQuads()[0], explode( '.', NETWORK )[0] );
-    $this->assertEquals( $this->sub->getNetworkPortionQuads()[1], explode( '.', NETWORK )[1] );
-    $this->assertEquals( $this->sub->getNetworkPortionQuads()[2], explode( '.', NETWORK )[2] );
-    $this->assertEquals( $this->sub->getNetworkPortionQuads()[3], explode( '.', NETWORK )[3] );
-  }
+    public function testGetNetworkPortionQuads()
+    {
+        $this->assertEquals($this->sub->getNetworkPortionQuads()[0], explode('.', NETWORK)[0]);
+        $this->assertEquals($this->sub->getNetworkPortionQuads()[1], explode('.', NETWORK)[1]);
+        $this->assertEquals($this->sub->getNetworkPortionQuads()[2], explode('.', NETWORK)[2]);
+        $this->assertEquals($this->sub->getNetworkPortionQuads()[3], explode('.', NETWORK)[3]);
+    }
 
-  public function testGetNetworkPortionHex() {
-    $this->assertEquals( $this->sub->getNetworkPortionHex(), NETWORK_HEX );
-  }
+    public function testGetNetworkPortionHex()
+    {
+        $this->assertEquals($this->sub->getNetworkPortionHex(), NETWORK_HEX);
+    }
 
-  public function testGetNetworkPortionBinary() {
-    $this->assertEquals( $this->sub->getNetworkPortionBinary(), NETWORK_BINARY );
-  }
+    public function testGetNetworkPortionBinary()
+    {
+        $this->assertEquals($this->sub->getNetworkPortionBinary(), NETWORK_BINARY);
+    }
 
-  public function testGetHostPortion() {
-    $this->assertEquals( $this->sub->getHostPortion(), HOST );
-  }
+    public function testGetHostPortion()
+    {
+        $this->assertEquals($this->sub->getHostPortion(), HOST);
+    }
 
-  public function testGetHostPortionQuads() {
-    $this->assertEquals( $this->sub->getHostPortionQuads()[0], explode( '.', HOST )[0] );
-    $this->assertEquals( $this->sub->getHostPortionQuads()[1], explode( '.', HOST )[1] );
-    $this->assertEquals( $this->sub->getHostPortionQuads()[2], explode( '.', HOST )[2] );
-    $this->assertEquals( $this->sub->getHostPortionQuads()[3], explode( '.', HOST )[3] );
-  }
+    public function testGetHostPortionQuads()
+    {
+        $this->assertEquals($this->sub->getHostPortionQuads()[0], explode('.', HOST)[0]);
+        $this->assertEquals($this->sub->getHostPortionQuads()[1], explode('.', HOST)[1]);
+        $this->assertEquals($this->sub->getHostPortionQuads()[2], explode('.', HOST)[2]);
+        $this->assertEquals($this->sub->getHostPortionQuads()[3], explode('.', HOST)[3]);
+    }
 
-  public function testGetHostPortionHex() {
-    $this->assertEquals( $this->sub->getHostPortionHex(), HOST_HEX );
-  }
+    public function testGetHostPortionHex()
+    {
+        $this->assertEquals($this->sub->getHostPortionHex(), HOST_HEX);
+    }
 
-  public function testGetHostPortionBinary() {
-    $this->assertEquals( $this->sub->getHostPortionBinary(), HOST_BINARY );
-  }
+    public function testGetHostPortionBinary()
+    {
+        $this->assertEquals($this->sub->getHostPortionBinary(), HOST_BINARY);
+    }
 
-  public function testValidateInputExceptionOnBadIPAddress() {
-    $this->setExpectedException('\Exception');
-    $sub = new SubnetCalculator( '555.444.333.222', 23 );
-  }
+    public function testValidateInputExceptionOnBadIPAddress()
+    {
+        $this->setExpectedException('\Exception');
+        $sub = new SubnetCalculator('555.444.333.222', 23);
+    }
 
-  public function testValidateInputExceptionOnBadNetworkSize() {
-    $this->setExpectedException('\Exception');
-    $sub = new SubnetCalculator( '192.168.112.203', 40 );
-  }
+    public function testValidateInputExceptionOnBadNetworkSize()
+    {
+        $this->setExpectedException('\Exception');
+        $sub = new SubnetCalculator('192.168.112.203', 40);
+    }
 }
