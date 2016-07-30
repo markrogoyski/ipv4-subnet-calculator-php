@@ -260,3 +260,8 @@ IPv4 Subnet Calculator (PHP) conforms to the following standards:
  * PSR-1 - Basic coding standard (http://www.php-fig.org/psr/psr-1/)
  * PSR-2 - Coding style guide (http://www.php-fig.org/psr/psr-2/)
  * PSR-4 - Autoloader (http://www.php-fig.org/psr/psr-4/)
+
+License
+-------
+
+IPv4 Subnet Calculator (PHP) is licensed under the MIT License. 
