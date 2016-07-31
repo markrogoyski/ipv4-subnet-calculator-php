@@ -49,6 +49,15 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($this->sub->getNumberAddressableHosts(), NUMBER_ADDRESSABLE_HOSTS);
     }
 
+    public function testGetNumberAddressableHostsEdgeCases()
+    {
+        $sub = new SubnetCalculator('192.168.112.203', 32);
+        $this->assertEquals(1, $sub->getNumberAddressableHosts());
+
+        $sub = new SubnetCalculator('192.168.112.203', 31);
+        $this->assertEquals(2, $sub->getNumberAddressableHosts());
+    }
+
     public function testGetIPAddressRange()
     {
         $this->assertEquals($this->sub->getIPAddressRange()[0], LOWER_IP_ADDRESS_RANGE);
