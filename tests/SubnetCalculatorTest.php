@@ -158,4 +158,40 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->setExpectedException('\Exception');
         $sub = new SubnetCalculator('192.168.112.203', 40);
     }
+
+    public function testGetSubnetArrayReport()
+    {
+        $report = $this->sub->getSubnetArrayReport();
+        $this->assertTrue(is_array($report));
+        $this->assertArrayHasKey('ip_address_with_network_size', $report);
+        $this->assertArrayHasKey('ip_address', $report);
+        $this->assertArrayHasKey('subnet_mask', $report);
+        $this->assertArrayHasKey('network_portion', $report);
+        $this->assertArrayHasKey('host_portion', $report);
+        $this->assertArrayHasKey('network_size', $report);
+        $this->assertArrayHasKey('number_of_ip_addresses', $report);
+        $this->assertArrayHasKey('number_of_addressable_hosts', $report);
+        $this->assertArrayHasKey('ip_address_range', $report);
+        $this->assertArrayHasKey('broadcast_address', $report);
+    }
+
+    public function testGetSubnetJSONReport()
+    {
+        $json = $this->sub->getSubnetJSONReport();
+        $this->assertTrue(is_string($json));
+    }
+
+    public function testPrintSubnetReport()
+    {
+        $this->sub->printSubnetReport();
+
+        // If it makes it here, there wasn't any failure.
+        $this->assertTrue(true);
+    }
+
+    public function testGetPrintableReport()
+    {
+        $report = $this->sub->getPrintableReport();
+        $this->assertTrue(is_string($report));
+    }
 }
