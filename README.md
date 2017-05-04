@@ -3,6 +3,10 @@ IPv4 Subnet Calculator (PHP)
 
 Network calculator for subnet mask and other classless (CIDR) network information.
 
+[![Coverage Status](https://coveralls.io/repos/github/markrogoyski/ipv4-subnet-calculator-php/badge.svg?branch=master)](https://coveralls.io/github/markrogoyski/ipv4-subnet-calculator-php?branch=master)
+[![Build Status](https://travis-ci.org/markrogoyski/ipv4-subnet-calculator-php.svg?branch=master)](https://travis-ci.org/markrogoyski/ipv4-subnet-calculator-php)
+[![License](https://poser.pugx.org/markrogoyski/ipv4-subnet-calculator-php/license)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator-php)
+
 Features
 --------
 Given an IP address and CIDR network size, it calculates the network information and provides all-in-one aggregated reports.
