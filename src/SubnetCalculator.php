@@ -36,7 +36,7 @@ class SubnetCalculator
      * CIDR network size.
      * @var int
      */
-    private $network;
+    private $network_size;
 
     /**
      * Array of four elements containing the four quads of the IP address.
