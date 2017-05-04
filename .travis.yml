@@ -3,14 +3,15 @@ language: php
 php:
   - '5.6'
   - '7.0'
-  - nightly
+  - '7.1'
 
 install:
   - composer install
 
 script: 
   - mkdir -p build/logs
-  - phpunit --configuration tests/phpunit.xml --coverage-clover build/logs/clover.xml
+  - vendor/bin/phpunit --configuration tests/phpunit.xml --coverage-clover build/logs/clover.xml
+  - vendor/bin/phpcs --ignore=vendor --standard=coding_standard.xml .
 
 after_success:
   - travis_retry php vendor/bin/coveralls
