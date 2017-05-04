@@ -158,13 +158,13 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
 
     public function testValidateInputExceptionOnBadIPAddress()
     {
-        $this->setExpectedException('\Exception');
+        $this->expectException(\Exception::class);
         $sub = new SubnetCalculator('555.444.333.222', 23);
     }
 
     public function testValidateInputExceptionOnBadNetworkSize()
     {
-        $this->setExpectedException('\Exception');
+        $this->expectException(\Exception::class);
         $sub = new SubnetCalculator('192.168.112.203', 40);
     }
 
@@ -192,10 +192,24 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
 
     public function testPrintSubnetReport()
     {
+        $this->expectOutputRegex('
+            /
+                ^
+                \d+[.]\d+[.]\d+[.]\d+\/\d+ \s+ Quads \s+ Hex \s+ Binary \n
+                .+?                                                     \n
+                IP [ ] Address:      .+                                 \n
+                Subnet [ ] Mask:     .+                                 \n
+                Network [ ] Portion: .+                                 \n
+                Host [ ] Portion:    .+                                 \n
+                                                                        \n
+                Number [ ] of [ ] IP [ ] Addresses:      \s+ \d+        \n
+                Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+        \n
+                IP [ ] Address [ ] Range:                \s+ .+?        \n
+                Broadcast [ ] Address:                   \s+ .+?        \n
+                $
+            /xms
+        ');
         $this->sub->printSubnetReport();
-
-        // If it makes it here, there wasn't any failure.
-        $this->assertTrue(true);
     }
 
     public function testGetPrintableReport()
