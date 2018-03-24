@@ -29,36 +29,516 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->sub = new SubnetCalculator('192.168.112.203', 23);
     }
 
-    public function testGetIPAddress()
+    /**
+     * @testCase     getIPAddress
+     * @dataProvider dataProviderForIpAddresses
+     * @param        string $ip_address
+     * @param        int    $network_size
+     */
+    public function testGetIpAddress($ip_address, $network_size)
     {
-        $this->assertEquals($this->sub->getIPAddress(), IP_ADDRESS);
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertSame($ip_address, $sub->getIPAddress());
     }
 
-    public function testGetNetworkSize()
+    /**
+     * @testCase     getNetworkSize
+     * @dataProvider dataProviderForIpAddresses
+     * @param        string $ip_address
+     * @param        int    $network_size
+     */
+    public function testGetNetworkSize($ip_address, $network_size)
     {
-        $this->assertEquals($this->sub->getNetworkSize(), NETWORK_SIZE);
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertSame($network_size, $sub->getNetworkSize());
     }
 
-    public function testGetNumberIPAddresses()
+    /**
+     * @return array [ip_address, network_size]
+     */
+    public function dataProviderForIpAddresses()
     {
-        $this->assertEquals($this->sub->getNumberIPAddresses(), NUMBER_IP_ADDRESSES);
+        return [
+            ['192.168.112.203', 1],
+            ['192.168.84.233', 2],
+            ['10.10.122.113', 3],
+            ['255.255.255.255', 4],
+            ['192.168.112.207', 5],
+            ['192.128.0.1', 6],
+            ['128.0.0.0', 7],
+            ['192.168.112.203', 8],
+            ['192.168.112.203', 9],
+            ['192.168.112.203', 10],
+            ['192.168.112.203', 11],
+            ['192.168.112.203', 12],
+            ['192.168.112.203', 13],
+            ['192.168.112.203', 14],
+            ['192.168.112.203', 15],
+            ['192.168.112.203', 16],
+            ['192.168.112.203', 17],
+            ['192.168.112.203', 18],
+            ['192.168.112.203', 19],
+            ['192.168.112.203', 20],
+            ['192.168.112.203', 21],
+            ['192.168.112.203', 22],
+            ['192.168.112.203', 23],
+            ['192.168.112.203', 24],
+            ['192.168.112.203', 25],
+            ['192.168.112.203', 26],
+            ['192.168.112.203', 27],
+            ['192.168.112.203', 28],
+            ['192.168.112.203', 29],
+            ['192.168.112.203', 30],
+            ['192.168.112.203', 31],
+            ['192.168.112.203', 32],
+        ];
     }
 
-    public function testGetNumberAddressableHosts()
+    /**
+     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @dataProvider dataProviderForNumberOfAddresses
+     * @param        string $ip_address
+     * @param        int    $network_size
+     */
+    public function testGetNumberIPAddresses($ip_address, $network_size, $number_addresses)
     {
-        $this->assertEquals($this->sub->getNumberAddressableHosts(), NUMBER_ADDRESSABLE_HOSTS);
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($number_addresses, $sub->getNumberIpAddresses());
     }
 
-    public function testGetNumberAddressableHostsEdgeCases()
+    /**
+     * @return array [ip_address, network_size, number_addresses]
+     */
+    public function dataProviderForNumberOfAddresses()
     {
-        $sub = new SubnetCalculator('192.168.112.203', 32);
-        $this->assertEquals(1, $sub->getNumberAddressableHosts());
-
-        $sub = new SubnetCalculator('192.168.112.203', 31);
-        $this->assertEquals(2, $sub->getNumberAddressableHosts());
+        return [
+            ['192.168.112.203', 1,  2147483648],
+            ['192.168.112.203', 2, 1073741824],
+            ['192.168.112.203', 3, 536870912],
+            ['192.168.112.203', 4, 268435456],
+            ['192.168.112.203', 5, 134217728],
+            ['192.168.112.203', 6, 67108864],
+            ['192.168.112.203', 7, 33554432],
+            ['192.168.112.203', 8, 16777216],
+            ['192.168.112.203', 9, 8388608],
+            ['192.168.112.203', 10, 4194304],
+            ['192.168.112.203', 11, 2097152],
+            ['192.168.112.203', 12, 1048576],
+            ['192.168.112.203', 13, 524288],
+            ['192.168.112.203', 14, 262144],
+            ['192.168.112.203', 15, 131072],
+            ['192.168.112.203', 16, 65536],
+            ['192.168.112.203', 17, 32768],
+            ['192.168.112.203', 18, 16384],
+            ['192.168.112.203', 19, 8192],
+            ['192.168.112.203', 20, 4096],
+            ['192.168.112.203', 21, 2048],
+            ['192.168.112.203', 22, 1024],
+            ['192.168.112.203', 23, 512],
+            ['192.168.112.203', 24, 256],
+            ['192.168.112.203', 25, 128],
+            ['192.168.112.203', 26, 64],
+            ['192.168.112.203', 27, 32],
+            ['192.168.112.203', 28, 16],
+            ['192.168.112.203', 29, 8],
+            ['192.168.112.203', 30, 4],
+            ['192.168.112.203', 31, 2],
+            ['192.168.112.203', 32, 1],
+        ];
     }
 
-    public function testGetIPAddressRange()
+    /**
+     * @testCase     getNumberAddressableHosts returns the number of IP addresses
+     * @dataProvider dataProviderForNumberOfAddressableHosts
+     * @param        string $ip_address
+     * @param        int    $network_size
+     */
+    public function testGetNumberAddressableHosts($ip_address, $network_size, $number_addressable_hosts)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($number_addressable_hosts, $sub->getNumberAddressableHosts());
+    }
+
+    /**
+     * @return array [ip_address, network_size, number_addressable_hosts]
+     */
+    public function dataProviderForNumberOfAddressableHosts()
+    {
+        return [
+            ['192.168.112.203', 1, 2147483646],
+            ['192.168.112.203', 2, 1073741822],
+            ['192.168.112.203', 3, 536870910],
+            ['192.168.112.203', 4, 268435454],
+            ['192.168.112.203', 5, 134217726],
+            ['192.168.112.203', 6, 67108862],
+            ['192.168.112.203', 7, 33554430],
+            ['192.168.112.203', 8, 16777214],
+            ['192.168.112.203', 9, 8388606],
+            ['192.168.112.203', 10, 4194302],
+            ['192.168.112.203', 11, 2097150],
+            ['192.168.112.203', 12, 1048574],
+            ['192.168.112.203', 13, 524286],
+            ['192.168.112.203', 14, 262142],
+            ['192.168.112.203', 15, 131070],
+            ['192.168.112.203', 16, 65534],
+            ['192.168.112.203', 17, 32766],
+            ['192.168.112.203', 18, 16382],
+            ['192.168.112.203', 19, 8190],
+            ['192.168.112.203', 20, 4094],
+            ['192.168.112.203', 21, 2046],
+            ['192.168.112.203', 22, 1022],
+            ['192.168.112.203', 23, 510],
+            ['192.168.112.203', 24, 254],
+            ['192.168.112.203', 25, 126],
+            ['192.168.112.203', 26, 62],
+            ['192.168.112.203', 27, 30],
+            ['192.168.112.203', 28, 14],
+            ['192.168.112.203', 29, 6],
+            ['192.168.112.203', 30, 2],
+            ['192.168.112.203', 31, 2],
+            ['192.168.112.203', 32, 1],
+        ];
+    }
+
+    /**
+     * @testCase     getIpAddressRange returns the lower and upper IP addresses in the range
+     * @dataProvider dataProviderForIpAddressRange
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $lower_ip
+     * @param        string $upper_ip
+     */
+    public function testGetIpAddressRange($ip_address, $network_size, $lower_ip, $upper_ip)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($lower_ip, $sub->getIpAddressRange()[0]);
+        $this->assertEquals($upper_ip, $sub->getIPAddressRange()[1]);
+    }
+
+    /**
+     * @return array [ip_address, network_size, lower_ip, upper_ip]
+     */
+    public function dataProviderForIpAddressRange()
+    {
+        return [
+            ['192.168.112.203', 1, '128.0.0.0', '255.255.255.255'],
+            ['192.168.112.203', 2, '192.0.0.0', '255.255.255.255'],
+            ['192.168.112.203', 3, '192.0.0.0', '223.255.255.255'],
+            ['192.168.112.203', 4, '192.0.0.0', '207.255.255.255'],
+            ['192.168.112.203', 5, '192.0.0.0', '199.255.255.255'],
+            ['192.168.112.203', 6, '192.0.0.0', '195.255.255.255'],
+            ['192.168.112.203', 7, '192.0.0.0', '193.255.255.255'],
+            ['192.168.112.203', 8, '192.0.0.0', '192.255.255.255'],
+            ['192.168.112.203', 9, '192.128.0.0', '192.255.255.255'],
+            ['192.168.112.203', 10, '192.128.0.0', '192.191.255.255'],
+            ['192.168.112.203', 11, '192.160.0.0', '192.191.255.255'],
+            ['192.168.112.203', 12, '192.160.0.0', '192.175.255.255'],
+            ['192.168.112.203', 13, '192.168.0.0', '192.175.255.255'],
+            ['192.168.112.203', 14, '192.168.0.0', '192.171.255.255'],
+            ['192.168.112.203', 15, '192.168.0.0', '192.169.255.255'],
+            ['192.168.112.203', 16, '192.168.0.0', '192.168.255.255'],
+            ['192.168.112.203', 17, '192.168.0.0', '192.168.127.255'],
+            ['192.168.112.203', 18, '192.168.64.0', '192.168.127.255'],
+            ['192.168.112.203', 19, '192.168.96.0', '192.168.127.255'],
+            ['192.168.112.203', 20, '192.168.112.0', '192.168.127.255'],
+            ['192.168.112.203', 21, '192.168.112.0', '192.168.119.255'],
+            ['192.168.112.203', 22, '192.168.112.0', '192.168.115.255'],
+            ['192.168.112.203', 23, '192.168.112.0', '192.168.113.255'],
+            ['192.168.112.203', 24, '192.168.112.0', '192.168.112.255'],
+            ['192.168.112.203', 25, '192.168.112.128', '192.168.112.255'],
+            ['192.168.112.203', 26, '192.168.112.192', '192.168.112.255'],
+            ['192.168.112.203', 27, '192.168.112.192', '192.168.112.223'],
+            ['192.168.112.203', 28, '192.168.112.192', '192.168.112.207'],
+            ['192.168.112.203', 29, '192.168.112.200', '192.168.112.207'],
+            ['192.168.112.203', 30, '192.168.112.200', '192.168.112.203'],
+            ['192.168.112.203', 31, '192.168.112.202', '192.168.112.203'],
+            ['192.168.112.203', 32, '192.168.112.203', '192.168.112.203'],
+        ];
+    }
+
+    /**
+     * @testCase     getAddressablehostRange returns the lower and upper addressable hosts
+     * @dataProvider dataProviderForAddressableHostRange
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $minHost
+     * @param        string $maxHost
+     */
+    public function testGetAddressableHostRange($ip_address, $network_size, $minHost, $maxHost)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($minHost, $sub->getAddressablehostRange()[0]);
+        $this->assertEquals($maxHost, $sub->getAddressablehostRange()[1]);
+    }
+
+    /**
+     * @testCase     getMinHost returns the lower addressable host
+     * @dataProvider dataProviderForAddressableHostRange
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $minHost
+     * @param        string $_
+     */
+    public function testGetMinHost($ip_address, $network_size, $minHost, $_)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($minHost, $sub->getMinHost());
+    }
+
+    /**
+     * @testCase     getMaxHost returns the upper addressable host
+     * @dataProvider dataProviderForAddressableHostRange
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $_
+     * @param        string $maxHost
+     */
+    public function testGetMaxHost($ip_address, $network_size, $_, $maxHost)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($maxHost, $sub->getMaxHost());
+    }
+
+    /**
+     * @return array [ip_address, network_size, minHost, maxHost]
+     */
+    public function dataProviderForAddressableHostRange()
+    {
+        return [
+            ['192.168.112.203', 1, '128.0.0.1', '255.255.255.254'],
+            ['192.168.112.203', 2, '192.0.0.1', '255.255.255.254'],
+            ['192.168.112.203', 3, '192.0.0.1', '223.255.255.254'],
+            ['192.168.112.203', 4, '192.0.0.1', '207.255.255.254'],
+            ['192.168.112.203', 5, '192.0.0.1', '199.255.255.254'],
+            ['192.168.112.203', 6, '192.0.0.1', '195.255.255.254'],
+            ['192.168.112.203', 7, '192.0.0.1', '193.255.255.254'],
+            ['192.168.112.203', 8, '192.0.0.1', '192.255.255.254'],
+            ['192.168.112.203', 9, '192.128.0.1', '192.255.255.254'],
+            ['192.168.112.203', 10, '192.128.0.1', '192.191.255.254'],
+            ['192.168.112.203', 11, '192.160.0.1', '192.191.255.254'],
+            ['192.168.112.203', 12, '192.160.0.1', '192.175.255.254'],
+            ['192.168.112.203', 13, '192.168.0.1', '192.175.255.254'],
+            ['192.168.112.203', 14, '192.168.0.1', '192.171.255.254'],
+            ['192.168.112.203', 15, '192.168.0.1', '192.169.255.254'],
+            ['192.168.112.203', 16, '192.168.0.1', '192.168.255.254'],
+            ['192.168.112.203', 17, '192.168.0.1', '192.168.127.254'],
+            ['192.168.112.203', 18, '192.168.64.1', '192.168.127.254'],
+            ['192.168.112.203', 19, '192.168.96.1', '192.168.127.254'],
+            ['192.168.112.203', 20, '192.168.112.1', '192.168.127.254'],
+            ['192.168.112.203', 21, '192.168.112.1', '192.168.119.254'],
+            ['192.168.112.203', 22, '192.168.112.1', '192.168.115.254'],
+            ['192.168.112.203', 23, '192.168.112.1', '192.168.113.254'],
+            ['192.168.112.203', 24, '192.168.112.1', '192.168.112.254'],
+            ['192.168.112.203', 25, '192.168.112.129', '192.168.112.254'],
+            ['192.168.112.203', 26, '192.168.112.193', '192.168.112.254'],
+            ['192.168.112.203', 27, '192.168.112.193', '192.168.112.222'],
+            ['192.168.112.203', 28, '192.168.112.193', '192.168.112.206'],
+            ['192.168.112.203', 29, '192.168.112.201', '192.168.112.206'],
+            ['192.168.112.203', 30, '192.168.112.201', '192.168.112.202'],
+            ['192.168.112.203', 31, '192.168.112.203', '192.168.112.203'],
+            ['192.168.112.203', 32, '192.168.112.203', '192.168.112.203'],
+        ];
+    }
+
+    /**
+     * @testCase     getMinHostQuads returns an array of quads
+     * @dataProvider dataProviderForGetMinHostQuads
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param array  $quads
+     */
+    public function testGetMinHostQuads($ip_address, $network_size, array $quads)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($quads, $sub->getMinHostQuads());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMinHostQuads()
+    {
+        return [
+            ['192.168.112.203', 1, [128, 0, 0, 1]],
+            ['192.168.112.203', 2, [192, 0, 0, 1]],
+            ['192.168.112.203', 24, [192, 168, 112, 1]],
+            ['192.168.112.203', 25, [192, 168, 112, 129]],
+            ['192.168.112.203', 26, [192, 168, 112, 193]],
+            ['192.168.112.203', 27, [192, 168, 112, 193]],
+            ['192.168.112.203', 28, [192, 168, 112, 193]],
+            ['192.168.112.203', 29, [192, 168, 112, 201]],
+            ['192.168.112.203', 30, [192, 168, 112, 201]],
+            ['192.168.112.203', 31, [192, 168, 112, 203]],
+            ['192.168.112.203', 32, [192, 168, 112, 203]],
+        ];
+    }
+
+    /**
+     * @testCase     getMaxHostQuads returns an array of quads
+     * @dataProvider dataProviderForGetMaxHostQuads
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param array  $quads
+     */
+    public function testGetMaxHostQuads($ip_address, $network_size, array $quads)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($quads, $sub->getMaxHostQuads());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMaxHostQuads()
+    {
+        return [
+            ['192.168.112.203', 1, [255, 255, 255, 254]],
+            ['192.168.112.203', 2, [255, 255, 255, 254]],
+            ['192.168.112.203', 24, [192, 168, 112, 254]],
+            ['192.168.112.203', 25, [192, 168, 112, 254]],
+            ['192.168.112.203', 26, [192, 168, 112, 254]],
+            ['192.168.112.203', 27, [192, 168, 112, 222]],
+            ['192.168.112.203', 28, [192, 168, 112, 206]],
+            ['192.168.112.203', 29, [192, 168, 112, 206]],
+            ['192.168.112.203', 30, [192, 168, 112, 202]],
+            ['192.168.112.203', 31, [192, 168, 112, 203]],
+            ['192.168.112.203', 32, [192, 168, 112, 203]],
+        ];
+    }
+
+    /**
+     * @testCase     getMinHostHex returns a string of hex
+     * @dataProvider dataProviderForGetMinHostHex
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param string $hex
+     */
+    public function testGetMinHostHex($ip_address, $network_size, $hex)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($hex, $sub->getMinHostHex());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMinHostHex()
+    {
+        return [
+            ['192.168.112.203', 1, '80000001'],
+            ['192.168.112.203', 2, 'C0000001'],
+            ['192.168.112.203', 24, 'C0A87001'],
+            ['192.168.112.203', 25, 'C0A87081'],
+            ['192.168.112.203', 26, 'C0A870C1'],
+            ['192.168.112.203', 27, 'C0A870C1'],
+            ['192.168.112.203', 28, 'C0A870C1'],
+            ['192.168.112.203', 29, 'C0A870C9'],
+            ['192.168.112.203', 30, 'C0A870C9'],
+            ['192.168.112.203', 31, 'C0A870CB'],
+            ['192.168.112.203', 32, 'C0A870CB'],
+        ];
+    }
+
+    /**
+     * @testCase     getMaxHostHex returns a string of hex
+     * @dataProvider dataProviderForGetMaxHostHex
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param string $hex
+     */
+    public function testGetMaxHostHex($ip_address, $network_size, $hex)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($hex, $sub->getMaxHostHex());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMaxHostHex()
+    {
+        return [
+            ['192.168.112.203', 1, 'FFFFFFFE'],
+            ['192.168.112.203', 2, 'FFFFFFFE'],
+            ['192.168.112.203', 24, 'C0A870FE'],
+            ['192.168.112.203', 25, 'C0A870FE'],
+            ['192.168.112.203', 26, 'C0A870FE'],
+            ['192.168.112.203', 27, 'C0A870DE'],
+            ['192.168.112.203', 28, 'C0A870CE'],
+            ['192.168.112.203', 29, 'C0A870CE'],
+            ['192.168.112.203', 30, 'C0A870CA'],
+            ['192.168.112.203', 31, 'C0A870CB'],
+            ['192.168.112.203', 32, 'C0A870CB'],
+        ];
+    }
+
+    /**
+     * @testCase     getMinHostBinary returns a string of binary
+     * @dataProvider dataProviderForGetMinHostBinary
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param string $binary
+     */
+    public function testGetMinHostBinary($ip_address, $network_size, $binary)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($binary, $sub->getMinHostBinary());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMinHostBinary()
+    {
+        return [
+            ['192.168.112.203', 1, '10000000000000000000000000000001'],
+            ['192.168.112.203', 2, '11000000000000000000000000000001'],
+            ['192.168.112.203', 24, '11000000101010000111000000000001'],
+            ['192.168.112.203', 25, '11000000101010000111000010000001'],
+            ['192.168.112.203', 26, '11000000101010000111000011000001'],
+            ['192.168.112.203', 27, '11000000101010000111000011000001'],
+            ['192.168.112.203', 28, '11000000101010000111000011000001'],
+            ['192.168.112.203', 29, '11000000101010000111000011001001'],
+            ['192.168.112.203', 30, '11000000101010000111000011001001'],
+            ['192.168.112.203', 31, '11000000101010000111000011001011'],
+            ['192.168.112.203', 32, '11000000101010000111000011001011'],
+        ];
+    }
+
+    /**
+     * @testCase     getMaxHostBinary returns a string of binary
+     * @dataProvider dataProviderForGetMaxHostBinary
+     * @param string $ip_address
+     * @param int    $network_size
+     * @param string $binary
+     */
+    public function testGetMaxHostBinary($ip_address, $network_size, $binary)
+    {
+        $sub = new SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($binary, $sub->getMaxHostBinary());
+    }
+
+    /**
+     * @return array
+     */
+    public function dataProviderForGetMaxHostBinary()
+    {
+        return [
+            ['192.168.112.203', 1, '11111111111111111111111111111110'],
+            ['192.168.112.203', 2, '11111111111111111111111111111110'],
+            ['192.168.112.203', 24, '11000000101010000111000011111110'],
+            ['192.168.112.203', 25, '11000000101010000111000011111110'],
+            ['192.168.112.203', 26, '11000000101010000111000011111110'],
+            ['192.168.112.203', 27, '11000000101010000111000011011110'],
+            ['192.168.112.203', 28, '11000000101010000111000011001110'],
+            ['192.168.112.203', 29, '11000000101010000111000011001110'],
+            ['192.168.112.203', 30, '11000000101010000111000011001010'],
+            ['192.168.112.203', 31, '11000000101010000111000011001011'],
+            ['192.168.112.203', 32, '11000000101010000111000011001011'],
+        ];
+    }
+
+    public function testGetIPAddressRange2()
     {
         $this->assertEquals($this->sub->getIPAddressRange()[0], LOWER_IP_ADDRESS_RANGE);
         $this->assertEquals($this->sub->getIPAddressRange()[1], UPPER_IP_ADDRESS_RANGE);
