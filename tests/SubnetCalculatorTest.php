@@ -1,32 +1,19 @@
 <?php
-namespace IPv4;
+namespace IPv4\Tests;
 
-// Precalculated constants for network 192.168.112.203/23.
-const IP_ADDRESS               = '192.168.112.203';
-const NETWORK_SIZE             = 23;
-const NUMBER_IP_ADDRESSES      = 512;
-const NUMBER_ADDRESSABLE_HOSTS = 510;
-const LOWER_IP_ADDRESS_RANGE   = '192.168.112.0';
-const UPPER_IP_ADDRESS_RANGE   = '192.168.113.255';
-const BROADCAST_ADDRESS        = '192.168.113.255';
-const IP_ADDRESS_HEX           = 'C0A870CB';
-const IP_ADDRESS_BINARY        = '11000000101010000111000011001011';
-const SUBNET_MASK              = '255.255.254.0';
-const SUBNET_MASK_HEX          = 'FFFFFE00';
-const SUBNET_MASK_BINARY       = '11111111111111111111111000000000';
-const NETWORK                  = '192.168.112.0';
-const NETWORK_HEX              = 'C0A87000';
-const NETWORK_BINARY           = '11000000101010000111000000000000';
-const HOST                     = '0.0.0.203';
-const HOST_HEX                 = '000000CB';
-const HOST_BINARY              = '00000000000000000000000011001011';
+use IPv4;
 
 class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
 {
-    
+    /** @var IPv4\SubnetCalculator */
+    private $sub;
+
+    /**
+     * Set up test SubnetCalculator
+     */
     public function setUp()
     {
-        $this->sub = new SubnetCalculator('192.168.112.203', 23);
+        $this->sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
     }
 
     /**
@@ -37,7 +24,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetIpAddress($ip_address, $network_size)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertSame($ip_address, $sub->getIPAddress());
     }
 
@@ -49,7 +36,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetNetworkSize($ip_address, $network_size)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertSame($network_size, $sub->getNetworkSize());
     }
 
@@ -66,31 +53,103 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
             ['192.168.112.207', 5],
             ['192.128.0.1', 6],
             ['128.0.0.0', 7],
-            ['192.168.112.203', 8],
-            ['192.168.112.203', 9],
-            ['192.168.112.203', 10],
-            ['192.168.112.203', 11],
-            ['192.168.112.203', 12],
-            ['192.168.112.203', 13],
-            ['192.168.112.203', 14],
-            ['192.168.112.203', 15],
-            ['192.168.112.203', 16],
-            ['192.168.112.203', 17],
-            ['192.168.112.203', 18],
-            ['192.168.112.203', 19],
-            ['192.168.112.203', 20],
-            ['192.168.112.203', 21],
-            ['192.168.112.203', 22],
-            ['192.168.112.203', 23],
-            ['192.168.112.203', 24],
-            ['192.168.112.203', 25],
-            ['192.168.112.203', 26],
-            ['192.168.112.203', 27],
-            ['192.168.112.203', 28],
-            ['192.168.112.203', 29],
-            ['192.168.112.203', 30],
-            ['192.168.112.203', 31],
-            ['192.168.112.203', 32],
+            ['235.90.125.222', 8],
+            ['208.153.158.185', 9],
+            ['99.107.189.17', 10],
+            ['233.126.142.167', 11],
+            ['205.39.43.86', 12],
+            ['158.114.74.115', 13],
+            ['127.132.3.128', 14],
+            ['243.73.87.101', 15],
+            ['176.103.67.129', 16],
+            ['190.113.28.0', 17],
+            ['204.243.103.224', 18],
+            ['203.247.20.148', 19],
+            ['15.254.55.4', 20],
+            ['96.245.55.29', 21],
+            ['88.102.195.7', 22],
+            ['144.60.195.68', 23],
+            ['189.191.237.105', 24],
+            ['98.79.29.150', 25],
+            ['56.5.145.126', 26],
+            ['80.170.127.173', 27],
+            ['92.123.10.117', 28],
+            ['88.52.155.198', 29],
+            ['230.233.123.40', 30],
+            ['254.17.211.42', 31],
+            ['57.51.231.108', 32],
+        ];
+    }
+
+    /**
+     * @testCase     getIPAddressQuads
+     * @dataProvider dataProviderForIpAddressQuads
+     * @param        string $ip_address
+     * @param        array $quads
+     */
+    public function testGetIPAddressQuads($ip_address, array $quads)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, 24);
+        $this->assertSame($quads, $sub->getIPAddressQuads());
+    }
+
+    /**
+     * @return array [ip_address, quads]
+     */
+    public function dataProviderForIpAddressQuads()
+    {
+        return [
+            ['192.168.112.203', ['192', '168', '112', '203']],
+            ['56.5.145.126', ['56', '5', '145', '126']],
+            ['128.0.0.0', ['128', '0', '0', '0']],
+        ];
+    }
+
+    /**
+     * @testCase     getIPAddressHex
+     * @dataProvider dataProviderForIpAddressHex
+     * @param        string $ip_address
+     * @param        string $hex
+     */
+    public function testGetIPAddressHex($ip_address, $hex)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, 24);
+        $this->assertSame($hex, $sub->getIPAddressHex());
+    }
+
+    /**
+     * @return array [ip_address, hex]
+     */
+    public function dataProviderForIpAddressHex()
+    {
+        return [
+            ['192.168.112.203', 'C0A870CB'],
+            ['56.5.145.126', '3805917E'],
+            ['128.0.0.0', '80000000'],
+        ];
+    }
+
+    /**
+     * @testCase     getIPAddressBinary
+     * @dataProvider dataProviderForIpAddressBinary
+     * @param        string $ip_address
+     * @param        string $binary
+     */
+    public function testGetIPAddressBinary($ip_address, $binary)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, 24);
+        $this->assertSame($binary, $sub->getIPAddressBinary());
+    }
+
+    /**
+     * @return array [ip_address, binary]
+     */
+    public function dataProviderForIpAddressBinary()
+    {
+        return [
+            ['192.168.112.203', '11000000101010000111000011001011'],
+            ['56.5.145.126', '00111000000001011001000101111110'],
+            ['128.0.0.0', '10000000000000000000000000000000'],
         ];
     }
 
@@ -99,10 +158,11 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForNumberOfAddresses
      * @param        string $ip_address
      * @param        int    $network_size
+     * @param        int    $number_addresses
      */
     public function testGetNumberIPAddresses($ip_address, $network_size, $number_addresses)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($number_addresses, $sub->getNumberIpAddresses());
     }
 
@@ -152,10 +212,11 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      * @dataProvider dataProviderForNumberOfAddressableHosts
      * @param        string $ip_address
      * @param        int    $network_size
+     * @param        int    $number_addressable_hosts
      */
     public function testGetNumberAddressableHosts($ip_address, $network_size, $number_addressable_hosts)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($number_addressable_hosts, $sub->getNumberAddressableHosts());
     }
 
@@ -210,9 +271,22 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetIpAddressRange($ip_address, $network_size, $lower_ip, $upper_ip)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($lower_ip, $sub->getIpAddressRange()[0]);
         $this->assertEquals($upper_ip, $sub->getIPAddressRange()[1]);
+    }
+
+    /**
+     * @testCase     getNetworkPortion
+     * @dataProvider dataProviderForIpAddressRange
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $network_portion
+     */
+    public function testGetNetworkPortionLowerIp($ip_address, $network_size, $network_portion)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($network_portion, $sub->getNetworkPortion());
     }
 
     /**
@@ -266,9 +340,63 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetAddressableHostRange($ip_address, $network_size, $minHost, $maxHost)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($minHost, $sub->getAddressablehostRange()[0]);
         $this->assertEquals($maxHost, $sub->getAddressablehostRange()[1]);
+    }
+
+    /**
+     * @testCase     getBroadcastAddress returns the broadcast address
+     * @dataProvider dataProviderForBroardcastAddress
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $broadcast_address
+     */
+    public function testGetBroadcastAddress($ip_address, $network_size, $broadcast_address)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $this->assertEquals($broadcast_address, $sub->getBroadcastAddress());
+    }
+
+    /**
+     * @return array [ip_address, network_size, broadcast_address]
+     */
+    public function dataProviderForBroardcastAddress()
+    {
+        return [
+            ['192.168.112.203', 1, '255.255.255.255'],
+            ['192.168.112.203', 2, '255.255.255.255'],
+            ['192.168.112.203', 3, '223.255.255.255'],
+            ['192.168.112.203', 4, '207.255.255.255'],
+            ['192.168.112.203', 5, '199.255.255.255'],
+            ['192.168.112.203', 6, '195.255.255.255'],
+            ['192.168.112.203', 7, '193.255.255.255'],
+            ['192.168.112.203', 8, '192.255.255.255'],
+            ['192.168.112.203', 9, '192.255.255.255'],
+            ['192.168.112.203', 10, '192.191.255.255'],
+            ['192.168.112.203', 11, '192.191.255.255'],
+            ['192.168.112.203', 12, '192.175.255.255'],
+            ['192.168.112.203', 13, '192.175.255.255'],
+            ['192.168.112.203', 14, '192.171.255.255'],
+            ['192.168.112.203', 15, '192.169.255.255'],
+            ['192.168.112.203', 16, '192.168.255.255'],
+            ['192.168.112.203', 17, '192.168.127.255'],
+            ['192.168.112.203', 18, '192.168.127.255'],
+            ['192.168.112.203', 19, '192.168.127.255'],
+            ['192.168.112.203', 20, '192.168.127.255'],
+            ['192.168.112.203', 21, '192.168.119.255'],
+            ['192.168.112.203', 22, '192.168.115.255'],
+            ['192.168.112.203', 23, '192.168.113.255'],
+            ['192.168.112.203', 24, '192.168.112.255'],
+            ['192.168.112.203', 25, '192.168.112.255'],
+            ['192.168.112.203', 26, '192.168.112.255'],
+            ['192.168.112.203', 27, '192.168.112.223'],
+            ['192.168.112.203', 28, '192.168.112.207'],
+            ['192.168.112.203', 29, '192.168.112.207'],
+            ['192.168.112.203', 30, '192.168.112.203'],
+            ['192.168.112.203', 31, '192.168.112.203'],
+            ['192.168.112.203', 32, '192.168.112.203'],
+        ];
     }
 
     /**
@@ -277,11 +405,10 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      * @param        string $ip_address
      * @param        int    $network_size
      * @param        string $minHost
-     * @param        string $_
      */
-    public function testGetMinHost($ip_address, $network_size, $minHost, $_)
+    public function testGetMinHost($ip_address, $network_size, $minHost)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($minHost, $sub->getMinHost());
     }
 
@@ -295,7 +422,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMaxHost($ip_address, $network_size, $_, $maxHost)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($maxHost, $sub->getMaxHost());
     }
 
@@ -349,7 +476,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMinHostQuads($ip_address, $network_size, array $quads)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($quads, $sub->getMinHostQuads());
     }
 
@@ -382,7 +509,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMaxHostQuads($ip_address, $network_size, array $quads)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($quads, $sub->getMaxHostQuads());
     }
 
@@ -415,7 +542,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMinHostHex($ip_address, $network_size, $hex)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($hex, $sub->getMinHostHex());
     }
 
@@ -448,7 +575,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMaxHostHex($ip_address, $network_size, $hex)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($hex, $sub->getMaxHostHex());
     }
 
@@ -481,7 +608,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMinHostBinary($ip_address, $network_size, $binary)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($binary, $sub->getMinHostBinary());
     }
 
@@ -514,7 +641,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetMaxHostBinary($ip_address, $network_size, $binary)
     {
-        $sub = new SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
         $this->assertEquals($binary, $sub->getMaxHostBinary());
     }
 
@@ -538,116 +665,270 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         ];
     }
 
-    public function testGetIPAddressRange2()
+    /**
+     * @testCase     getSubnetMask
+     * @dataProvider dataProviderForSubnetMask
+     * @param        int    $network_size
+     * @param        string $subnet_mask
+     * @param        array  $quads
+     * @param        string $hex
+     * @param        string $binary
+     */
+    public function testGetSubnetMask($network_size, $subnet_mask, array $quads, $hex, $binary)
     {
-        $this->assertEquals($this->sub->getIPAddressRange()[0], LOWER_IP_ADDRESS_RANGE);
-        $this->assertEquals($this->sub->getIPAddressRange()[1], UPPER_IP_ADDRESS_RANGE);
+        $sub = new IPv4\SubnetCalculator('192.168.233.207', $network_size);
+        $this->assertSame($subnet_mask, $sub->getSubnetMask());
+        $this->assertSame($quads, $sub->getSubnetMaskQuads());
+        $this->assertSame($hex, $sub->getSubnetMaskHex());
+        $this->assertSame($binary, $sub->getSubnetMaskBinary());
     }
 
-    public function testGetBroadcastAddress()
+    /**
+     * @return array [network size, subnet mask, hex, binary]
+     */
+    public function dataProviderForSubnetMask()
     {
-        $this->assertEquals($this->sub->getBroadcastAddress(), BROADCAST_ADDRESS);
+        return [
+            [1, '128.0.0.0', ['128', '0', '0', '0'], '80000000', '10000000000000000000000000000000'],
+            [2, '192.0.0.0', ['192', '0', '0', '0'], 'C0000000', '11000000000000000000000000000000'],
+            [3, '224.0.0.0', ['224', '0', '0', '0'], 'E0000000', '11100000000000000000000000000000'],
+            [4, '240.0.0.0', ['240', '0', '0', '0'], 'F0000000', '11110000000000000000000000000000'],
+            [5, '248.0.0.0', ['248', '0', '0', '0'], 'F8000000', '11111000000000000000000000000000'],
+            [6, '252.0.0.0', ['252', '0', '0', '0'], 'FC000000', '11111100000000000000000000000000'],
+            [7, '254.0.0.0', ['254', '0', '0', '0'], 'FE000000', '11111110000000000000000000000000'],
+            [8, '255.0.0.0', ['255', '0', '0', '0'], 'FF000000', '11111111000000000000000000000000'],
+            [9, '255.128.0.0', ['255', '128', '0', '0'], 'FF800000', '11111111100000000000000000000000'],
+            [10, '255.192.0.0', ['255', '192', '0', '0'], 'FFC00000', '11111111110000000000000000000000'],
+            [11, '255.224.0.0', ['255', '224', '0', '0'], 'FFE00000', '11111111111000000000000000000000'],
+            [12, '255.240.0.0', ['255', '240', '0', '0'], 'FFF00000', '11111111111100000000000000000000'],
+            [13, '255.248.0.0', ['255', '248', '0', '0'], 'FFF80000', '11111111111110000000000000000000'],
+            [14, '255.252.0.0', ['255', '252', '0', '0'], 'FFFC0000', '11111111111111000000000000000000'],
+            [15, '255.254.0.0', ['255', '254', '0', '0'], 'FFFE0000', '11111111111111100000000000000000'],
+            [16, '255.255.0.0', ['255', '255', '0', '0'], 'FFFF0000', '11111111111111110000000000000000'],
+            [17, '255.255.128.0', ['255', '255', '128', '0'], 'FFFF8000', '11111111111111111000000000000000'],
+            [18, '255.255.192.0', ['255', '255', '192', '0'], 'FFFFC000', '11111111111111111100000000000000'],
+            [19, '255.255.224.0', ['255', '255', '224', '0'], 'FFFFE000', '11111111111111111110000000000000'],
+            [20, '255.255.240.0', ['255', '255', '240', '0'], 'FFFFF000', '11111111111111111111000000000000'],
+            [21, '255.255.248.0', ['255', '255', '248', '0'], 'FFFFF800', '11111111111111111111100000000000'],
+            [22, '255.255.252.0', ['255', '255', '252', '0'], 'FFFFFC00', '11111111111111111111110000000000'],
+            [23, '255.255.254.0', ['255', '255', '254', '0'], 'FFFFFE00', '11111111111111111111111000000000'],
+            [24, '255.255.255.0', ['255', '255', '255', '0'], 'FFFFFF00', '11111111111111111111111100000000'],
+            [25, '255.255.255.128', ['255', '255', '255', '128'], 'FFFFFF80', '11111111111111111111111110000000'],
+            [26, '255.255.255.192', ['255', '255', '255', '192'], 'FFFFFFC0', '11111111111111111111111111000000'],
+            [27, '255.255.255.224', ['255', '255', '255', '224'], 'FFFFFFE0', '11111111111111111111111111100000'],
+            [28, '255.255.255.240', ['255', '255', '255', '240'], 'FFFFFFF0', '11111111111111111111111111110000'],
+            [29, '255.255.255.248', ['255', '255', '255', '248'], 'FFFFFFF8', '11111111111111111111111111111000'],
+            [30, '255.255.255.252', ['255', '255', '255', '252'], 'FFFFFFFC', '11111111111111111111111111111100'],
+            [31, '255.255.255.254', ['255', '255', '255', '254'], 'FFFFFFFE', '11111111111111111111111111111110'],
+            [32, '255.255.255.255', ['255', '255', '255', '255'], 'FFFFFFFF', '11111111111111111111111111111111'],
+        ];
     }
 
-    public function testGetIPAddressQuads()
+    /**
+     * @testCase     getHostPortion
+     * @dataProvider dataProviderForNetworkPortion
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $network
+     * @param        array  $quads
+     * @param        string $hex
+     * @param        string $binary
+     */
+    public function testGetNetworkPortion($ip_address, $network_size, $network, array $quads, $hex, $binary)
     {
-        $this->assertEquals($this->sub->getIPAddressQuads()[0], explode('.', IP_ADDRESS)[0]);
-        $this->assertEquals($this->sub->getIPAddressQuads()[1], explode('.', IP_ADDRESS)[1]);
-        $this->assertEquals($this->sub->getIPAddressQuads()[2], explode('.', IP_ADDRESS)[2]);
-        $this->assertEquals($this->sub->getIPAddressQuads()[3], explode('.', IP_ADDRESS)[3]);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $this->assertSame($network, $sub->getNetworkPortion());
+        $this->assertSame($quads, $sub->getNetworkPortionQuads());
+        $this->assertSame($hex, $sub->getNetworkPortionHex());
+        $this->assertSame($binary, $sub->getNetworkPortionBinary());
     }
 
-    public function testGetIPAddressHex()
+    /**
+     * @return array [ip_address, network_size, network, quads, hex, binary]
+     */
+    public function dataProviderForNetworkPortion()
     {
-        $this->assertEquals($this->sub->getIPAddressHex(), IP_ADDRESS_HEX);
+        return [
+            ['192.168.112.203', 1, '128.0.0.0', ['128', '0', '0', '0'], '80000000', '10000000000000000000000000000000'],
+            ['192.168.84.233', 2, '192.0.0.0', ['192', '0', '0', '0'], 'C0000000', '11000000000000000000000000000000'],
+            ['10.10.122.113', 3, '0.0.0.0', ['0', '0', '0', '0'], '00000000', '00000000000000000000000000000000'],
+            ['255.255.255.255', 4, '240.0.0.0', ['240', '0', '0', '0'], 'F0000000', '11110000000000000000000000000000'],
+            ['192.168.112.207', 5, '192.0.0.0', ['192', '0', '0', '0'], 'C0000000', '11000000000000000000000000000000'],
+            ['192.128.0.1', 6, '192.0.0.0', ['192', '0', '0', '0'], 'C0000000', '11000000000000000000000000000000'],
+            ['128.0.0.0', 7, '128.0.0.0', ['128', '0', '0', '0'], '80000000', '10000000000000000000000000000000'],
+            ['235.90.125.222', 8, '235.0.0.0', ['235', '0', '0', '0'], 'EB000000', '11101011000000000000000000000000'],
+            ['208.153.158.185', 9, '208.128.0.0', ['208', '128', '0', '0'], 'D0800000', '11010000100000000000000000000000'],
+            ['99.107.189.17', 10, '99.64.0.0', ['99', '64', '0', '0'], '63400000', '01100011010000000000000000000000'],
+            ['233.126.142.167', 11, '233.96.0.0', ['233', '96', '0', '0'], 'E9600000', '11101001011000000000000000000000'],
+            ['205.39.43.86', 12, '205.32.0.0', ['205', '32', '0', '0'], 'CD200000', '11001101001000000000000000000000'],
+            ['158.114.74.115', 13, '158.112.0.0', ['158', '112', '0', '0'], '9E700000', '10011110011100000000000000000000'],
+            ['127.132.3.128', 14, '127.132.0.0', ['127', '132', '0', '0'], '7F840000', '01111111100001000000000000000000'],
+            ['243.73.87.101', 15, '243.72.0.0', ['243', '72', '0', '0'], 'F3480000', '11110011010010000000000000000000'],
+            ['176.103.67.129', 16, '176.103.0.0', ['176', '103', '0', '0'], 'B0670000', '10110000011001110000000000000000'],
+            ['190.113.28.0', 17, '190.113.0.0', ['190', '113', '0', '0'], 'BE710000', '10111110011100010000000000000000'],
+            ['204.243.103.224', 18, '204.243.64.0', ['204', '243', '64', '0'], 'CCF34000', '11001100111100110100000000000000'],
+            ['203.247.20.148', 19, '203.247.0.0', ['203', '247', '0', '0'], 'CBF70000', '11001011111101110000000000000000'],
+            ['15.254.55.4', 20, '15.254.48.0', ['15', '254', '48', '0'], '0FFE3000', '00001111111111100011000000000000'],
+            ['96.245.55.29', 21, '96.245.48.0', ['96', '245', '48', '0'], '60F53000', '01100000111101010011000000000000'],
+            ['88.102.195.7', 22, '88.102.192.0', ['88', '102', '192', '0'], '5866C000', '01011000011001101100000000000000'],
+            ['144.60.195.68', 23, '144.60.194.0', ['144', '60', '194', '0'], '903CC200', '10010000001111001100001000000000'],
+            ['189.191.237.105', 24, '189.191.237.0', ['189', '191', '237', '0'], 'BDBFED00', '10111101101111111110110100000000'],
+            ['98.79.29.150', 25, '98.79.29.128', ['98', '79', '29', '128'], '624F1D80', '01100010010011110001110110000000'],
+            ['56.5.145.126', 26, '56.5.145.64', ['56', '5', '145', '64'], '38059140', '00111000000001011001000101000000'],
+            ['80.170.127.173', 27, '80.170.127.160', ['80', '170', '127', '160'], '50AA7FA0', '01010000101010100111111110100000'],
+            ['92.123.10.117', 28, '92.123.10.112', ['92', '123', '10', '112'], '5C7B0A70', '01011100011110110000101001110000'],
+            ['88.52.155.198', 29, '88.52.155.192', ['88', '52', '155', '192'], '58349BC0', '01011000001101001001101111000000'],
+            ['230.233.123.40', 30, '230.233.123.40', ['230', '233', '123', '40'], 'E6E97B28', '11100110111010010111101100101000'],
+            ['254.17.211.42', 31, '254.17.211.42', ['254', '17', '211', '42'], 'FE11D32A', '11111110000100011101001100101010'],
+            ['57.51.231.108', 32, '57.51.231.108', ['57', '51', '231', '108'], '3933E76C', '00111001001100111110011101101100'],
+        ];
     }
 
-    public function testGetIPAddressBinary()
+    /**
+     * @testCase     getHostPortion
+     * @dataProvider dataProviderForHostPortion
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $host
+     * @param        array  $quads
+     * @param        string $hex
+     * @param        string $binary
+     */
+    public function testGetHostPortion($ip_address, $network_size, $host, array $quads, $hex, $binary)
     {
-        $this->assertEquals($this->sub->getIPAddressBinary(), IP_ADDRESS_BINARY);
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $this->assertSame($host, $sub->getHostPortion());
+        $this->assertSame($quads, $sub->getHostPortionQuads());
+        $this->assertSame($hex, $sub->getHostPortionHex());
+        $this->assertSame($binary, $sub->getHostPortionBinary());
     }
 
-    public function testGetSubnetMask()
+    /**
+     * @return array [ip_address, network_size, host, quads, hex, binary]
+     */
+    public function dataProviderForHostPortion()
     {
-        $this->assertEquals($this->sub->getSubnetMask(), SUBNET_MASK);
+        return [
+            ['192.168.112.203', 1, '64.168.112.203', ['64', '168', '112', '203'], '40A870CB', '01000000101010000111000011001011'],
+            ['192.168.84.233', 2, '0.168.84.233', ['0', '168', '84', '233'], '00A854E9', '00000000101010000101010011101001'],
+            ['10.10.122.113', 3, '10.10.122.113', ['10', '10', '122', '113'], '0A0A7A71', '00001010000010100111101001110001'],
+            ['255.255.255.255', 4, '15.255.255.255', ['15', '255', '255', '255'], '0FFFFFFF', '00001111111111111111111111111111'],
+            ['192.168.112.207', 5, '0.168.112.207', ['0', '168', '112', '207'], '00A870CF', '00000000101010000111000011001111'],
+            ['192.128.0.1', 6, '0.128.0.1', ['0', '128', '0', '1'], '00800001', '00000000100000000000000000000001'],
+            ['128.0.0.0', 7, '0.0.0.0', ['0', '0', '0', '0'], '00000000', '00000000000000000000000000000000'],
+            ['235.90.125.222', 8, '0.90.125.222', ['0', '90', '125', '222'], '005A7DDE', '00000000010110100111110111011110'],
+            ['208.153.158.185', 9, '0.25.158.185', ['0', '25', '158', '185'], '00199EB9', '00000000000110011001111010111001'],
+            ['99.107.189.17', 10, '0.43.189.17', ['0', '43', '189', '17'], '002BBD11', '00000000001010111011110100010001'],
+            ['233.126.142.167', 11, '0.30.142.167', ['0', '30', '142', '167'], '001E8EA7', '00000000000111101000111010100111'],
+            ['205.39.43.86', 12, '0.7.43.86', ['0', '7', '43', '86'], '00072B56', '00000000000001110010101101010110'],
+            ['158.114.74.115', 13, '0.2.74.115', ['0', '2', '74', '115'], '00024A73', '00000000000000100100101001110011'],
+            ['127.132.3.128', 14, '0.0.3.128', ['0', '0', '3', '128'], '00000380', '00000000000000000000001110000000'],
+            ['243.73.87.101', 15, '0.1.87.101', ['0', '1', '87', '101'], '00015765', '00000000000000010101011101100101'],
+            ['176.103.67.129', 16, '0.0.67.129', ['0', '0', '67', '129'], '00004381', '00000000000000000100001110000001'],
+            ['190.113.28.0', 17, '0.0.28.0', ['0', '0', '28', '0'], '00001C00', '00000000000000000001110000000000'],
+            ['204.243.103.224', 18, '0.0.39.224', ['0', '0', '39', '224'], '000027E0', '00000000000000000010011111100000'],
+            ['203.247.20.148', 19, '0.0.20.148', ['0', '0', '20', '148'], '00001494', '00000000000000000001010010010100'],
+            ['15.254.55.4', 20, '0.0.7.4', ['0', '0', '7', '4'], '00000704', '00000000000000000000011100000100'],
+            ['96.245.55.29', 21, '0.0.7.29', ['0', '0', '7', '29'], '0000071D', '00000000000000000000011100011101'],
+            ['88.102.195.7', 22, '0.0.3.7', ['0', '0', '3', '7'], '00000307', '00000000000000000000001100000111'],
+            ['144.60.195.68', 23, '0.0.1.68', ['0', '0', '1', '68'], '00000144', '00000000000000000000000101000100'],
+            ['189.191.237.105', 24, '0.0.0.105', ['0', '0', '0', '105'], '00000069', '00000000000000000000000001101001'],
+            ['98.79.29.150', 25, '0.0.0.22', ['0', '0', '0', '22'], '00000016', '00000000000000000000000000010110'],
+            ['56.5.145.126', 26, '0.0.0.62', ['0', '0', '0', '62'], '0000003E', '00000000000000000000000000111110'],
+            ['80.170.127.173', 27, '0.0.0.13', ['0', '0', '0', '13'], '0000000D', '00000000000000000000000000001101'],
+            ['92.123.10.117', 28, '0.0.0.5', ['0', '0', '0', '5'], '00000005', '00000000000000000000000000000101'],
+            ['88.52.155.198', 29, '0.0.0.6', ['0', '0', '0', '6'], '00000006', '00000000000000000000000000000110'],
+            ['230.233.123.40', 30, '0.0.0.0', ['0', '0', '0', '0'], '00000000', '00000000000000000000000000000000'],
+            ['254.17.211.42', 31, '0.0.0.0', ['0', '0', '0', '0'], '00000000', '00000000000000000000000000000000'],
+            ['57.51.231.108', 32, '0.0.0.0', ['0', '0', '0', '0'], '00000000', '00000000000000000000000000000000'],
+        ];
     }
 
-    public function testGetSubnetMaskQuads()
+    /**
+     * @testCase     constructor bad IP address
+     * @dataProvider dataProviderForBadIpAddresses
+     * @param        string $ip_address
+     * @throws       \Exception
+     */
+    public function testConstructorExceptionOnBadIPAddress($ip_address)
     {
-        $this->assertEquals($this->sub->getSubnetMaskQuads()[0], explode('.', SUBNET_MASK)[0]);
-        $this->assertEquals($this->sub->getSubnetMaskQuads()[1], explode('.', SUBNET_MASK)[1]);
-        $this->assertEquals($this->sub->getSubnetMaskQuads()[2], explode('.', SUBNET_MASK)[2]);
-        $this->assertEquals($this->sub->getSubnetMaskQuads()[3], explode('.', SUBNET_MASK)[3]);
+        $this->expectException(\UnexpectedValueException::class);
+        $sub = new IPv4\SubnetCalculator($ip_address, 24);
     }
 
-    public function testGetSubnetMaskHex()
+    /**
+     * @testCase     validateInputs bad IP address
+     * @dataProvider dataProviderForBadIpAddresses
+     * @param        string $ip_address
+     * @throws       \Exception
+     */
+    public function testValidateInputExceptionOnBadIPAddress($ip_address)
     {
-        $this->assertEquals($this->sub->getSubnetMaskHex(), SUBNET_MASK_HEX);
+        $validateInputs = new \ReflectionMethod(IPv4\SubnetCalculator::class, 'validateInputs');
+        $validateInputs->setAccessible(true);
+
+        $this->expectException(\UnexpectedValueException::class);
+        $validateInputs->invokeArgs($this->sub, [$ip_address, 24]);
     }
 
-    public function testGetSubnetMaskBinary()
+    /**
+     * @return array [ip_address]
+     */
+    public function dataProviderForBadIpAddresses()
     {
-        $this->assertEquals($this->sub->getSubnetMaskBinary(), SUBNET_MASK_BINARY);
+        return [
+            ['-1.168.3.4'],
+            ['256.168.3.4'],
+            ['555.444.333.222'],
+        ];
     }
 
-    public function testGetNetworkPortion()
+    /**
+     * @testCase     constructor bad network size
+     * @dataProvider dataProviderForBadNetworkSize
+     * @param        int $network_size
+     * @throws       \Exception
+     */
+    public function testConstructorExceptionOnBadNetworkSize($network_size)
     {
-        $this->assertEquals($this->sub->getNetworkPortion(), NETWORK);
+        $this->expectException(\UnexpectedValueException::class);
+        $sub = new IPv4\SubnetCalculator('192.168.112.203', $network_size);
     }
 
-    public function testGetNetworkPortionQuads()
+
+    /**
+     * @testCase     validateInputs bad network size
+     * @dataProvider dataProviderForBadNetworkSize
+     * @param        int $network_size
+     * @throws       \Exception
+     */
+    public function testValidateInputExceptionOnBadNetworkSize($network_size)
     {
-        $this->assertEquals($this->sub->getNetworkPortionQuads()[0], explode('.', NETWORK)[0]);
-        $this->assertEquals($this->sub->getNetworkPortionQuads()[1], explode('.', NETWORK)[1]);
-        $this->assertEquals($this->sub->getNetworkPortionQuads()[2], explode('.', NETWORK)[2]);
-        $this->assertEquals($this->sub->getNetworkPortionQuads()[3], explode('.', NETWORK)[3]);
+        $validateInputs = new \ReflectionMethod(IPv4\SubnetCalculator::class, 'validateInputs');
+        $validateInputs->setAccessible(true);
+
+        $this->expectException(\UnexpectedValueException::class);
+        $validateInputs->invokeArgs($this->sub, ['192.168.112.203', $network_size]);
     }
 
-    public function testGetNetworkPortionHex()
+    /**
+     * @return array [network_size]
+     */
+    public function dataProviderForBadNetworkSize()
     {
-        $this->assertEquals($this->sub->getNetworkPortionHex(), NETWORK_HEX);
+        return [
+            [-2],
+            [-1],
+            [0],
+            [33],
+            [34],
+            [89394839],
+        ];
     }
 
-    public function testGetNetworkPortionBinary()
-    {
-        $this->assertEquals($this->sub->getNetworkPortionBinary(), NETWORK_BINARY);
-    }
-
-    public function testGetHostPortion()
-    {
-        $this->assertEquals($this->sub->getHostPortion(), HOST);
-    }
-
-    public function testGetHostPortionQuads()
-    {
-        $this->assertEquals($this->sub->getHostPortionQuads()[0], explode('.', HOST)[0]);
-        $this->assertEquals($this->sub->getHostPortionQuads()[1], explode('.', HOST)[1]);
-        $this->assertEquals($this->sub->getHostPortionQuads()[2], explode('.', HOST)[2]);
-        $this->assertEquals($this->sub->getHostPortionQuads()[3], explode('.', HOST)[3]);
-    }
-
-    public function testGetHostPortionHex()
-    {
-        $this->assertEquals($this->sub->getHostPortionHex(), HOST_HEX);
-    }
-
-    public function testGetHostPortionBinary()
-    {
-        $this->assertEquals($this->sub->getHostPortionBinary(), HOST_BINARY);
-    }
-
-    public function testValidateInputExceptionOnBadIPAddress()
-    {
-        $this->expectException(\Exception::class);
-        $sub = new SubnetCalculator('555.444.333.222', 23);
-    }
-
-    public function testValidateInputExceptionOnBadNetworkSize()
-    {
-        $this->expectException(\Exception::class);
-        $sub = new SubnetCalculator('192.168.112.203', 40);
-    }
-
+    /**
+     * @testCase getGubnetArrayReport
+     */
     public function testGetSubnetArrayReport()
     {
         $report = $this->sub->getSubnetArrayReport();
@@ -664,12 +945,18 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('broadcast_address', $report);
     }
 
+    /**
+     * @testCase getSubnetJSONReport
+     */
     public function testGetSubnetJSONReport()
     {
         $json = $this->sub->getSubnetJSONReport();
         $this->assertTrue(is_string($json));
     }
 
+    /**
+     * @testCase printSubnetReport
+     */
     public function testPrintSubnetReport()
     {
         $this->expectOutputRegex('
@@ -692,6 +979,9 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->sub->printSubnetReport();
     }
 
+    /**
+     * @testCase getPrintableReport
+     */
     public function testGetPrintableReport()
     {
         $report = $this->sub->getPrintableReport();

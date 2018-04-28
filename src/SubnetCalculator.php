@@ -55,9 +55,10 @@ class SubnetCalculator
 
     /**
      * Constructor - Takes IP address and network size, validates inputs, and assigns class attributes.
-     * For example: 192.168.1.120/24 would be $ip=192.168.1.120 $network_size=24
-     * @param string $ip IP address in dotted quad notation.
-     * @param int CIDR network size.
+     * For example: 192.168.1.120/24 would be $ip = 192.168.1.120 $network_size = 24
+     *
+     * @param string $ip           IP address in dotted quad notation.
+     * @param int    $network_size CIDR network size.
      */
     public function __construct($ip, $network_size)
     {
@@ -73,6 +74,7 @@ class SubnetCalculator
 
     /**
      * Get IP address as dotted quads: xxx.xxx.xxx.xxx
+     *
      * @return string IP address as dotted quads.
      */
     public function getIPAddress()
@@ -81,8 +83,39 @@ class SubnetCalculator
     }
 
     /**
-     * Get network.
-     * @return int network.
+     * Get IP address as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return array
+     */
+    public function getIPAddressQuads()
+    {
+        return $this->quads;
+    }
+
+    /**
+     * Get IP address as hexadecimal
+     *
+     * @return string IP address in hex
+     */
+    public function getIPAddressHex()
+    {
+        return $this->ipAddressCalculation(self::FORMAT_HEX);
+    }
+
+    /**
+     * Get IP address as binary
+     *
+     * @return string IP address in binary
+     */
+    public function getIPAddressBinary()
+    {
+        return $this->ipAddressCalculation(self::FORMAT_BINARY);
+    }
+
+    /**
+     * Get network size
+     *
+     * @return int network size
      */
     public function getNetworkSize()
     {
@@ -90,8 +123,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get the number of IP addresses in the network.
-     * @return int Number of IP addresses.
+     * Get the number of IP addresses in the network
+     *
+     * @return int Number of IP addresses
      */
     public function getNumberIPAddresses()
     {
@@ -99,23 +133,26 @@ class SubnetCalculator
     }
 
     /**
-     * Get the number of addressable hosts in the network.
-     * @return int Number of IP addresses that are addressable.
+     * Get the number of addressable hosts in the network
+     *
+     * @return int Number of IP addresses that are addressable
      */
     public function getNumberAddressableHosts()
     {
         if ($this->network_size == 32) {
             return 1;
-        } elseif ($this->network_size == 31) {
-            return 2;
-        } else {
-            return ($this->getNumberIPAddresses() - 2);
         }
+        if ($this->network_size == 31) {
+            return 2;
+        }
+
+        return ($this->getNumberIPAddresses() - 2);
     }
 
     /**
-     * Get range of IP addresses in the network.
-     * @return array Array containing start and end of IP address range. IP addresses in dotted quad notation.
+     * Get range of IP addresses in the network
+     *
+     * @return array containing start and end of IP address range. IP addresses in dotted quad notation.
      */
     public function getIPAddressRange()
     {
@@ -123,8 +160,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get range of IP addresses in the network.
-     * @return array Array containing start and end of IP address range. IP addresses in dotted quad notation.
+     * Get range of IP addresses in the network
+     *
+     * @return array containing start and end of IP address range. IP addresses in dotted quad notation.
      */
     public function getAddressableHostRange()
     {
@@ -132,24 +170,28 @@ class SubnetCalculator
     }
 
     /**
-     * Get the broadcast IP address.
-     * @return string IP address as dotted quads.
+     * Get the broadcast IP address
+     *
+     * @return string IP address as dotted quads
      */
     public function getBroadcastAddress()
     {
         $network_quads         = $this->getNetworkPortionQuads();
         $number_ip_addresses   = $this->getNumberIPAddresses();
+
         $network_range_quads   = [];
         $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[0] & ( $this->subnet_mask >> 24 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 24 ) & 0xFF ));
         $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[1] & ( $this->subnet_mask >> 16 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 16 ) & 0xFF ));
         $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[2] & ( $this->subnet_mask >>  8 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  8 ) & 0xFF ));
         $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[3] & ( $this->subnet_mask >>  0 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  0 ) & 0xFF ));
+
         return implode('.', $network_range_quads);
     }
 
     /**
      * Get minimum host IP address as dotted quads: xxx.xxx.xxx.xxx
-     * @return string min host as dotted quads.
+     *
+     * @return string min host as dotted quads
      */
     public function getMinHost()
     {
@@ -160,7 +202,8 @@ class SubnetCalculator
     }
 
     /**
-     * Get minimum host IP address as array of quads: array( xxx, xxx, xxx, xxx )
+     * Get minimum host IP address as array of quads: [xxx, xxx, xxx, xxx]
+     *
      * @return array min host portion as dotted quads.
      */
     public function getMinHostQuads()
@@ -173,7 +216,8 @@ class SubnetCalculator
 
     /**
      * Get minimum host IP address as hex
-     * @return string min host portion as hex.
+     *
+     * @return string min host portion as hex
      */
     public function getMinHostHex()
     {
@@ -190,7 +234,8 @@ class SubnetCalculator
 
     /**
      * Get minimum host IP address as binary
-     * @return string min host portion as binary.
+     *
+     * @return string min host portion as binary
      */
     public function getMinHostBinary()
     {
@@ -207,6 +252,7 @@ class SubnetCalculator
 
     /**
      * Get maximum host IP address as dotted quads: xxx.xxx.xxx.xxx
+     *
      * @return string max host as dotted quads.
      */
     public function getMaxHost()
@@ -218,8 +264,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get maximum host IP address as array of quads: array( xxx, xxx, xxx, xxx )
-     * @return array min host portion as dotted quads.
+     * Get maximum host IP address as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return array min host portion as dotted quads
      */
     public function getMaxHostQuads()
     {
@@ -231,7 +278,8 @@ class SubnetCalculator
 
     /**
      * Get maximum host IP address as hex
-     * @return string max host portion as hex.
+     *
+     * @return string max host portion as hex
      */
     public function getMaxHostHex()
     {
@@ -248,7 +296,8 @@ class SubnetCalculator
 
     /**
      * Get maximum host IP address as binary
-     * @return string man host portion as binary.
+     *
+     * @return string man host portion as binary
      */
     public function getMaxHostBinary()
     {
@@ -264,35 +313,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get IP address as array of quads: array( xxx, xxx, xxx, xxx ).
-     * @return array
-     */
-    public function getIPAddressQuads()
-    {
-        return $this->quads;
-    }
-
-    /**
-     * Get IP address as hexadecimal.
-     * @return string IP address in hex.
-     */
-    public function getIPAddressHex()
-    {
-        return $this->ipAddressCalculation(self::FORMAT_HEX);
-    }
-
-    /**
-     * Get IP address as binary.
-     * @return string IP address in binary.
-     */
-    public function getIPAddressBinary()
-    {
-        return $this->ipAddressCalculation(self::FORMAT_BINARY);
-    }
-
-    /**
      * Get subnet mask as dotted quads: xxx.xxx.xxx.xxx
-     * @return string subnet mask as dotted quads.
+     *
+     * @return string subnet mask as dotted quads
      */
     public function getSubnetMask()
     {
@@ -300,8 +323,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get subnet mask as array of quads: array( xxx, xxx, xxx, xxx ).
-     * @return array Array of four elements containing the four quads of the subnet mask.
+     * Get subnet mask as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return array of four elements containing the four quads of the subnet mask.
      */
     public function getSubnetMaskQuads()
     {
@@ -309,8 +333,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get subnet mask as hexadecimal.
-     * @return string subnet mask in hex.
+     * Get subnet mask as hexadecimal
+     *
+     * @return string subnet mask in hex
      */
     public function getSubnetMaskHex()
     {
@@ -318,8 +343,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get subnet mask as binary.
-     * @return string subnet mask in binary.
+     * Get subnet mask as binary
+     *
+     * @return string subnet mask in binary
      */
     public function getSubnetMaskBinary()
     {
@@ -328,7 +354,8 @@ class SubnetCalculator
 
     /**
      * Get network portion of IP address as dotted quads: xxx.xxx.xxx.xxx
-     * @return string network portion as dotted quads.
+     *
+     * @return string network portion as dotted quads
      */
     public function getNetworkPortion()
     {
@@ -336,8 +363,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get network portion as array of quads: array( xxx, xxx, xxx, xxx );
-     * @return array Array of four elements containing the four quads of the network portion.
+     * Get network portion as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return array of four elements containing the four quads of the network portion
      */
     public function getNetworkPortionQuads()
     {
@@ -345,8 +373,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get network portion of IP address as hexadecimal.
-     * @return string network portion in hex.
+     * Get network portion of IP address as hexadecimal
+     *
+     * @return string network portion in hex
      */
     public function getNetworkPortionHex()
     {
@@ -354,8 +383,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get network portion of IP address as binary.
-     * @return string network portion in binary.
+     * Get network portion of IP address as binary
+     *
+     * @return string network portion in binary
      */
     public function getNetworkPortionBinary()
     {
@@ -364,7 +394,8 @@ class SubnetCalculator
 
     /**
      * Get host portion of IP address as dotted quads: xxx.xxx.xxx.xxx
-     * @return string host portion as dotted quads.
+     *
+     * @return string host portion as dotted quads
      */
     public function getHostPortion()
     {
@@ -372,8 +403,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get host portion as array of quads: array( xxx, xxx, xxx, xxx );
-     * @return array Array of four elements containing the four quads of the host portion.
+     * Get host portion as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return array of four elements containing the four quads of the host portion
      */
     public function getHostPortionQuads()
     {
@@ -381,8 +413,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get host portion of IP address as hexadecimal.
-     * @return string host portion in hex.
+     * Get host portion of IP address as hexadecimal
+     *
+     * @return string host portion in hex
      */
     public function getHostPortionHex()
     {
@@ -390,8 +423,9 @@ class SubnetCalculator
     }
 
     /**
-     * Get host portion of IP address as binary.
-     * @return string host portion in binary.
+     * Get host portion of IP address as binary
+     *
+     * @return string host portion in binary
      */
     public function getHostPortionBinary()
     {
@@ -399,11 +433,12 @@ class SubnetCalculator
     }
 
     /**
-     * Get subnet calculations as an associated array.
+     * Get subnet calculations as an associated array
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
-     * @return array Associated array of subnet calculations.
+     *
+     * @return array of subnet calculations.
      */
     public function getSubnetArrayReport()
     {
@@ -438,11 +473,12 @@ class SubnetCalculator
     }
 
     /**
-     * Get subnet calculations as JSON string.
+     * Get subnet calculations as JSON string
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
-     * @return string JSON string of subnet calculations.
+     *
+     * @return string JSON string of subnet calculations
      */
     public function getSubnetJSONReport()
     {
@@ -461,11 +497,12 @@ class SubnetCalculator
     }
 
     /**
-     * Print a report of subnet calculations.
+     * Print a report of subnet calculations
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
-     * @return string Subnet Calculator report.
+     *
+     * @return string Subnet Calculator report
      */
     public function getPrintableReport()
     {
@@ -473,11 +510,13 @@ class SubnetCalculator
     }
 
     /**
-     * Format as string a report of subnet calculations.
+     * String representation of a report of subnet calculations
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
+     *
+     * @return string
      */
-    public function __tostring()
+    public function __toString()
     {
         $string  = sprintf("%-18s %15s %8s %32s\n", "{$this->ip}/{$this->network_size}", 'Quads', 'Hex', 'Binary');
         $string .= sprintf("%-18s %15s %8s %32s\n", '------------------', '---------------', '--------', '--------------------------------');
@@ -494,13 +533,15 @@ class SubnetCalculator
         return $string;
     }
 
-  // PRIVATE METHODS
+    // PRIVATE METHODS
 
     /**
-     * Calculate IP address for formatting.
-     * @param string $format sprintf format to determine if decimal, hex or binary.
-     * @param string $separator implode separator for formatting quads vs hex and binary.
-     * @return string formatted IP address.
+     * Calculate IP address for formatting
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
+     * @return string formatted IP address
      */
     private function ipAddressCalculation($format, $separator = '')
     {
@@ -514,8 +555,10 @@ class SubnetCalculator
 
     /**
      * Subnet calculation
-     * @param $string sprintf format to determine if decimal, hex or binary
-     * @param $separator implode separator for formatting quads vs hex and binary
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
      * @return string subnet
      */
     private function subnetCalculation($format, $separator = '')
@@ -530,10 +573,12 @@ class SubnetCalculator
     }
 
     /**
-     * Calculate network portion for formatting.
-     * @param string $format sprintf format to determine if decimal, hex or binary.
-     * @param string $separator implode separator for formatting quads vs hex and binary.
-     * @return string formatted subnet mask.
+     * Calculate network portion for formatting
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
+     * @return string formatted subnet mask
      */
     private function networkCalculation($format, $separator = '')
     {
@@ -547,10 +592,12 @@ class SubnetCalculator
     }
 
     /**
-     * Calculate host portion for formatting.
-     * @param string $format sprintf format to determine if decimal, hex or binary.
-     * @param string $separator implode separator for formatting quads vs hex and binary.
-     * @return string formatted subnet mask.
+     * Calculate host portion for formatting
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
+     * @return string formatted subnet mask
      */
     private function hostCalculation($format, $separator = '')
     {
@@ -564,9 +611,11 @@ class SubnetCalculator
     }
 
     /**
-     * Calculate min host for formatting.
-     * @param string $format sprintf format to determine if decimal, hex or binary.
-     * @param string $separator implode separator for formatting quads vs hex and binary.
+     * Calculate min host for formatting
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
      * @return string formatted min host
      */
     private function minHostCalculation($format, $separator = '')
@@ -581,9 +630,11 @@ class SubnetCalculator
     }
 
     /**
-     * Calculate max host for formatting.
-     * @param string $format sprintf format to determine if decimal, hex or binary.
-     * @param string $separator implode separator for formatting quads vs hex and binary.
+     * Calculate max host for formatting
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
      * @return string formatted max host
      */
     private function maxHostCalculation($format, $separator = '')
@@ -601,18 +652,20 @@ class SubnetCalculator
     }
 
     /**
-     * Validate IP address and network.
-     * @param string $ip IP address in dotted quads format.
-     * @param int $network_size Network.
-     * @throws \Exception IP or network size not valid.
+     * Validate IP address and network
+     *
+     * @param string $ip           IP address in dotted quads format
+     * @param int    $network_size Network size
+     *
+     * @throws \UnexpectedValueException IP or network size not valid
      */
     private function validateInputs($ip, $network_size)
     {
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            throw new \Exception("IP address $ip not valid.");
+            throw new \UnexpectedValueException("IP address $ip not valid.");
         }
         if (( $network_size < 1 ) || ( $network_size > 32 )) {
-            throw new \Exception("Network size $network_size not valid.");
+            throw new \UnexpectedValueException("Network size $network_size not valid.");
         }
     }
 }
