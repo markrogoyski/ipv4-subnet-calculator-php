@@ -111,7 +111,7 @@ $host_hex    = $sub->getHostPortionHex();    // 000000CB
 $host_binary = $sub->getHostPortionBinary(); // 00000000000000000000000011001011
 ```
 
-## Min and Max Host
+### Min and Max Host
 ```php
 $min_host        = $sub->getMinHost();       // 192.168.112.1
 $min_host_quads  = $sub->getMinHostQuads();  // [192, 168, 112, 1]
