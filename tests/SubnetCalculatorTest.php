@@ -943,6 +943,8 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $this->assertArrayHasKey('number_of_addressable_hosts', $report);
         $this->assertArrayHasKey('ip_address_range', $report);
         $this->assertArrayHasKey('broadcast_address', $report);
+        $this->assertArrayHasKey('min_host', $report);
+        $this->assertArrayHasKey('max_host', $report);
     }
 
     /**
@@ -973,6 +975,8 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
                 Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+        \n
                 IP [ ] Address [ ] Range:                \s+ .+?        \n
                 Broadcast [ ] Address:                   \s+ .+?        \n
+                Min [ ] Host:                            \s  .+?        \n
+                Max [ ] Host:                            \s  .+?        \n
                 $
             /xms
         ');

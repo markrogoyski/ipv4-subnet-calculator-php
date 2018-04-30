@@ -469,6 +469,8 @@ class SubnetCalculator
             'number_of_addressable_hosts' => $this->getNumberAddressableHosts(),
             'ip_address_range'            => $this->getIPAddressRange(),
             'broadcast_address'           => $this->getBroadcastAddress(),
+            'min_host'                    => $this->getMinHost(),
+            'max_host'                    => $this->getMaxHost(),
         ];
     }
 
@@ -529,6 +531,8 @@ class SubnetCalculator
         $string .= sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $this->getNumberAddressableHosts());
         $string .= sprintf("%-28s %s\n", 'IP Address Range:', implode(' - ', $this->getIPAddressRange()));
         $string .= sprintf("%-28s %s\n", 'Broadcast Address:', $this->getBroadcastAddress());
+        $string .= sprintf("%-28s %s\n", 'Min Host:', $this->getMinHost());
+        $string .= sprintf("%-28s %s\n", 'Max Host:', $this->getMaxHost());
 
         return $string;
     }

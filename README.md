@@ -36,7 +36,7 @@ Setup
 ```javascript
 {
   "require": {
-      "markrogoyski/ipv4-subnet-calculator": "2.0.*"
+      "markrogoyski/ipv4-subnet-calculator": "2.*"
   }
 }
 ```
@@ -60,51 +60,64 @@ require_once( __DIR__ . '/vendor/autoload.php' );
 Usage
 -----
 
-### Create New SubnetCalculator Object
+### Create New SubnetCalculator
 ```php
 // For network 192.168.112.203/23
-$sub = new IPv4\SubnetCalculator( '192.168.112.203', 23 );
+$sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
 ```
 
-### Get Various Network Information
+### Various Network Information
 ```php
-$number_ip_addrssses = $sub->getNumberIPAddresses();      // 512
+$number_ip_addresses = $sub->getNumberIPAddresses();      // 512
 $number_hosts        = $sub->getNumberAddressableHosts(); // 510
-$address_rage        = $sub->getIPAddressRange();         // [ 192.168.112.0, 192.168.113.255 ]
+$address_rage        = $sub->getIPAddressRange();         // [192.168.112.0, 192.168.113.255]
 $network_size        = $sub->getNetworkSize();            // 23
 $broadcast_address   = $sub->getBroadcastAddress();       // 192.168.113.255
 ```
 
-### Get IP Address
+### IP Address
 ```php
 $ip_address        = $sub->getIPAddress();       // 192.168.112.203
-$ip_address_quads  = $sub->getIPAddressQuads();  // [ 192, 168, 112, 203 ]
+$ip_address_quads  = $sub->getIPAddressQuads();  // [192, 168, 112, 203]
 $ip_address_hex    = $sub->getIPAddressHex();    // C0A870CB
 $ip_address_binary = $sub->getIPAddressBinary(); // 11000000101010000111000011001011
 ```
 
-### Get Subnet Mask
+### Subnet Mask
 ```php
 $subnet_mask        = $sub->getSubnetMask();       // 255.255.254.0
-$subnet_mask_quads  = $sub->getSubnetMaskQuads();  // [ 255, 255, 254, 0 ]
+$subnet_mask_quads  = $sub->getSubnetMaskQuads();  // [255, 255, 254, 0]
 $subnet_mask_hex    = $sub->getSubnetMaskHex();    // FFFFFE00
 $subnet_mask_binary = $sub->getSubnetMaskBinary(); // 11111111111111111111111000000000
 ```
 
-### Get Network Portion
+### Network Portion
 ```php
 $network        = $sub->getNetworkPortion();       // 192.168.112.0
-$network_quads  = $sub->getNetworkPortionQuads();  // [ 192, 168, 112, 0 ]
+$network_quads  = $sub->getNetworkPortionQuads();  // [192, 168, 112, 0]
 $network_hex    = $sub->getNetworkPortionHex();    // C0A87000
 $network_binary = $sub->getNetworkPortionBinary(); // 11000000101010000111000000000000
 ```
 
-### Get Host Portion
+### Host Portion
 ```php
 $host        = $sub->getHostPortion();       // 0.0.0.203
-$host_quads  = $sub->getHostPortionQuads();  // [ 0, 0, 0, 203 ]
+$host_quads  = $sub->getHostPortionQuads();  // [0, 0, 0, 203]
 $host_hex    = $sub->getHostPortionHex();    // 000000CB
 $host_binary = $sub->getHostPortionBinary(); // 00000000000000000000000011001011
+```
+
+## Min and Max Host
+```php
+$min_host        = $sub->getMinHost();       // 192.168.112.1
+$min_host_quads  = $sub->getMinHostQuads();  // [192, 168, 112, 1]
+$min_host_hex    = $sub->getMinHostHex();    // C0A87001
+$min_host_binary = $sub->getMinHostBinary(); // 11000000101010000111000000000001
+
+$max_host        = $sub->getMaxHost();       // 192.168.113.254
+$max_host_quads  = $sub->getMaxHostQuads();  // [192, 168, 113, 254]
+$max_host_hex    = $sub->getMaxHostHex();    // C0A871FE
+$max_host_binary = $sub->getMaxHostBinary(); // 11000000101010000111000111111110
 ```
 
 ### Reports
@@ -124,6 +137,8 @@ Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
+Min Host:                    192.168.112.1
+Max Host:                    192.168.113.254
 */
 ```
 
@@ -172,6 +187,8 @@ Array
         )
 
     [broadcast_address] => 192.168.113.255
+    [min_host] => 192.168.112.1
+    [max_host => 192.168.113.254
 )
 */
 ```
@@ -209,7 +226,9 @@ $sub->getJSONReport();
         "192.168.112.0",
         "192.168.113.255"
     ],
-    "broadcast_address": "192.168.113.255"
+    "broadcast_address": "192.168.113.255",
+    "min_host": "192.168.112.1",
+    "max_host": "192.168.113.254"
 }
 */
 ```
@@ -229,6 +248,8 @@ Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
+Min Host:                    192.168.112.1
+Max Host:                    192.168.113.254
 */
 
 // Printing the SubnetCalculator object will print the printable report.
@@ -245,6 +266,8 @@ Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
+Min Host:                    192.168.112.1
+Max Host:                    192.168.113.254
 */
 ```
 
