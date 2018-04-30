@@ -12,7 +12,8 @@ Features
 Given an IP address and CIDR network size, it calculates the network information and provides all-in-one aggregated reports.
 
 ### Calculations
- * IP address network subnet masks, network and host portions, and provides aggregated reports.
+ * IP address
+ * Network size
  * Subnet mask 
  * Network portion
  * Host portion
@@ -20,6 +21,8 @@ Given an IP address and CIDR network size, it calculates the network information
  * Number of addressable hosts in the network
  * IP address range
  * Broadcast address
+ * Min and max host
+
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
 
 ### Aggregated Network Calculation Reports
@@ -51,7 +54,7 @@ Composer will install IPv4 Subnet Calculator inside your vendor folder. Then you
 .php files to the use library with Autoloading.
 
 ```php
-require_once( __DIR__ . '/vendor/autoload.php' );
+require_once(__DIR__ . '/vendor/autoload.php');
 ```
 
 ### Minimum Requirements
