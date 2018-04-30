@@ -71,11 +71,12 @@ $sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
 
 ### Various Network Information
 ```php
-$number_ip_addresses = $sub->getNumberIPAddresses();      // 512
-$number_hosts        = $sub->getNumberAddressableHosts(); // 510
-$address_rage        = $sub->getIPAddressRange();         // [192.168.112.0, 192.168.113.255]
-$network_size        = $sub->getNetworkSize();            // 23
-$broadcast_address   = $sub->getBroadcastAddress();       // 192.168.113.255
+$number_ip_addresses    = $sub->getNumberIPAddresses();      // 512
+$number_hosts           = $sub->getNumberAddressableHosts(); // 510
+$address_rage           = $sub->getIPAddressRange();         // [192.168.112.0, 192.168.113.255]
+$addressable_host_range = $sub->getAddressableHostRange();   // [192.168.112.1, 192.168.113.254]
+$network_size           = $sub->getNetworkSize();            // 23
+$broadcast_address      = $sub->getBroadcastAddress();       // 192.168.113.255
 ```
 
 ### IP Address
