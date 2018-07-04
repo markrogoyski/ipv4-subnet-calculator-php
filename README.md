@@ -199,7 +199,7 @@ Array
 
 #### JSON Report
 ```php
-$sub->getJSONReport();
+$sub->getSubnetJSONReport();
 /*
 {
     "ip_address_with_network_size": "192.168.112.203/23",
