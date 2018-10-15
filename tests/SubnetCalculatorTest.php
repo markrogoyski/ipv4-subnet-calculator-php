@@ -991,4 +991,122 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $report = $this->sub->getPrintableReport();
         $this->assertTrue(is_string($report));
     }
+
+    /**
+     * @return array [ip_address, network_size, number_addresses]
+     */
+    public function dataProviderForGetAllIpsCount()
+    {
+        return [
+            ['192.168.112.203', 11, 2097152],
+            ['192.168.112.203', 12, 1048576],
+            ['192.168.112.203', 13, 524288],
+            ['192.168.112.203', 14, 262144],
+            ['192.168.112.203', 15, 131072],
+            ['192.168.112.203', 16, 65536],
+            ['192.168.112.203', 17, 32768],
+            ['192.168.112.203', 18, 16384],
+            ['192.168.112.203', 19, 8192],
+            ['192.168.112.203', 20, 4096],
+            ['192.168.112.203', 21, 2048],
+            ['192.168.112.203', 22, 1024],
+            ['192.168.112.203', 23, 512],
+            ['192.168.112.203', 24, 256],
+            ['192.168.112.203', 25, 128],
+            ['192.168.112.203', 26, 64],
+            ['192.168.112.203', 27, 32],
+            ['192.168.112.203', 28, 16],
+            ['192.168.112.203', 29, 8],
+            ['192.168.112.203', 30, 4],
+            ['192.168.112.203', 31, 2],
+            ['192.168.112.203', 32, 1],
+        ];
+    }
+
+    /**
+     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @dataProvider dataProviderForGetAllIpsCount
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        int    $number_addresses
+     */
+    public function testGetAllIPsCount($ip_address, $network_size, $number_addresses)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $count = 0;
+        foreach($sub->getAllIPs() as $ip) {
+            $count++;
+        }
+        $this->assertEquals($number_addresses, $count);
+    }
+
+    /**
+     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @dataProvider dataProviderForGetAllIpsCount
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        int    $number_addresses
+     */
+    public function testGetAllIPsCountHostsOnly($ip_address, $network_size, $number_addresses)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $count = 0;
+        foreach($sub->getAllIPs(true) as $ip) {
+            $count++;
+        }
+        if ($network_size < 31) {
+            $this->assertEquals(($number_addresses-2), $count);
+        } else {
+            $this->assertEquals($number_addresses, $count);
+        }
+    }
+
+    /**
+     * @return array [ip_address, network_size, [ip_addresses]]
+     */
+    public function dataProviderForGetAllIps()
+    {
+        return [
+            ['192.168.112.203', 29, ['192.168.112.200','192.168.112.201','192.168.112.202','192.168.112.203','192.168.112.204','192.168.112.205','192.168.112.206','192.168.112.207']],
+            ['192.168.112.203', 30, ['192.168.112.200','192.168.112.201','192.168.112.202','192.168.112.203',]],
+            ['192.168.112.203', 31, ['192.168.112.202','192.168.112.203',]],
+            ['192.168.112.203', 32, ['192.168.112.203',]],
+        ];
+    }
+
+    /**
+     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @dataProvider dataProviderForGetAllIps
+     * @param        string $ip_address
+     * @param        int $network_size
+     * @param        array $ip_addresses
+     */
+    public function testGetAllIPs($ip_address, $network_size, $ip_addresses)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        foreach($sub->getAllIPs() as $key => $ip) {
+            $this->assertEquals($ip_addresses[$key], $ip);
+        }
+    }
+
+    /**
+     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @dataProvider dataProviderForGetAllIps
+     * @param        string $ip_address
+     * @param        int $network_size
+     * @param        array $ip_addresses
+     */
+    public function testGetAllIPsHostsOnly($ip_address, $network_size, $ip_addresses)
+    {
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        // Remove network and Broadcast ips from $ip_addresses if the network size allows for them.
+        if ($network_size < 31) {
+            array_shift($ip_addresses);
+            array_pop($ip_addresses);
+        }
+        foreach($sub->getAllIPs(true) as $key => $ip) {
+            $this->assertEquals($ip_addresses[$key], $ip);
+        }
+    }
+
 }

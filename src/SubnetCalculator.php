@@ -672,4 +672,22 @@ class SubnetCalculator
             throw new \UnexpectedValueException("Network size $network_size not valid.");
         }
     }
+
+    /**
+     * @param bool $onlyHostIps (Only removes broadcast and network address if they exist);
+     * @return \Generator
+     */
+    public function getAllIPs($onlyHostIps = false)
+    {
+        list($start, $end) = $this->getIPAddressRange();
+        $start = ip2Long($start);
+        $end = ip2Long($end);
+        if ($onlyHostIps && $this->getNetworkSize() < 31) {
+            $start += 1;
+            $end -= 1;
+        }
+        for ($i=$start;$i<=$end;$i++) {
+            yield long2ip($i);
+        }
+    }
 }
