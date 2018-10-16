@@ -998,11 +998,6 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     public function dataProviderForGetAllIpsCount()
     {
         return [
-            ['192.168.112.203', 11, 2097152],
-            ['192.168.112.203', 12, 1048576],
-            ['192.168.112.203', 13, 524288],
-            ['192.168.112.203', 14, 262144],
-            ['192.168.112.203', 15, 131072],
             ['192.168.112.203', 16, 65536],
             ['192.168.112.203', 17, 32768],
             ['192.168.112.203', 18, 16384],
@@ -1024,7 +1019,32 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @testCase     getNumberIpAddresses returns the number of IP addresses
+     * @return array [ip_address, network_size, number_addresses]
+     */
+    public function dataProviderForGetAllIpsHostOnlyCount()
+    {
+        return [
+            ['192.168.112.203', 16, 65534],
+            ['192.168.112.203', 17, 32766],
+            ['192.168.112.203', 18, 16382],
+            ['192.168.112.203', 19, 8190],
+            ['192.168.112.203', 20, 4094],
+            ['192.168.112.203', 21, 2046],
+            ['192.168.112.203', 22, 1022],
+            ['192.168.112.203', 23, 510],
+            ['192.168.112.203', 24, 254],
+            ['192.168.112.203', 25, 126],
+            ['192.168.112.203', 26, 62],
+            ['192.168.112.203', 27, 30],
+            ['192.168.112.203', 28, 14],
+            ['192.168.112.203', 29, 6],
+            ['192.168.112.203', 30, 2],
+            ['192.168.112.203', 31, 2],
+        ];
+    }
+
+    /**
+     * @testCase     getAllIPAddresses returns the expected number of IP addresses
      * @dataProvider dataProviderForGetAllIpsCount
      * @param        string $ip_address
      * @param        int    $network_size
@@ -1032,32 +1052,76 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
      */
     public function testGetAllIPsCount($ip_address, $network_size, $number_addresses)
     {
-        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        // Given
+        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
         $count = 0;
-        foreach($sub->getAllIPs() as $ip) {
+
+        // When
+        foreach($sub->getAllIPAddresses() as $ip) {
             $count++;
         }
+
+        // Then
         $this->assertEquals($number_addresses, $count);
+        $this->assertEquals($count, $sub->getNumberIPAddresses());
     }
 
     /**
-     * @testCase     getNumberIpAddresses returns the number of IP addresses
-     * @dataProvider dataProviderForGetAllIpsCount
+     * @testCase     getAllIPAddresses for host only returns the expected number of IP addresses
+     * @dataProvider dataProviderForGetAllIpsHostOnlyCount
      * @param        string $ip_address
      * @param        int    $network_size
      * @param        int    $number_addresses
      */
     public function testGetAllIPsCountHostsOnly($ip_address, $network_size, $number_addresses)
     {
-        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        // Given
+        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
         $count = 0;
-        foreach($sub->getAllIPs(true) as $ip) {
+
+        // When
+        foreach($sub->getAllIPAddresses(true) as $ip) {
             $count++;
         }
-        if ($network_size < 31) {
-            $this->assertEquals(($number_addresses-2), $count);
-        } else {
-            $this->assertEquals($number_addresses, $count);
+
+        // Then
+        $this->assertEquals($number_addresses, $count);
+    }
+
+    /**
+     * @testCase getAllIPAddresses for host only returns the expected number of IP addresses for edge case /32 network
+     */
+    public function testGetAllIPsCountHostsOnlyEdgeCaseSlash32Network()
+    {
+        // Given
+        $sub   = new IPv4\SubnetCalculator('192.168.112.203', 32);
+        $count = 0;
+
+        // When
+        foreach($sub->getAllIPAddresses(true) as $ip) {
+            $count++;
+        }
+
+        // Then
+        $this->assertEquals(1, $count);
+    }
+
+    /**
+     * @testCase     getAllIPAddresses returns the expected IP addresses
+     * @dataProvider dataProviderForGetAllIps
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        array  $ip_addresses
+     */
+    public function testGetAllIPs($ip_address, $network_size, $ip_addresses)
+    {
+        // Given
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+
+        // When
+        foreach($sub->getAllIPAddresses() as $key => $ip) {
+            // Then
+            $this->assertEquals($ip_addresses[$key], $ip);
         }
     }
 
@@ -1067,46 +1131,44 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     public function dataProviderForGetAllIps()
     {
         return [
-            ['192.168.112.203', 29, ['192.168.112.200','192.168.112.201','192.168.112.202','192.168.112.203','192.168.112.204','192.168.112.205','192.168.112.206','192.168.112.207']],
-            ['192.168.112.203', 30, ['192.168.112.200','192.168.112.201','192.168.112.202','192.168.112.203',]],
-            ['192.168.112.203', 31, ['192.168.112.202','192.168.112.203',]],
-            ['192.168.112.203', 32, ['192.168.112.203',]],
+            ['192.168.112.203', 28, ['192.168.112.192', '192.168.112.193', '192.168.112.194', '192.168.112.195', '192.168.112.196', '192.168.112.197', '192.168.112.198', '192.168.112.199', '192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206', '192.168.112.207']],
+            ['192.168.112.203', 29, ['192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206', '192.168.112.207']],
+            ['192.168.112.203', 30, ['192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203']],
+            ['192.168.112.203', 31, ['192.168.112.202', '192.168.112.203']],
+            ['192.168.112.203', 32, ['192.168.112.203']],
         ];
     }
 
     /**
-     * @testCase     getNumberIpAddresses returns the number of IP addresses
-     * @dataProvider dataProviderForGetAllIps
-     * @param        string $ip_address
-     * @param        int $network_size
-     * @param        array $ip_addresses
-     */
-    public function testGetAllIPs($ip_address, $network_size, $ip_addresses)
-    {
-        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
-        foreach($sub->getAllIPs() as $key => $ip) {
-            $this->assertEquals($ip_addresses[$key], $ip);
-        }
-    }
-
-    /**
-     * @testCase     getNumberIpAddresses returns the number of IP addresses
-     * @dataProvider dataProviderForGetAllIps
+     * @testCase     getAllIPAddresses returns the expected IP addresses
+     * @dataProvider dataProviderForGetAllIpsHostsOnly
      * @param        string $ip_address
      * @param        int $network_size
      * @param        array $ip_addresses
      */
     public function testGetAllIPsHostsOnly($ip_address, $network_size, $ip_addresses)
     {
+        // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
-        // Remove network and Broadcast ips from $ip_addresses if the network size allows for them.
-        if ($network_size < 31) {
-            array_shift($ip_addresses);
-            array_pop($ip_addresses);
-        }
-        foreach($sub->getAllIPs(true) as $key => $ip) {
+
+        // When
+        foreach($sub->getAllIPAddresses(true) as $key => $ip) {
+            // Then
             $this->assertEquals($ip_addresses[$key], $ip);
         }
     }
 
+    /**
+     * @return array [ip_address, network_size, [ip_addresses]]
+     */
+    public function dataProviderForGetAllIpsHostsOnly()
+    {
+        return [
+            ['192.168.112.203', 28, ['192.168.112.193', '192.168.112.194', '192.168.112.195', '192.168.112.196', '192.168.112.197', '192.168.112.198', '192.168.112.199', '192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206']],
+            ['192.168.112.203', 29, ['192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206']],
+            ['192.168.112.203', 30, ['192.168.112.201', '192.168.112.202']],
+            ['192.168.112.203', 31, ['192.168.112.202', '192.168.112.203',]],
+            ['192.168.112.203', 32, ['192.168.112.203']],
+        ];
+    }
 }

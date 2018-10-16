@@ -433,6 +433,29 @@ class SubnetCalculator
     }
 
     /**
+     * Get all IP addresses
+     *
+     * @param bool $onlyHostIps (Removes broadcast and network address if they exist);
+     *
+     * @return \Generator|string[]
+     */
+    public function getAllIPAddresses($onlyHostIps = false)
+    {
+        list($start_ip, $end_ip) = $this->getIPAddressRange();
+        $start_ip = ip2Long($start_ip);
+        $end_ip   = ip2Long($end_ip);
+
+        if ($onlyHostIps && $this->getNetworkSize() < 31) {
+            $start_ip += 1;
+            $end_ip   -= 1;
+        }
+
+        for ($ip = $start_ip; $ip <= $end_ip; $ip++) {
+            yield long2ip($ip);
+        }
+    }
+
+    /**
      * Get subnet calculations as an associated array
      * Contains IP address, subnet mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
@@ -670,24 +693,6 @@ class SubnetCalculator
         }
         if (( $network_size < 1 ) || ( $network_size > 32 )) {
             throw new \UnexpectedValueException("Network size $network_size not valid.");
-        }
-    }
-
-    /**
-     * @param bool $onlyHostIps (Only removes broadcast and network address if they exist);
-     * @return \Generator
-     */
-    public function getAllIPs($onlyHostIps = false)
-    {
-        list($start, $end) = $this->getIPAddressRange();
-        $start = ip2Long($start);
-        $end = ip2Long($end);
-        if ($onlyHostIps && $this->getNetworkSize() < 31) {
-            $start += 1;
-            $end -= 1;
-        }
-        for ($i=$start;$i<=$end;$i++) {
-            yield long2ip($i);
         }
     }
 }
