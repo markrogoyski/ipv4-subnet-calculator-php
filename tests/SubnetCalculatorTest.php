@@ -1057,7 +1057,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $count = 0;
 
         // When
-        foreach($sub->getAllIPAddresses() as $ip) {
+        foreach ($sub->getAllIPAddresses() as $ip) {
             $count++;
         }
 
@@ -1080,7 +1080,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $count = 0;
 
         // When
-        foreach($sub->getAllIPAddresses(true) as $ip) {
+        foreach ($sub->getAllIPAddresses(true) as $ip) {
             $count++;
         }
 
@@ -1098,7 +1098,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $count = 0;
 
         // When
-        foreach($sub->getAllIPAddresses(true) as $ip) {
+        foreach ($sub->getAllIPAddresses(true) as $ip) {
             $count++;
         }
 
@@ -1119,7 +1119,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach($sub->getAllIPAddresses() as $key => $ip) {
+        foreach ($sub->getAllIPAddresses() as $key => $ip) {
             // Then
             $this->assertEquals($ip_addresses[$key], $ip);
         }
@@ -1152,7 +1152,7 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach($sub->getAllIPAddresses(true) as $key => $ip) {
+        foreach ($sub->getAllIPAddresses(true) as $key => $ip) {
             // Then
             $this->assertEquals($ip_addresses[$key], $ip);
         }
