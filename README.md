@@ -57,8 +57,14 @@ Composer will install IPv4 Subnet Calculator inside your vendor folder. Then you
 require_once(__DIR__ . '/vendor/autoload.php');
 ```
 
+Alternatively, use composer on the command line to require and install IPv4 SubnetCalculator:
+
+```
+$ php composer.phar require markrogoyski/ipv4-subnet-calculator:2.*
+```
+
 ### Minimum Requirements
- * PHP 5.3.0
+ * PHP 5.5.0
 
 Usage
 -----
