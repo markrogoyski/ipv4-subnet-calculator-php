@@ -179,11 +179,12 @@ class SubnetCalculator
         $network_quads         = $this->getNetworkPortionQuads();
         $number_ip_addresses   = $this->getNumberIPAddresses();
 
-        $network_range_quads   = [];
-        $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[0] & ( $this->subnet_mask >> 24 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 24 ) & 0xFF ));
-        $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[1] & ( $this->subnet_mask >> 16 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 16 ) & 0xFF ));
-        $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[2] & ( $this->subnet_mask >>  8 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  8 ) & 0xFF ));
-        $network_range_quads[] = sprintf(self::FORMAT_QUADS, ( $network_quads[3] & ( $this->subnet_mask >>  0 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  0 ) & 0xFF ));
+        $network_range_quads = [
+            sprintf(self::FORMAT_QUADS, ($network_quads[0] & ($this->subnet_mask >> 24)) + ((($number_ip_addresses - 1) >> 24) & 0xFF)),
+            sprintf(self::FORMAT_QUADS, ($network_quads[1] & ($this->subnet_mask >> 16)) + ((($number_ip_addresses - 1) >> 16) & 0xFF)),
+            sprintf(self::FORMAT_QUADS, ($network_quads[2] & ($this->subnet_mask >>  8)) + ((($number_ip_addresses - 1) >>  8) & 0xFF)),
+            sprintf(self::FORMAT_QUADS, ($network_quads[3] & ($this->subnet_mask >>  0)) + ((($number_ip_addresses - 1) >>  0) & 0xFF)),
+        ];
 
         return implode('.', $network_range_quads);
     }
@@ -590,11 +591,12 @@ class SubnetCalculator
      */
     private function subnetCalculation($format, $separator = '')
     {
-        $mask_quads   = [];
-        $mask_quads[] = sprintf($format, ( $this->subnet_mask >> 24 ) & 0xFF);
-        $mask_quads[] = sprintf($format, ( $this->subnet_mask >> 16 ) & 0xFF);
-        $mask_quads[] = sprintf($format, ( $this->subnet_mask >>  8 ) & 0xFF);
-        $mask_quads[] = sprintf($format, ( $this->subnet_mask >>  0 ) & 0xFF);
+        $mask_quads = [
+            sprintf($format, ($this->subnet_mask >> 24) & 0xFF),
+            sprintf($format, ($this->subnet_mask >> 16) & 0xFF),
+            sprintf($format, ($this->subnet_mask >>  8) & 0xFF),
+            sprintf($format, ($this->subnet_mask >>  0) & 0xFF),
+        ];
 
         return implode($separator, $mask_quads);
     }
@@ -609,11 +611,12 @@ class SubnetCalculator
      */
     private function networkCalculation($format, $separator = '')
     {
-        $network_quads   = [];
-        $network_quads[] = sprintf("$format", $this->quads[0] & ( $this->subnet_mask >> 24 ));
-        $network_quads[] = sprintf("$format", $this->quads[1] & ( $this->subnet_mask >> 16 ));
-        $network_quads[] = sprintf("$format", $this->quads[2] & ( $this->subnet_mask >>  8 ));
-        $network_quads[] = sprintf("$format", $this->quads[3] & ( $this->subnet_mask >>  0 ));
+        $network_quads = [
+            sprintf("$format", $this->quads[0] & ($this->subnet_mask >> 24)),
+            sprintf("$format", $this->quads[1] & ($this->subnet_mask >> 16)),
+            sprintf("$format", $this->quads[2] & ($this->subnet_mask >>  8)),
+            sprintf("$format", $this->quads[3] & ($this->subnet_mask >>  0)),
+        ];
 
         return implode($separator, $network_quads);
     }
@@ -628,11 +631,12 @@ class SubnetCalculator
      */
     private function hostCalculation($format, $separator = '')
     {
-        $network_quads   = [];
-        $network_quads[] = sprintf("$format", $this->quads[0] & ~( $this->subnet_mask >> 24 ));
-        $network_quads[] = sprintf("$format", $this->quads[1] & ~( $this->subnet_mask >> 16 ));
-        $network_quads[] = sprintf("$format", $this->quads[2] & ~( $this->subnet_mask >>  8 ));
-        $network_quads[] = sprintf("$format", $this->quads[3] & ~( $this->subnet_mask >>  0 ));
+        $network_quads = [
+            sprintf("$format", $this->quads[0] & ~($this->subnet_mask >> 24)),
+            sprintf("$format", $this->quads[1] & ~($this->subnet_mask >> 16)),
+            sprintf("$format", $this->quads[2] & ~($this->subnet_mask >>  8)),
+            sprintf("$format", $this->quads[3] & ~($this->subnet_mask >>  0)),
+        ];
 
         return implode($separator, $network_quads);
     }
@@ -647,11 +651,12 @@ class SubnetCalculator
      */
     private function minHostCalculation($format, $separator = '')
     {
-        $network_quads   = [];
-        $network_quads[] = sprintf("$format", $this->quads[0] & ($this->subnet_mask >> 24));
-        $network_quads[] = sprintf("$format", $this->quads[1] & ($this->subnet_mask >> 16));
-        $network_quads[] = sprintf("$format", $this->quads[2] & ($this->subnet_mask >>  8));
-        $network_quads[] = sprintf("$format", ($this->quads[3] & ($this->subnet_mask >>  0)) + 1);
+        $network_quads = [
+            sprintf("$format", $this->quads[0] & ($this->subnet_mask >> 24)),
+            sprintf("$format", $this->quads[1] & ($this->subnet_mask >> 16)),
+            sprintf("$format", $this->quads[2] & ($this->subnet_mask >>  8)),
+            sprintf("$format", ($this->quads[3] & ($this->subnet_mask >> 0)) + 1),
+        ];
 
         return implode($separator, $network_quads);
     }
@@ -669,11 +674,12 @@ class SubnetCalculator
         $network_quads         = $this->getNetworkPortionQuads();
         $number_ip_addresses   = $this->getNumberIPAddresses();
 
-        $network_range_quads   = [];
-        $network_range_quads[] = sprintf($format, ( $network_quads[0] & ( $this->subnet_mask >> 24 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 24 ) & 0xFF ));
-        $network_range_quads[] = sprintf($format, ( $network_quads[1] & ( $this->subnet_mask >> 16 ) ) + ( ( ( $number_ip_addresses - 1 ) >> 16 ) & 0xFF ));
-        $network_range_quads[] = sprintf($format, ( $network_quads[2] & ( $this->subnet_mask >>  8 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  8 ) & 0xFF ));
-        $network_range_quads[] = sprintf($format, ( $network_quads[3] & ( $this->subnet_mask >>  0 ) ) + ( ( ( $number_ip_addresses - 1 ) >>  0 ) & 0xFE ));
+        $network_range_quads = [
+            sprintf($format, ($network_quads[0] & ($this->subnet_mask >> 24)) + ((($number_ip_addresses - 1) >> 24) & 0xFF)),
+            sprintf($format, ($network_quads[1] & ($this->subnet_mask >> 16)) + ((($number_ip_addresses - 1) >> 16) & 0xFF)),
+            sprintf($format, ($network_quads[2] & ($this->subnet_mask >>  8)) + ((($number_ip_addresses - 1) >>  8) & 0xFF)),
+            sprintf($format, ($network_quads[3] & ($this->subnet_mask >>  0)) + ((($number_ip_addresses - 1) >>  0) & 0xFE)),
+        ];
 
         return implode($separator, $network_range_quads);
     }
