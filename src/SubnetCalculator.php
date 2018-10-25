@@ -438,17 +438,32 @@ class SubnetCalculator
     /**
      * Get all IP addresses
      *
-     * @param bool $onlyHostIps (Removes broadcast and network address if they exist);
+     * @return \Generator|string[]
+     */
+    public function getAllIPAddresses()
+    {
+        list($start_ip, $end_ip) = $this->getIPAddressRange();
+        $start_ip = ip2long($start_ip);
+        $end_ip   = ip2long($end_ip);
+
+        for ($ip = $start_ip; $ip <= $end_ip; $ip++) {
+            yield long2ip($ip);
+        }
+    }
+
+    /**
+     * Get all host IP addresses
+     * Removes broadcast and network address if they exist.
      *
      * @return \Generator|string[]
      */
-    public function getAllIPAddresses($onlyHostIps = false)
+    public function getAllHostIPAddresses()
     {
         list($start_ip, $end_ip) = $this->getIPAddressRange();
-        $start_ip = ip2Long($start_ip);
-        $end_ip   = ip2Long($end_ip);
+        $start_ip = ip2long($start_ip);
+        $end_ip   = ip2long($end_ip);
 
-        if ($onlyHostIps && $this->getNetworkSize() < 31) {
+        if ($this->getNetworkSize() < 31) {
             $start_ip += 1;
             $end_ip   -= 1;
         }
@@ -521,7 +536,7 @@ class SubnetCalculator
      */
     public function printSubnetReport()
     {
-        print($this->__tostring());
+        print($this->__toString());
     }
 
     /**
@@ -534,7 +549,7 @@ class SubnetCalculator
      */
     public function getPrintableReport()
     {
-        return $this->__tostring();
+        return $this->__toString();
     }
 
     /**
@@ -699,7 +714,7 @@ class SubnetCalculator
         if (!filter_var($ip, FILTER_VALIDATE_IP)) {
             throw new \UnexpectedValueException("IP address $ip not valid.");
         }
-        if (( $network_size < 1 ) || ( $network_size > 32 )) {
+        if (($network_size < 1) || ($network_size > 32)) {
             throw new \UnexpectedValueException("Network size $network_size not valid.");
         }
     }

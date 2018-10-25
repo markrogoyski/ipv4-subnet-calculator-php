@@ -129,6 +129,10 @@ $max_host_binary = $sub->getMaxHostBinary(); // 11000000101010000111000111111110
 foreach ($sub->getAllIPAddresses() as $ip_address) {
     echo $ip_address;
 }
+
+foreach ($sub->getAllHostIPAddresses() as $ip_address) {
+    echo $ip_address;
+}
 ```
 
 ### Reports

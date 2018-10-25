@@ -3,7 +3,7 @@ namespace IPv4\Tests;
 
 use IPv4;
 
-class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
+class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
 {
     /** @var IPv4\SubnetCalculator */
     private $sub;
@@ -1218,20 +1218,20 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @testCase     getAllIPAddresses for host only returns the expected number of IP addresses
+     * @testCase     getAllHostIPAddresses returns the expected number of IP addresses
      * @dataProvider dataProviderForGetAllIpsHostOnlyCount
      * @param        string $ip_address
      * @param        int    $network_size
      * @param        int    $number_addresses
      */
-    public function testGetAllIPsCountHostsOnly($ip_address, $network_size, $number_addresses)
+    public function testGetAllHostIPsCount($ip_address, $network_size, $number_addresses)
     {
         // Given
         $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
         $count = 0;
 
         // When
-        foreach ($sub->getAllIPAddresses(true) as $ip) {
+        foreach ($sub->getAllHostIPAddresses() as $ip) {
             $count++;
         }
 
@@ -1240,16 +1240,16 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @testCase getAllIPAddresses for host only returns the expected number of IP addresses for edge case /32 network
+     * @testCase getAllHostIPAddresses returns the expected number of IP addresses for edge case /32 network
      */
-    public function testGetAllIPsCountHostsOnlyEdgeCaseSlash32Network()
+    public function testGetAllHostIPsCountHostsOnlyEdgeCaseSlash32Network()
     {
         // Given
         $sub   = new IPv4\SubnetCalculator('192.168.112.203', 32);
         $count = 0;
 
         // When
-        foreach ($sub->getAllIPAddresses(true) as $ip) {
+        foreach ($sub->getAllIPAddresses() as $ip) {
             $count++;
         }
 
@@ -1291,19 +1291,19 @@ class SubnetCalculatorTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @testCase     getAllIPAddresses returns the expected IP addresses
+     * @testCase     getAllHostIPAddresses returns the expected IP addresses
      * @dataProvider dataProviderForGetAllIpsHostsOnly
      * @param        string $ip_address
      * @param        int $network_size
      * @param        array $ip_addresses
      */
-    public function testGetAllIPsHostsOnly($ip_address, $network_size, $ip_addresses)
+    public function testGetAllHostIPAddresses($ip_address, $network_size, $ip_addresses)
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach ($sub->getAllIPAddresses(true) as $key => $ip) {
+        foreach ($sub->getAllHostIPAddresses() as $key => $ip) {
             // Then
             $this->assertEquals($ip_addresses[$key], $ip);
         }
