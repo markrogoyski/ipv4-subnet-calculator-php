@@ -124,6 +124,13 @@ $max_host_hex    = $sub->getMaxHostHex();    // C0A871FE
 $max_host_binary = $sub->getMaxHostBinary(); // 11000000101010000111000111111110
 ```
 
+### All IP Addresses
+```php
+foreach ($sub->getAllIPAddresses() as $ip_address) {
+    echo $ip_address;
+}
+```
+
 ### Reports
 
 #### Printed Report
