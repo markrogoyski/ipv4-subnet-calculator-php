@@ -10,7 +10,7 @@ lint :
 
 static :
 	vendor/bin/phpstan analyze --level max src/
-	vendor/bin/phpmd src/ text cleancode,codesize,design,unusedcode
+	vendor/bin/phpmd src/ text cleancode,codesize,design,unusedcode,naming
 
 report :
 	vendor/bin/phploc src/
