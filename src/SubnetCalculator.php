@@ -22,34 +22,23 @@ namespace IPv4;
  *  - JSON
  *  - String
  *  - Printed to STDOUT
- *
- * @author Mark Rogoyski
  */
 class SubnetCalculator
 {
-    /**
-     * IP address as dotted quads: xxx.xxx.xxx.xxx
-     * @var string
-     */
-    private $ip;
+    /** @var string IP address as dotted quads: xxx.xxx.xxx.xxx */
+    private $ip_address;
 
-    /**
-     * CIDR network size.
-     * @var int
-     */
+    /** @var int CIDR network size */
     private $network_size;
 
-    /**
-     * Array of four elements containing the four quads of the IP address.
-     * @var array
-     */
+    /** @var array of four elements containing the four quads of the IP address */
     private $quads = [];
 
-    /**
-     * Subnet mask in format used for subnet calculations.
-     * @var int
-     */
+    /** @var int Subnet mask in format used for subnet calculations */
     private $subnet_mask;
+
+    /** @var SubnetReportInterface */
+    private $report;
 
     const FORMAT_QUADS  = '%d';
     const FORMAT_HEX    = '%02X';
@@ -59,17 +48,19 @@ class SubnetCalculator
      * Constructor - Takes IP address and network size, validates inputs, and assigns class attributes.
      * For example: 192.168.1.120/24 would be $ip = 192.168.1.120 $network_size = 24
      *
-     * @param string $ip           IP address in dotted quad notation.
-     * @param int    $network_size CIDR network size.
+     * @param string                     $ip_address IP address in dotted quad notation.
+     * @param int                        $network_size CIDR network size.
+     * @param SubnetReportInterface|null $report
      */
-    public function __construct($ip, $network_size)
+    public function __construct($ip_address, $network_size, SubnetReportInterface $report = null)
     {
-        $this->validateInputs($ip, $network_size);
+        $this->validateInputs($ip_address, $network_size);
 
-        $this->ip           = $ip;
+        $this->ip_address   = $ip_address;
         $this->network_size = $network_size;
-        $this->quads        = explode('.', $ip);
-        $this->subnet_mask  = 0xFFFFFFFF << (32 - $this->network_size);
+        $this->quads        = explode('.', $ip_address);
+        $this->subnet_mask  = $this->calculateSubnetMask($network_size);
+        $this->report       = $report ?: new SubnetReport();
     }
 
     /* **************** *
@@ -83,7 +74,7 @@ class SubnetCalculator
      */
     public function getIPAddress()
     {
-        return $this->ip;
+        return $this->ip_address;
     }
 
     /**
@@ -201,7 +192,7 @@ class SubnetCalculator
     public function getMinHost()
     {
         if ($this->network_size === 32 || $this->network_size === 31) {
-            return $this->ip;
+            return $this->ip_address;
         }
         return $this->minHostCalculation(self::FORMAT_QUADS, '.');
     }
@@ -263,7 +254,7 @@ class SubnetCalculator
     public function getMaxHost()
     {
         if ($this->network_size === 32 || $this->network_size === 31) {
-            return $this->ip;
+            return $this->ip_address;
         }
         return $this->maxHostCalculation(self::FORMAT_QUADS, '.');
     }
@@ -477,112 +468,67 @@ class SubnetCalculator
 
     /**
      * Get subnet calculations as an associated array
-     * Contains IP address, subnet mask, network portion and host portion.
-     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
-     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      *
-     * @return array of subnet calculations.
+     * @return array of subnet calculations
      */
     public function getSubnetArrayReport()
     {
-        return [
-            'ip_address_with_network_size' => $this->getIPAddress() . '/' . $this->getNetworkSize(),
-            'ip_address' => [
-                'quads'  => $this->getIPAddress(),
-                'hex'    => $this->getIPAddressHex(),
-                'binary' => $this->getIPAddressBinary()
-            ],
-            'subnet_mask' => [
-                'quads'  => $this->getSubnetMask(),
-                'hex'    => $this->getSubnetMaskHex(),
-                'binary' => $this->getSubnetMaskBinary()
-            ],
-            'network_portion' => [
-                'quads'  => $this->getNetworkPortion(),
-                'hex'    => $this->getNetworkPortionHex(),
-                'binary' => $this->getNetworkPortionBinary()
-            ],
-            'host_portion' => [
-                'quads'  => $this->getHostPortion(),
-                'hex'    => $this->getHostPortionHex(),
-                'binary' => $this->getHostPortionBinary()
-            ],
-            'network_size'                => $this->getNetworkSize(),
-            'number_of_ip_addresses'      => $this->getNumberIPAddresses(),
-            'number_of_addressable_hosts' => $this->getNumberAddressableHosts(),
-            'ip_address_range'            => $this->getIPAddressRange(),
-            'broadcast_address'           => $this->getBroadcastAddress(),
-            'min_host'                    => $this->getMinHost(),
-            'max_host'                    => $this->getMaxHost(),
-        ];
+        return $this->report->createArrayReport($this);
     }
 
     /**
-     * Get subnet calculations as JSON string
-     * Contains IP address, subnet mask, network portion and host portion.
-     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
-     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
+     * Get subnet calculations as a JSON string
      *
      * @return string JSON string of subnet calculations
      */
     public function getSubnetJSONReport()
     {
-        return json_encode($this->getSubnetArrayReport());
-    }
-
-    /**
-     * Print a report of subnet calculations.
-     * Contains IP address, subnet mask, network portion and host portion.
-     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
-     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
-     */
-    public function printSubnetReport()
-    {
-        print($this->__toString());
+        return json_encode($this->report->createJsonReport($this));
     }
 
     /**
      * Print a report of subnet calculations
-     * Contains IP address, subnet mask, network portion and host portion.
-     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
-     * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
+     */
+    public function printSubnetReport()
+    {
+        $this->report->printReport($this);
+    }
+
+    /**
+     * Print a report of subnet calculations
      *
      * @return string Subnet Calculator report
      */
     public function getPrintableReport()
     {
-        return $this->__toString();
+        return $this->report->createPrintableReport($this);
     }
 
     /**
      * String representation of a report of subnet calculations
-     * Contains IP address, subnet mask, network portion and host portion.
-     * Each of the above is provided in dotted quads, hexedecimal, and binary notation.
      *
      * @return string
      */
     public function __toString()
     {
-        $string  = sprintf("%-18s %15s %8s %32s\n", "{$this->ip}/{$this->network_size}", 'Quads', 'Hex', 'Binary');
-        $string .= sprintf("%-18s %15s %8s %32s\n", '------------------', '---------------', '--------', '--------------------------------');
-        $string .= sprintf("%-18s %15s %8s %32s\n", 'IP Address:', $this->getIPAddress(), $this->getIPAddressHex(), $this->getIPAddressBinary());
-        $string .= sprintf("%-18s %15s %8s %32s\n", 'Subnet Mask:', $this->getSubnetMask(), $this->getSubnetMaskHex(), $this->getSubnetMaskBinary());
-        $string .= sprintf("%-18s %15s %8s %32s\n", 'Network Portion:', $this->getNetworkPortion(), $this->getNetworkPortionHex(), $this->getNetworkPortionBinary());
-        $string .= sprintf("%-18s %15s %8s %32s\n", 'Host Portion:', $this->getHostPortion(), $this->getHostPortionHex(), $this->getHostPortionBinary());
-        $string .= "\n";
-        $string .= sprintf("%-28s %d\n", 'Number of IP Addresses:', $this->getNumberIPAddresses());
-        $string .= sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $this->getNumberAddressableHosts());
-        $string .= sprintf("%-28s %s\n", 'IP Address Range:', implode(' - ', $this->getIPAddressRange()));
-        $string .= sprintf("%-28s %s\n", 'Broadcast Address:', $this->getBroadcastAddress());
-        $string .= sprintf("%-28s %s\n", 'Min Host:', $this->getMinHost());
-        $string .= sprintf("%-28s %s\n", 'Max Host:', $this->getMaxHost());
-
-        return $string;
+        return $this->report->createPrintableReport($this);
     }
 
     /* ********************** *
      * PRIVATE IMPLEMENTATION
      * ********************** */
+
+    /**
+     * Calculate subnet mask
+     *
+     * @param  int $network_size
+     *
+     * @return int
+     */
+    private function calculateSubnetMask($network_size)
+    {
+        return 0xFFFFFFFF << (32 - $network_size);
+    }
 
     /**
      * Calculate IP address for formatting
@@ -595,8 +541,8 @@ class SubnetCalculator
     private function ipAddressCalculation($format, $separator = '')
     {
         return implode($separator, array_map(
-            function ($x) use ($format) {
-                return sprintf($format, $x);
+            function ($quad) use ($format) {
+                return sprintf($format, $quad);
             },
             $this->quads
         ));
@@ -708,15 +654,15 @@ class SubnetCalculator
     /**
      * Validate IP address and network
      *
-     * @param string $ip           IP address in dotted quads format
+     * @param string $ip_address   IP address in dotted quads format
      * @param int    $network_size Network size
      *
      * @throws \UnexpectedValueException IP or network size not valid
      */
-    private function validateInputs($ip, $network_size)
+    private function validateInputs($ip_address, $network_size)
     {
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            throw new \UnexpectedValueException("IP address $ip not valid.");
+        if (!filter_var($ip_address, FILTER_VALIDATE_IP)) {
+            throw new \UnexpectedValueException("IP address $ip_address not valid.");
         }
         if (($network_size < 1) || ($network_size > 32)) {
             throw new \UnexpectedValueException("Network size $network_size not valid.");
