@@ -449,12 +449,18 @@ class SubnetCalculator
      * Removes broadcast and network address if they exist.
      *
      * @return \Generator|string[]
+     *
+     * @throws \RuntimeException if there is an error in the IP address range calculation
      */
     public function getAllHostIPAddresses()
     {
         list($start_ip, $end_ip) = $this->getIPAddressRange();
         $start_ip = ip2long($start_ip);
         $end_ip   = ip2long($end_ip);
+
+        if ($start_ip === false || $end_ip === false) {
+            throw new \RuntimeException('IP address range calculation failed: ' . print_r($this->getIPAddressRange(), true));
+        }
 
         if ($this->getNetworkSize() < 31) {
             $start_ip += 1;
@@ -480,10 +486,18 @@ class SubnetCalculator
      * Get subnet calculations as a JSON string
      *
      * @return string JSON string of subnet calculations
+     *
+     * @throws \RuntimeException if there is a JSON encode error
      */
-    public function getSubnetJSONReport()
+    public function getSubnetJsonReport()
     {
-        return json_encode($this->report->createJsonReport($this));
+        $json = json_encode($this->report->createJsonReport($this));
+
+        if ($json === false) {
+            throw new \RuntimeException('JSON report failure: ' . json_last_error_msg());
+        }
+
+        return $json;
     }
 
     /**

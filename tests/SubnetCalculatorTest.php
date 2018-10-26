@@ -1090,15 +1090,35 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @testCase getSubnetJSONReport
+     * @testCase getSubnetJsonReport
      */
-    public function testGetSubnetJSONReport()
+    public function testGetSubnetJsonReport()
     {
         // When
-        $json = $this->sub->getSubnetJSONReport();
+        $json = $this->sub->getSubnetJsonReport();
 
         // Then
         $this->assertTrue(is_string($json));
+    }
+
+    /**
+     * @testCase getSubnetJsonReport gets a JSON error from the SubnetReportInterface
+     */
+    public function testGetSubnetJsonReportJsonError()
+    {
+        // Given
+        /** @var IPv4\SubnetReport|\PHPUnit_Framework_MockObject_MockObject $subnetReport */
+        $subnetReport = $this->getMockBuilder(IPv4\SubnetReport::class)
+            ->setMethods(['createJsonReport'])
+            ->getMock();
+        $subnetReport->method('createJsonReport')->willReturn(\NAN);
+        $sub = new IPv4\SubnetCalculator('192.168.112.203', 23, $subnetReport);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+
+        // When
+        $sub->getSubnetJsonReport();
     }
 
     /**
@@ -1321,5 +1341,27 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
             ['192.168.112.203', 31, ['192.168.112.202', '192.168.112.203',]],
             ['192.168.112.203', 32, ['192.168.112.203']],
         ];
+    }
+
+    /**
+     * @testCase getAllHostIPAddresses gets an error in the getIPAddressRange calculation
+     */
+    public function testGetAllHostIPAddressesIPRangeCalculationError()
+    {
+        // Given
+        /** @var IPv4\SubnetCalculator|\PHPUnit_Framework_MockObject_MockObject $sub */
+        $sub = $this->getMockBuilder(IPv4\SubnetCalculator::class)
+            ->setMethods(['getIPAddressRange'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $sub->method('getIPAddressRange')->willReturn([-4, -1]);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+
+        // When
+        foreach ($sub->getAllHostIPAddresses() as $ip) {
+            // Exception is thrown
+        }
     }
 }
