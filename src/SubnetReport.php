@@ -62,7 +62,7 @@ class SubnetReport implements SubnetReportInterface
      *
      * @param SubnetCalculator $sub
      *
-     * @return string JSON string of subnet calculations
+     * @return string|false JSON string of subnet calculations
      */
     public function createJsonReport(SubnetCalculator $sub)
     {

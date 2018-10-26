@@ -1111,7 +1111,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $subnetReport = $this->getMockBuilder(IPv4\SubnetReport::class)
             ->setMethods(['createJsonReport'])
             ->getMock();
-        $subnetReport->method('createJsonReport')->willReturn(\NAN);
+        $subnetReport->method('createJsonReport')->willReturn(false);
         $sub = new IPv4\SubnetCalculator('192.168.112.203', 23, $subnetReport);
 
         // Then
@@ -1341,6 +1341,28 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
             ['192.168.112.203', 31, ['192.168.112.202', '192.168.112.203',]],
             ['192.168.112.203', 32, ['192.168.112.203']],
         ];
+    }
+
+    /**
+     * @testCase getAllIPAddresses gets an error in the getIPAddressRange calculation
+     */
+    public function testGetAllIPAddressesIPRangeCalculationError()
+    {
+        // Given
+        /** @var IPv4\SubnetCalculator|\PHPUnit_Framework_MockObject_MockObject $sub */
+        $sub = $this->getMockBuilder(IPv4\SubnetCalculator::class)
+            ->setMethods(['getIPAddressRange'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $sub->method('getIPAddressRange')->willReturn([-4, -1]);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+
+        // When
+        foreach ($sub->getAllIPAddresses() as $ip) {
+            // Exception is thrown
+        }
     }
 
     /**

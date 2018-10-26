@@ -439,6 +439,10 @@ class SubnetCalculator
         $start_ip = ip2long($start_ip);
         $end_ip   = ip2long($end_ip);
 
+        if ($start_ip === false || $end_ip === false) {
+            throw new \RuntimeException('IP address range calculation failed: ' . print_r($this->getIPAddressRange(), true));
+        }
+
         for ($ip = $start_ip; $ip <= $end_ip; $ip++) {
             yield long2ip($ip);
         }
@@ -491,7 +495,7 @@ class SubnetCalculator
      */
     public function getSubnetJsonReport()
     {
-        $json = json_encode($this->report->createJsonReport($this));
+        $json = $this->report->createJsonReport($this);
 
         if ($json === false) {
             throw new \RuntimeException('JSON report failure: ' . json_last_error_msg());
