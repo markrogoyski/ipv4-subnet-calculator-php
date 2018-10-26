@@ -196,7 +196,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        $number_addresses = $sub->getNumberIpAddresses();
+        $number_addresses = $sub->getNumberIPAddresses();
 
         // Then
         $this->assertEquals($expected_number_addresses, $number_addresses);
