@@ -22,6 +22,7 @@ Given an IP address and CIDR network size, it calculates the network information
  * IP address range
  * Broadcast address
  * Min and max host
+ * All IP addresses
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
 
@@ -39,7 +40,7 @@ Setup
 ```javascript
 {
   "require": {
-      "markrogoyski/ipv4-subnet-calculator": "2.*"
+      "markrogoyski/ipv4-subnet-calculator": "3.*"
   }
 }
 ```
@@ -60,11 +61,11 @@ require_once(__DIR__ . '/vendor/autoload.php');
 Alternatively, use composer on the command line to require and install IPv4 SubnetCalculator:
 
 ```
-$ php composer.phar require markrogoyski/ipv4-subnet-calculator:2.*
+$ php composer.phar require markrogoyski/ipv4-subnet-calculator:3.*
 ```
 
 ### Minimum Requirements
- * PHP 5.5.0
+ * PHP 5.5
 
 Usage
 -----
@@ -136,8 +137,8 @@ foreach ($sub->getAllIPAddresses() as $ip_address) {
     echo $ip_address;
 }
 
-foreach ($sub->getAllHostIPAddresses() as $ip_address) {
-    echo $ip_address;
+foreach ($sub->getAllHostIPAddresses() as $host_address) {
+    echo $host_address;
 }
 ```
 

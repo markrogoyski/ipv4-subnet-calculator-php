@@ -72,7 +72,9 @@ class SubnetCalculator
         $this->subnet_mask  = 0xFFFFFFFF << (32 - $this->network_size);
     }
 
-    // PUBLIC INTERFACE
+    /* **************** *
+     * PUBLIC INTERFACE
+     * **************** */
 
     /**
      * Get IP address as dotted quads: xxx.xxx.xxx.xxx
@@ -578,7 +580,9 @@ class SubnetCalculator
         return $string;
     }
 
-    // PRIVATE METHODS
+    /* ********************** *
+     * PRIVATE IMPLEMENTATION
+     * ********************** */
 
     /**
      * Calculate IP address for formatting
