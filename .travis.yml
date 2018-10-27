@@ -15,4 +15,4 @@ script:
   - vendor/bin/phpstan analyze --level max src/
 
 after_success:
-  - travis_retry php vendor/bin/coveralls
+  - if [[ "$TRAVIS_PHP_VERSION" == '7.0' ]]; then php vendor/bin/coveralls --coverage_clover=clover.xml -v ; fi
