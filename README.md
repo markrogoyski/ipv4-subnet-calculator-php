@@ -278,7 +278,7 @@ Max Host:                    192.168.113.254
 */
 ```
 
-### Printing - String Representation
+#### Printing - String Representation
 ```php
 print($sub);
 /*
