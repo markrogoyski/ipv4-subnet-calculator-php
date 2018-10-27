@@ -1164,6 +1164,33 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * @testCase \JsonSerializable interface
+     */
+    public function testJsonSerializableInterface()
+    {
+        // When
+        $json = json_encode($this->sub);
+
+        // Then
+        $this->assertInternalType('string', $json);
+
+        // And
+        $decoded = json_decode($json, true);
+        $this->assertArrayHasKey('ip_address_with_network_size', $decoded);
+        $this->assertArrayHasKey('ip_address', $decoded);
+        $this->assertArrayHasKey('subnet_mask', $decoded);
+        $this->assertArrayHasKey('network_portion', $decoded);
+        $this->assertArrayHasKey('host_portion', $decoded);
+        $this->assertArrayHasKey('network_size', $decoded);
+        $this->assertArrayHasKey('number_of_ip_addresses', $decoded);
+        $this->assertArrayHasKey('number_of_addressable_hosts', $decoded);
+        $this->assertArrayHasKey('ip_address_range', $decoded);
+        $this->assertArrayHasKey('broadcast_address', $decoded);
+        $this->assertArrayHasKey('min_host', $decoded);
+        $this->assertArrayHasKey('max_host', $decoded);
+    }
+
+    /**
      * @return array [ip_address, network_size, number_addresses]
      */
     public function dataProviderForGetAllIpsCount()

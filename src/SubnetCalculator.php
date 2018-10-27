@@ -23,7 +23,7 @@ namespace IPv4;
  *  - String
  *  - Printed to STDOUT
  */
-class SubnetCalculator
+class SubnetCalculator implements \JsonSerializable
 {
     /** @var string IP address as dotted quads: xxx.xxx.xxx.xxx */
     private $ip_address;
@@ -530,6 +530,20 @@ class SubnetCalculator
     public function __toString()
     {
         return $this->report->createPrintableReport($this);
+    }
+
+    /* ************** *
+     * PHP INTERFACES
+     * ************** */
+
+    /**
+     * \JsonSerializable interface
+     *
+     * @return array
+     */
+    public function jsonSerialize()
+    {
+        return $this->report->createArrayReport($this);
     }
 
     /* ********************** *

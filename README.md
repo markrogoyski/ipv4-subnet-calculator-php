@@ -32,6 +32,9 @@ Provides each data in dotted quads, hexadecimal, and binary formats, as well as 
  * String
  * Printed to STDOUT
 
+### Standard Interfaces
+ * JsonSerializable
+
 Setup
 -----
 
@@ -273,8 +276,10 @@ Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
 */
+```
 
-// Printing the SubnetCalculator object will print the printable report.
+### Printing - String Representation
+```php
 print($sub);
 /*
 192.168.112.203/23           Quads      Hex                           Binary
@@ -291,6 +296,13 @@ Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
 */
+```
+
+### Standard Interfaces
+
+#### JsonSerializable
+```php
+$json = json_encode($sub);
 ```
 
 Unit Tests
