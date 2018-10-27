@@ -1066,7 +1066,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @testCase getGubnetArrayReport
+     * @testCase getSubnetArrayReport
      */
     public function testGetSubnetArrayReport()
     {
