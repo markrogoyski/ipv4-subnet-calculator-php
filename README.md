@@ -22,6 +22,7 @@ Given an IP address and CIDR network size, it calculates the network information
  * IP address range
  * Broadcast address
  * Min and max host
+ * All IP addresses
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
 
@@ -31,6 +32,9 @@ Provides each data in dotted quads, hexadecimal, and binary formats, as well as 
  * String
  * Printed to STDOUT
 
+### Standard Interfaces
+ * JsonSerializable
+
 Setup
 -----
 
@@ -39,7 +43,7 @@ Setup
 ```javascript
 {
   "require": {
-      "markrogoyski/ipv4-subnet-calculator": "2.*"
+      "markrogoyski/ipv4-subnet-calculator": "3.*"
   }
 }
 ```
@@ -57,8 +61,14 @@ Composer will install IPv4 Subnet Calculator inside your vendor folder. Then you
 require_once(__DIR__ . '/vendor/autoload.php');
 ```
 
+Alternatively, use composer on the command line to require and install IPv4 SubnetCalculator:
+
+```
+$ php composer.phar require markrogoyski/ipv4-subnet-calculator:3.*
+```
+
 ### Minimum Requirements
- * PHP 5.3.0
+ * PHP 5.5
 
 Usage
 -----
@@ -122,6 +132,17 @@ $max_host        = $sub->getMaxHost();       // 192.168.113.254
 $max_host_quads  = $sub->getMaxHostQuads();  // [192, 168, 113, 254]
 $max_host_hex    = $sub->getMaxHostHex();    // C0A871FE
 $max_host_binary = $sub->getMaxHostBinary(); // 11000000101010000111000111111110
+```
+
+### All IP Addresses
+```php
+foreach ($sub->getAllIPAddresses() as $ip_address) {
+    echo $ip_address;
+}
+
+foreach ($sub->getAllHostIPAddresses() as $host_address) {
+    echo $host_address;
+}
 ```
 
 ### Reports
@@ -255,8 +276,10 @@ Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
 */
+```
 
-// Printing the SubnetCalculator object will print the printable report.
+#### Printing - String Representation
+```php
 print($sub);
 /*
 192.168.112.203/23           Quads      Hex                           Binary
@@ -273,6 +296,13 @@ Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
 */
+```
+
+### Standard Interfaces
+
+#### JsonSerializable
+```php
+$json = json_encode($sub);
 ```
 
 Unit Tests
