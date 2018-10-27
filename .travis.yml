@@ -15,4 +15,4 @@ script:
   - vendor/bin/phpstan analyze --level max src/
 
 after_success:
-  - travis_retry php vendor/bin/coveralls --coverage_clover=build/logs/clover.xml -v
+  - travis_retry php vendor/bin/coveralls -v
