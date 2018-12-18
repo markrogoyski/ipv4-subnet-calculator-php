@@ -23,6 +23,7 @@ Given an IP address and CIDR network size, it calculates the network information
  * Broadcast address
  * Min and max host
  * All IP addresses
+ * Is an IP address in the subnet
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
 
@@ -143,6 +144,13 @@ foreach ($sub->getAllIPAddresses() as $ip_address) {
 foreach ($sub->getAllHostIPAddresses() as $host_address) {
     echo $host_address;
 }
+```
+
+### Is IP Address in Subnet
+```php
+$bool_true  = $sub->isIPAddressInSubnet('192.168.112.5');
+$bool_false = $sub->isIPAddressInSubnet('192.168.111.5');
+
 ```
 
 ### Reports

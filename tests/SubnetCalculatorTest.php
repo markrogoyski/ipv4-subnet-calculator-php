@@ -409,7 +409,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @testCase     getBroadcastAddress returns the broadcast address
-     * @dataProvider dataProviderForBroardcastAddress
+     * @dataProvider dataProviderForBroadcastAddress
      * @param        string $ip_address
      * @param        int    $network_size
      * @param        string $expected_broadcast_address
@@ -429,7 +429,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @return array [ip_address, network_size, broadcast_address]
      */
-    public function dataProviderForBroardcastAddress()
+    public function dataProviderForBroadcastAddress()
     {
         return [
             ['192.168.112.203', 1, '255.255.255.255'],
@@ -1412,5 +1412,143 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         foreach ($sub->getAllHostIPAddresses() as $ip) {
             // Exception is thrown
         }
+    }
+
+    /**
+     * @testCase     isIPAddressInSubnet
+     * @dataProvider dataProviderForGetAllIps
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        array  $ip_addresses
+     */
+    public function testIsIPAddressInSubnet($ip_address, $network_size, $ip_addresses)
+    {
+        // Given
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+
+        foreach ($ip_addresses as $ip_address) {
+            // When
+            $isIPInSubnet = $sub->isIPAddressInSubnet($ip_address);
+
+            // Then
+            $this->assertTrue($isIPInSubnet);
+        }
+    }
+
+    /**
+     * @testCase isIPAddressInSubnet for all IP addresses in a subnet
+     */
+    public function testIsIPAddressInSubnetForAllIPAddressesInSubnet()
+    {
+        foreach ($this->sub->getAllIPAddresses() as $ip_address) {
+            // When
+            $isIPInSubnet = $this->sub->isIPAddressInSubnet($ip_address);
+
+            // Then
+            $this->assertTrue($isIPInSubnet);
+        }
+    }
+
+    /**
+     * @testCase     isIPAddressInSubnet when it is not
+     * @dataProvider dataProviderForIpAddressesNotInSubnet
+     * @param        string $ip_address
+     * @param        int    $network_size
+     * @param        string $ip_address_to_check
+     */
+    public function testIsIpAddressInSubnetWhenItIsNot($ip_address, $network_size, $ip_address_to_check)
+    {
+        // Given
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+
+        // When
+        $isIPInSubnet = $sub->isIPAddressInSubnet($ip_address_to_check);
+
+        // Then
+        $this->assertFalse($isIPInSubnet, "$ip_address_to_check");
+    }
+
+    public function dataProviderForIpAddressesNotInSubnet()
+    {
+        return [
+            ['192.168.112.203', 28, '10.168.112.194'],
+            ['192.168.112.203', 28, '192.148.112.191'],
+            ['192.168.112.203', 28, '192.168.111.191'],
+            ['192.168.112.203', 28, '192.168.112.190'],
+            ['192.168.112.203', 28, '192.168.112.191'],
+            ['192.168.112.203', 28, '192.168.112.208'],
+            ['192.168.112.203', 28, '192.168.112.209'],
+            ['192.168.112.203', 28, '192.168.152.208'],
+            ['192.168.112.203', 28, '192.178.112.208'],
+            ['192.168.112.203', 28, '255.168.112.208'],
+            ['192.168.112.203', 31, '192.168.112.201'],
+            ['192.168.112.203', 31, '192.168.112.204'],
+            ['192.168.112.203', 32, '192.168.112.202'],
+            ['192.168.112.203', 32, '192.168.112.204'],
+
+            ['192.168.112.203', 1, '127.0.0.0'],
+            ['192.168.112.203', 2, '191.0.0.0'],
+            ['192.168.112.203', 3, '191.0.0.0'],
+            ['192.168.112.203', 4, '191.0.0.0'],
+            ['192.168.112.203', 5, '191.0.0.0'],
+            ['192.168.112.203', 6, '191.0.0.0'],
+            ['192.168.112.203', 7, '190.0.0.0'],
+            ['192.168.112.203', 8, '190.0.0.0'],
+            ['192.168.112.203', 9, '190.128.0.0'],
+            ['192.168.112.203', 10, '192.127.0.0'],
+            ['192.168.112.203', 11, '192.150.0.0'],
+            ['192.168.112.203', 12, '192.140.0.0'],
+            ['192.168.112.203', 13, '192.167.0.0'],
+            ['192.168.112.203', 14, '192.166.0.0'],
+            ['192.168.112.203', 15, '192.165.0.0'],
+            ['192.168.112.203', 16, '192.164.0.0'],
+            ['192.168.112.203', 17, '192.163.0.0'],
+            ['192.168.112.203', 18, '192.162.64.0'],
+            ['192.168.112.203', 19, '192.161.96.0'],
+            ['192.168.112.203', 20, '192.168.111.0'],
+            ['192.168.112.203', 21, '192.168.110.0'],
+            ['192.168.112.203', 22, '192.168.102.0'],
+            ['192.168.112.203', 23, '192.168.102.0'],
+            ['192.168.112.203', 24, '192.168.102.0'],
+            ['192.168.112.203', 25, '192.168.102.128'],
+            ['192.168.112.203', 26, '192.168.102.192'],
+            ['192.168.112.203', 27, '192.168.102.192'],
+            ['192.168.112.203', 28, '192.168.102.192'],
+            ['192.168.112.203', 29, '192.168.111.200'],
+            ['192.168.112.203', 30, '192.168.111.200'],
+            ['192.168.112.203', 31, '192.168.111.202'],
+            ['192.168.112.203', 32, '192.168.111.202'],
+
+            ['192.168.112.203', 3, '224.255.255.255'],
+            ['192.168.112.203', 4, '208.255.255.255'],
+            ['192.168.112.203', 5, '200.255.255.255'],
+            ['192.168.112.203', 6, '196.255.255.255'],
+            ['192.168.112.203', 7, '194.255.255.255'],
+            ['192.168.112.203', 8, '193.255.255.255'],
+            ['192.168.112.203', 9, '194.255.255.255'],
+            ['192.168.112.203', 10, '192.192.255.255'],
+            ['192.168.112.203', 11, '192.193.255.255'],
+            ['192.168.112.203', 12, '192.176.255.255'],
+            ['192.168.112.203', 13, '192.177.255.255'],
+            ['192.168.112.203', 14, '192.172.255.255'],
+            ['192.168.112.203', 15, '192.179.255.255'],
+            ['192.168.112.203', 16, '192.169.255.255'],
+            ['192.168.112.203', 17, '192.178.127.255'],
+            ['192.168.112.203', 18, '192.188.127.255'],
+            ['192.168.112.203', 19, '192.198.127.255'],
+            ['192.168.112.203', 20, '192.168.128.255'],
+            ['192.168.112.203', 21, '192.168.129.255'],
+            ['192.168.112.203', 22, '192.168.116.255'],
+            ['192.168.112.203', 23, '192.168.114.255'],
+            ['192.168.112.203', 24, '192.168.113.255'],
+            ['192.168.112.203', 25, '192.168.113.255'],
+            ['192.168.112.203', 26, '192.168.114.255'],
+            ['192.168.112.203', 27, '192.168.112.224'],
+            ['192.168.112.203', 28, '192.168.112.208'],
+            ['192.168.112.203', 29, '192.168.112.208'],
+            ['192.168.112.203', 30, '192.168.112.204'],
+            ['192.168.112.203', 31, '192.168.112.205'],
+            ['192.168.112.203', 32, '192.168.112.204'],
+        ];
     }
 }
