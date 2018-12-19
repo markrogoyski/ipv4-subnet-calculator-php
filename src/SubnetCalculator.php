@@ -435,13 +435,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getAllIPAddresses()
     {
-        list($start_ip, $end_ip) = $this->getIPAddressRange();
-        $start_ip = ip2long($start_ip);
-        $end_ip   = ip2long($end_ip);
-
-        if ($start_ip === false || $end_ip === false) {
-            throw new \RuntimeException('IP address range calculation failed: ' . print_r($this->getIPAddressRange(), true));
-        }
+        list($start_ip, $end_ip) = $this->getIPAddressRangeAsInts();
 
         for ($ip = $start_ip; $ip <= $end_ip; $ip++) {
             yield long2ip($ip);
@@ -458,13 +452,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getAllHostIPAddresses()
     {
-        list($start_ip, $end_ip) = $this->getIPAddressRange();
-        $start_ip = ip2long($start_ip);
-        $end_ip   = ip2long($end_ip);
-
-        if ($start_ip === false || $end_ip === false) {
-            throw new \RuntimeException('IP address range calculation failed: ' . print_r($this->getIPAddressRange(), true));
-        }
+        list($start_ip, $end_ip) = $this->getIPAddressRangeAsInts();
 
         if ($this->getNetworkSize() < 31) {
             $start_ip += 1;
@@ -474,6 +462,23 @@ class SubnetCalculator implements \JsonSerializable
         for ($ip = $start_ip; $ip <= $end_ip; $ip++) {
             yield long2ip($ip);
         }
+    }
+
+    /**
+     * Is the IP address in the subnet?
+     *
+     * @param string $ip_address_string
+     *
+     * @return bool
+     */
+    public function isIPAddressInSubnet($ip_address_string)
+    {
+        $ip_address = ip2long($ip_address_string);
+        list($start_ip, $end_ip) = $this->getIPAddressRangeAsInts();
+
+        return $ip_address >= $start_ip && $ip_address <= $end_ip
+            ? true
+            : false;
     }
 
     /**
@@ -699,5 +704,23 @@ class SubnetCalculator implements \JsonSerializable
         if (($network_size < 1) || ($network_size > 32)) {
             throw new \UnexpectedValueException("Network size $network_size not valid.");
         }
+    }
+
+    /**
+     * Get the start and end of the IP address range as ints
+     *
+     * @return array [start IP, end IP]
+     */
+    private function getIPAddressRangeAsInts()
+    {
+        list($start_ip, $end_ip) = $this->getIPAddressRange();
+        $start_ip = ip2long($start_ip);
+        $end_ip   = ip2long($end_ip);
+
+        if ($start_ip === false || $end_ip === false) {
+            throw new \RuntimeException('IP address range calculation failed: ' . print_r($this->getIPAddressRange(), true));
+        }
+
+        return [$start_ip, $end_ip];
     }
 }
