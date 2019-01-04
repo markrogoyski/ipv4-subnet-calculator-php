@@ -78,6 +78,9 @@ Usage
 ```php
 // For network 192.168.112.203/23
 $sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
+// Or
+$sub = IPv4\SubnetCalculator::factory('192.168.112.203/23');
+
 ```
 
 ### Various Network Information
