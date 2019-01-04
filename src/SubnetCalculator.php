@@ -63,6 +63,18 @@ class SubnetCalculator implements \JsonSerializable
         $this->report       = $report ?: new SubnetReport();
     }
 
+    /**
+     * SubnetCalculator factory when IP address is written with subnetmask (ex. "192.168.1.120/24")
+     *
+     * @param string $ip_address "192.168.1.120/24"
+     * @return SubnetCalculator
+     */
+    public static function factory($ip_address_with_network_size)
+    {
+        $network = explode('/', $ip_address_with_network_size);
+        return new self($network[0], $network[1]);
+    }
+
     /* **************** *
      * PUBLIC INTERFACE
      * **************** */

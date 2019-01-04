@@ -1551,4 +1551,16 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
             ['192.168.112.203', 32, '192.168.112.204'],
         ];
     }
+
+    /**
+     * @testCase factory
+     */
+    public function testSubnetCalculatorFactory()
+    {
+        // Given
+        $instance = IPv4\SubnetCalculator::factory('192.168.1.1/24');
+
+        // Then
+        $this->assertInstanceOf('IPv4\SubnetCalculator', $instance);
+    }
 }
