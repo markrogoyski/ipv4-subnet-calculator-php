@@ -73,7 +73,7 @@ class SubnetCalculator implements \JsonSerializable
     public static function factory($ip_address_with_network_size, SubnetReportInterface $report = null)
     {
         $network = explode('/', $ip_address_with_network_size);
-        return new self($network[0], $network[1], $report);
+        return new self($network[0], (int) $network[1], $report);
     }
 
     /* **************** *
