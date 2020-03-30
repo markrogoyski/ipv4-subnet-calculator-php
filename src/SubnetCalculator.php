@@ -191,8 +191,8 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHost()
     {
-        if ($this->network_size === 32 || $this->network_size === 31) {
-            return $this->ip_address;
+        if ($this->network_size > 30) {
+            return $this->getNetworkPortion();
         }
         return $this->minHostCalculation(self::FORMAT_QUADS, '.');
     }
@@ -253,9 +253,12 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMaxHost()
     {
-        if ($this->network_size === 32 || $this->network_size === 31) {
-            return $this->ip_address;
+        if ($this->network_size == 32) {
+            return $this->getNetworkPortion();
+        } elseif ($this->network_size == 31) {
+            return $this->addIps($this->getNetworkPortion(), 1);        
         }
+        
         return $this->maxHostCalculation(self::FORMAT_QUADS, '.');
     }
 
@@ -604,6 +607,18 @@ class SubnetCalculator implements \JsonSerializable
 
         return implode($separator, $mask_quads);
     }
+    
+    /**
+     * Return next (or more) valid IP
+     *
+     * @param string $ip    IP input
+     * @param int    $num   Number to add, default 1
+     *
+     * @return string formatted subnet mask
+     */    
+    private function addIps($ip, $num=1) {
+      return long2ip(ip2long($ip)+$num);      
+    }      
 
     /**
      * Calculate network portion for formatting
