@@ -8,12 +8,13 @@
     "php": ">=5.5.0"
   },
   "require-dev": {
-    "phpunit/phpunit": "6.*",
-    "satooshi/php-coveralls": "^2.0",
+    "phpunit/phpunit": "^6.0",
+    "php-coveralls/php-coveralls": "^2.0",
     "squizlabs/php_codesniffer": "2.*",
     "phpstan/phpstan": "*",
     "phpmd/phpmd": "^2.6",
-    "phploc/phploc": "*"
+    "phploc/phploc": "*",
+    "php-parallel-lint/php-parallel-lint": "^1.2"
   },
   "autoload": {
     "psr-4": { "IPv4\\": "src/" }
