@@ -11,7 +11,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * Set up test SubnetCalculator
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
     }
@@ -22,7 +22,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $given_ip_address
      * @param        int    $network_size
      */
-    public function testGetIpAddress($given_ip_address, $network_size)
+    public function testGetIpAddress(string $given_ip_address, int $network_size): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($given_ip_address, $network_size);
@@ -40,7 +40,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $ip_address
      * @param        int    $given_network_size
      */
-    public function testGetNetworkSize($ip_address, $given_network_size)
+    public function testGetNetworkSize(string $ip_address, int $given_network_size): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $given_network_size);
@@ -53,9 +53,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size]
+     * @return mixed[][] [ip_address, network_size]
      */
-    public function dataProviderForIpAddresses()
+    public function dataProviderForIpAddresses(): array
     {
         return [
             ['192.168.112.203', 1],
@@ -96,10 +96,10 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getIPAddressQuads
      * @dataProvider dataProviderForIpAddressQuads
-     * @param        string $ip_address
-     * @param        array $expected_quads
+     * @param        string   $ip_address
+     * @param        string[] $expected_quads
      */
-    public function testGetIPAddressQuads($ip_address, array $expected_quads)
+    public function testGetIPAddressQuads(string $ip_address, array $expected_quads): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, 24);
@@ -112,9 +112,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, quads]
+     * @return mixed[][] [ip_address, quads]
      */
-    public function dataProviderForIpAddressQuads()
+    public function dataProviderForIpAddressQuads(): array
     {
         return [
             ['192.168.112.203', ['192', '168', '112', '203']],
@@ -129,7 +129,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $ip_address
      * @param        string $expected_hex
      */
-    public function testGetIPAddressHex($ip_address, $expected_hex)
+    public function testGetIPAddressHex(string $ip_address, string $expected_hex): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, 24);
@@ -142,9 +142,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, hex]
+     * @return string[][] [ip_address, hex]
      */
-    public function dataProviderForIpAddressHex()
+    public function dataProviderForIpAddressHex(): array
     {
         return [
             ['192.168.112.203', 'C0A870CB'],
@@ -159,7 +159,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $ip_address
      * @param        string $expected_binary
      */
-    public function testGetIPAddressBinary($ip_address, $expected_binary)
+    public function testGetIPAddressBinary(string $ip_address, string $expected_binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, 24);
@@ -172,9 +172,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, binary]
+     * @return string[][] [ip_address, binary]
      */
-    public function dataProviderForIpAddressBinary()
+    public function dataProviderForIpAddressBinary(): array
     {
         return [
             ['192.168.112.203', '11000000101010000111000011001011'],
@@ -190,7 +190,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        int    $expected_number_addresses
      */
-    public function testGetNumberIPAddresses($ip_address, $network_size, $expected_number_addresses)
+    public function testGetNumberIPAddresses(string $ip_address, int $network_size, int $expected_number_addresses): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -203,9 +203,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, number_addresses]
+     * @return mixed[][] [ip_address, network_size, number_addresses]
      */
-    public function dataProviderForNumberOfAddresses()
+    public function dataProviderForNumberOfAddresses(): array
     {
         return [
             ['192.168.112.203', 1,  2147483648],
@@ -250,7 +250,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        int    $expected_number_addressable_hosts
      */
-    public function testGetNumberAddressableHosts($ip_address, $network_size, $expected_number_addressable_hosts)
+    public function testGetNumberAddressableHosts(string $ip_address, int $network_size, int $expected_number_addressable_hosts): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -263,9 +263,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, number_addressable_hosts]
+     * @return mixed[][] [ip_address, network_size, number_addressable_hosts]
      */
-    public function dataProviderForNumberOfAddressableHosts()
+    public function dataProviderForNumberOfAddressableHosts(): array
     {
         return [
             ['192.168.112.203', 1, 2147483646],
@@ -311,7 +311,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $expected_lower_ip
      * @param        string $expected_upper_ip
      */
-    public function testGetIpAddressRange($ip_address, $network_size, $expected_lower_ip, $expected_upper_ip)
+    public function testGetIpAddressRange(string $ip_address, int $network_size, string $expected_lower_ip, string $expected_upper_ip): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -332,7 +332,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        string $expected_network_portion
      */
-    public function testGetNetworkPortionLowerIp($ip_address, $network_size, $expected_network_portion)
+    public function testGetNetworkPortionLowerIp(string $ip_address, int $network_size, string $expected_network_portion): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -345,9 +345,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, lower_ip, upper_ip]
+     * @return mixed[][] [ip_address, network_size, lower_ip, upper_ip]
      */
-    public function dataProviderForIpAddressRange()
+    public function dataProviderForIpAddressRange(): array
     {
         return [
             ['192.168.112.203', 1, '128.0.0.0', '255.255.255.255'],
@@ -393,7 +393,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $expected_minHost
      * @param        string $expected_maxHost
      */
-    public function testGetAddressableHostRange($ip_address, $network_size, $expected_minHost, $expected_maxHost)
+    public function testGetAddressableHostRange(string $ip_address, int $network_size, string $expected_minHost, string $expected_maxHost): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -414,7 +414,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        string $expected_broadcast_address
      */
-    public function testGetBroadcastAddress($ip_address, $network_size, $expected_broadcast_address)
+    public function testGetBroadcastAddress(string $ip_address, int $network_size, string $expected_broadcast_address): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -427,9 +427,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, broadcast_address]
+     * @return mixed[][] [ip_address, network_size, broadcast_address]
      */
-    public function dataProviderForBroadcastAddress()
+    public function dataProviderForBroadcastAddress(): array
     {
         return [
             ['192.168.112.203', 1, '255.255.255.255'],
@@ -474,7 +474,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        string $expected_minHost
      */
-    public function testGetMinHost($ip_address, $network_size, $expected_minHost)
+    public function testGetMinHost(string $ip_address, int $network_size, string $expected_minHost): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -494,7 +494,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $_
      * @param        string $expected_maxHost
      */
-    public function testGetMaxHost($ip_address, $network_size, $_, $expected_maxHost)
+    public function testGetMaxHost(string $ip_address, int $network_size, string $_, string $expected_maxHost): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -507,9 +507,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, minHost, maxHost]
+     * @return mixed[][] [ip_address, network_size, minHost, maxHost]
      */
-    public function dataProviderForAddressableHostRange()
+    public function dataProviderForAddressableHostRange(): array
     {
         return [
             ['192.168.112.203', 1, '128.0.0.1', '255.255.255.254'],
@@ -552,9 +552,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @dataProvider dataProviderForGetMinHostQuads
      * @param string $ip_address
      * @param int    $network_size
-     * @param array  $expected_quads
+     * @param int[]  $expected_quads
      */
-    public function testGetMinHostQuads($ip_address, $network_size, array $expected_quads)
+    public function testGetMinHostQuads(string $ip_address, int $network_size, array $expected_quads): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -567,9 +567,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMinHostQuads()
+    public function dataProviderForGetMinHostQuads(): array
     {
         return [
             ['192.168.112.203', 1, [128, 0, 0, 1]],
@@ -591,9 +591,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @dataProvider dataProviderForGetMaxHostQuads
      * @param string $ip_address
      * @param int    $network_size
-     * @param array  $expected_quads
+     * @param int[]  $expected_quads
      */
-    public function testGetMaxHostQuads($ip_address, $network_size, array $expected_quads)
+    public function testGetMaxHostQuads(string $ip_address, int $network_size, array $expected_quads): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -606,9 +606,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMaxHostQuads()
+    public function dataProviderForGetMaxHostQuads(): array
     {
         return [
             ['192.168.112.203', 1, [255, 255, 255, 254]],
@@ -632,7 +632,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param int    $network_size
      * @param string $expected_hex
      */
-    public function testGetMinHostHex($ip_address, $network_size, $expected_hex)
+    public function testGetMinHostHex(string $ip_address, int $network_size, string $expected_hex): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -645,9 +645,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMinHostHex()
+    public function dataProviderForGetMinHostHex(): array
     {
         return [
             ['192.168.112.203', 1, '80000001'],
@@ -671,7 +671,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param int    $network_size
      * @param string $expected_hex
      */
-    public function testGetMaxHostHex($ip_address, $network_size, $expected_hex)
+    public function testGetMaxHostHex(string $ip_address, int $network_size, string $expected_hex): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -684,9 +684,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMaxHostHex()
+    public function dataProviderForGetMaxHostHex(): array
     {
         return [
             ['192.168.112.203', 1, 'FFFFFFFE'],
@@ -710,7 +710,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param int    $network_size
      * @param string $expected_binary
      */
-    public function testGetMinHostBinary($ip_address, $network_size, $expected_binary)
+    public function testGetMinHostBinary(string $ip_address, int $network_size, string $expected_binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -723,9 +723,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMinHostBinary()
+    public function dataProviderForGetMinHostBinary(): array
     {
         return [
             ['192.168.112.203', 1, '10000000000000000000000000000001'],
@@ -749,7 +749,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param int    $network_size
      * @param string $expected_binary
      */
-    public function testGetMaxHostBinary($ip_address, $network_size, $expected_binary)
+    public function testGetMaxHostBinary(string $ip_address, int $network_size, string $expected_binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -762,9 +762,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array
+     * @return mixed[][]
      */
-    public function dataProviderForGetMaxHostBinary()
+    public function dataProviderForGetMaxHostBinary(): array
     {
         return [
             ['192.168.112.203', 1, '11111111111111111111111111111110'],
@@ -784,13 +784,13 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getSubnetMask
      * @dataProvider dataProviderForSubnetMask
-     * @param        int    $network_size
-     * @param        string $subnet_mask
-     * @param        array  $quads
-     * @param        string $hex
-     * @param        string $binary
+     * @param        int      $network_size
+     * @param        string   $subnet_mask
+     * @param        string[] $quads
+     * @param        string   $hex
+     * @param        string   $binary
      */
-    public function testGetSubnetMask($network_size, $subnet_mask, array $quads, $hex, $binary)
+    public function testGetSubnetMask(int $network_size, string $subnet_mask, array $quads, string $hex, string $binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator('192.168.233.207', $network_size);
@@ -803,9 +803,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [network size, subnet mask, hex, binary]
+     * @return mixed[][] [network size, subnet mask, hex, binary]
      */
-    public function dataProviderForSubnetMask()
+    public function dataProviderForSubnetMask(): array
     {
         return [
             [1, '128.0.0.0', ['128', '0', '0', '0'], '80000000', '10000000000000000000000000000000'],
@@ -846,14 +846,14 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getHostPortion
      * @dataProvider dataProviderForNetworkPortion
-     * @param        string $ip_address
-     * @param        int    $network_size
-     * @param        string $network
-     * @param        array  $quads
-     * @param        string $hex
-     * @param        string $binary
+     * @param        string   $ip_address
+     * @param        int      $network_size
+     * @param        string   $network
+     * @param        string[] $quads
+     * @param        string   $hex
+     * @param        string   $binary
      */
-    public function testGetNetworkPortion($ip_address, $network_size, $network, array $quads, $hex, $binary)
+    public function testGetNetworkPortion(string $ip_address, int $network_size, string $network, array $quads, string $hex, string $binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -866,9 +866,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, network, quads, hex, binary]
+     * @return mixed[][] [ip_address, network_size, network, quads, hex, binary]
      */
-    public function dataProviderForNetworkPortion()
+    public function dataProviderForNetworkPortion(): array
     {
         return [
             ['192.168.112.203', 1, '128.0.0.0', ['128', '0', '0', '0'], '80000000', '10000000000000000000000000000000'],
@@ -909,14 +909,14 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getHostPortion
      * @dataProvider dataProviderForHostPortion
-     * @param        string $ip_address
-     * @param        int    $network_size
-     * @param        string $host
-     * @param        array  $quads
-     * @param        string $hex
-     * @param        string $binary
+     * @param        string   $ip_address
+     * @param        int      $network_size
+     * @param        string   $host
+     * @param        string[] $quads
+     * @param        string   $hex
+     * @param        string   $binary
      */
-    public function testGetHostPortion($ip_address, $network_size, $host, array $quads, $hex, $binary)
+    public function testGetHostPortion(string $ip_address, int $network_size, string $host, array $quads, string $hex, string $binary): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -929,9 +929,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, host, quads, hex, binary]
+     * @return mixed[][] [ip_address, network_size, host, quads, hex, binary]
      */
-    public function dataProviderForHostPortion()
+    public function dataProviderForHostPortion(): array
     {
         return [
             ['192.168.112.203', 1, '64.168.112.203', ['64', '168', '112', '203'], '40A870CB', '01000000101010000111000011001011'],
@@ -975,7 +975,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $ip_address
      * @throws       \Exception
      */
-    public function testConstructorExceptionOnBadIPAddress($ip_address)
+    public function testConstructorExceptionOnBadIPAddress(string $ip_address): void
     {
         // Then
         $this->expectException(\UnexpectedValueException::class);
@@ -990,7 +990,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        string $ip_address
      * @throws       \Exception
      */
-    public function testValidateInputExceptionOnBadIPAddress($ip_address)
+    public function testValidateInputExceptionOnBadIPAddress(string $ip_address): void
     {
         // Given
         $validateInputs = new \ReflectionMethod(IPv4\SubnetCalculator::class, 'validateInputs');
@@ -1004,9 +1004,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address]
+     * @return string[][] [ip_address]
      */
-    public function dataProviderForBadIpAddresses()
+    public function dataProviderForBadIpAddresses(): array
     {
         return [
             ['-1.168.3.4'],
@@ -1021,7 +1021,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int $network_size
      * @throws       \Exception
      */
-    public function testConstructorExceptionOnBadNetworkSize($network_size)
+    public function testConstructorExceptionOnBadNetworkSize(int $network_size): void
     {
         // Then
         $this->expectException(\UnexpectedValueException::class);
@@ -1037,7 +1037,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int $network_size
      * @throws       \Exception
      */
-    public function testValidateInputExceptionOnBadNetworkSize($network_size)
+    public function testValidateInputExceptionOnBadNetworkSize(int $network_size): void
     {
         // Given
         $validateInputs = new \ReflectionMethod(IPv4\SubnetCalculator::class, 'validateInputs');
@@ -1051,9 +1051,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [network_size]
+     * @return int[][] [network_size]
      */
-    public function dataProviderForBadNetworkSize()
+    public function dataProviderForBadNetworkSize(): array
     {
         return [
             [-2],
@@ -1068,7 +1068,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getSubnetArrayReport
      */
-    public function testGetSubnetArrayReport()
+    public function testGetSubnetArrayReport(): void
     {
         // When
         $report = $this->sub->getSubnetArrayReport();
@@ -1092,7 +1092,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getSubnetJsonReport
      */
-    public function testGetSubnetJsonReport()
+    public function testGetSubnetJsonReport(): void
     {
         // When
         $json = $this->sub->getSubnetJsonReport();
@@ -1104,14 +1104,16 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getSubnetJsonReport gets a JSON error from the SubnetReportInterface
      */
-    public function testGetSubnetJsonReportJsonError()
+    public function testGetSubnetJsonReportJsonError(): void
     {
         // Given
-        /** @var IPv4\SubnetReport|\PHPUnit_Framework_MockObject_MockObject $subnetReport */
+        /** @var \PHPUnit\Framework\MockObject\MockObject $subnetReport */
         $subnetReport = $this->getMockBuilder(IPv4\SubnetReport::class)
-            ->setMethods(['createJsonReport'])
+            ->onlyMethods(['createJsonReport'])
             ->getMock();
         $subnetReport->method('createJsonReport')->willReturn(false);
+
+        /** @var IPv4\SubnetReport $subnetReport */
         $sub = new IPv4\SubnetCalculator('192.168.112.203', 23, $subnetReport);
 
         // Then
@@ -1124,7 +1126,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase printSubnetReport
      */
-    public function testPrintSubnetReport()
+    public function testPrintSubnetReport(): void
     {
         // Then
         $this->expectOutputRegex('
@@ -1154,7 +1156,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getPrintableReport
      */
-    public function testGetPrintableReport()
+    public function testGetPrintableReport(): void
     {
         // When
         $report = $this->sub->getPrintableReport();
@@ -1166,13 +1168,13 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase \JsonSerializable interface
      */
-    public function testJsonSerializableInterface()
+    public function testJsonSerializableInterface(): void
     {
         // When
         $json = json_encode($this->sub);
 
         // Then
-        $this->assertInternalType('string', $json);
+        $this->assertIsString($json);
 
         // And
         $decoded = json_decode($json, true);
@@ -1191,9 +1193,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, number_addresses]
+     * @return mixed[][] [ip_address, network_size, number_addresses]
      */
-    public function dataProviderForGetAllIpsCount()
+    public function dataProviderForGetAllIpsCount(): array
     {
         return [
             ['192.168.112.203', 16, 65536],
@@ -1217,9 +1219,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, number_addresses]
+     * @return mixed[][] [ip_address, network_size, number_addresses]
      */
-    public function dataProviderForGetAllIpsHostOnlyCount()
+    public function dataProviderForGetAllIpsHostOnlyCount(): array
     {
         return [
             ['192.168.112.203', 16, 65534],
@@ -1248,7 +1250,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        int    $number_addresses
      */
-    public function testGetAllIPsCount($ip_address, $network_size, $number_addresses)
+    public function testGetAllIPsCount(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
         $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1271,7 +1273,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        int    $number_addresses
      */
-    public function testGetAllHostIPsCount($ip_address, $network_size, $number_addresses)
+    public function testGetAllHostIPsCount(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
         $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1289,7 +1291,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getAllHostIPAddresses returns the expected number of IP addresses for edge case /32 network
      */
-    public function testGetAllHostIPsCountHostsOnlyEdgeCaseSlash32Network()
+    public function testGetAllHostIPsCountHostsOnlyEdgeCaseSlash32Network(): void
     {
         // Given
         $sub   = new IPv4\SubnetCalculator('192.168.112.203', 32);
@@ -1307,11 +1309,11 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getAllIPAddresses returns the expected IP addresses
      * @dataProvider dataProviderForGetAllIps
-     * @param        string $ip_address
-     * @param        int    $network_size
-     * @param        array  $ip_addresses
+     * @param        string    $ip_address
+     * @param        int       $network_size
+     * @param        string[]  $ip_addresses
      */
-    public function testGetAllIPs($ip_address, $network_size, $ip_addresses)
+    public function testGetAllIPs(string $ip_address, int $network_size, array $ip_addresses): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1324,9 +1326,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, [ip_addresses]]
+     * @return mixed[][] [ip_address, network_size, [ip_addresses]]
      */
-    public function dataProviderForGetAllIps()
+    public function dataProviderForGetAllIps(): array
     {
         return [
             ['192.168.112.203', 28, ['192.168.112.192', '192.168.112.193', '192.168.112.194', '192.168.112.195', '192.168.112.196', '192.168.112.197', '192.168.112.198', '192.168.112.199', '192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206', '192.168.112.207']],
@@ -1340,11 +1342,11 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     getAllHostIPAddresses returns the expected IP addresses
      * @dataProvider dataProviderForGetAllIpsHostsOnly
-     * @param        string $ip_address
-     * @param        int $network_size
-     * @param        array $ip_addresses
+     * @param        string   $ip_address
+     * @param        int      $network_size
+     * @param        string[] $ip_addresses
      */
-    public function testGetAllHostIPAddresses($ip_address, $network_size, $ip_addresses)
+    public function testGetAllHostIPAddresses(string $ip_address, int $network_size, array $ip_addresses): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1357,9 +1359,9 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array [ip_address, network_size, [ip_addresses]]
+     * @return mixed[][] [ip_address, network_size, [ip_addresses]]
      */
-    public function dataProviderForGetAllIpsHostsOnly()
+    public function dataProviderForGetAllIpsHostsOnly(): array
     {
         return [
             ['192.168.112.203', 28, ['192.168.112.193', '192.168.112.194', '192.168.112.195', '192.168.112.196', '192.168.112.197', '192.168.112.198', '192.168.112.199', '192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206']],
@@ -1373,15 +1375,16 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getAllIPAddresses gets an error in the getIPAddressRange calculation
      */
-    public function testGetAllIPAddressesIPRangeCalculationError()
+    public function testGetAllIPAddressesIPRangeCalculationError(): void
     {
         // Given
-        /** @var IPv4\SubnetCalculator|\PHPUnit_Framework_MockObject_MockObject $sub */
+        /** @var \PHPUnit\Framework\MockObject\MockObject $sub */
         $sub = $this->getMockBuilder(IPv4\SubnetCalculator::class)
-            ->setMethods(['getIPAddressRange'])
+            ->onlyMethods(['getIPAddressRange'])
             ->disableOriginalConstructor()
             ->getMock();
-        $sub->method('getIPAddressRange')->willReturn([-4, -1]);
+        $sub->method('getIPAddressRange')->willReturn(['-4', '-1']);
+        /** @var IPv4\SubnetCalculator $sub */
 
         // Then
         $this->expectException(\RuntimeException::class);
@@ -1395,15 +1398,16 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase getAllHostIPAddresses gets an error in the getIPAddressRange calculation
      */
-    public function testGetAllHostIPAddressesIPRangeCalculationError()
+    public function testGetAllHostIPAddressesIPRangeCalculationError(): void
     {
         // Given
-        /** @var IPv4\SubnetCalculator|\PHPUnit_Framework_MockObject_MockObject $sub */
+        /** @var \PHPUnit\Framework\MockObject\MockObject $sub */
         $sub = $this->getMockBuilder(IPv4\SubnetCalculator::class)
-            ->setMethods(['getIPAddressRange'])
+            ->onlyMethods(['getIPAddressRange'])
             ->disableOriginalConstructor()
             ->getMock();
-        $sub->method('getIPAddressRange')->willReturn([-4, -1]);
+        $sub->method('getIPAddressRange')->willReturn(['-4', '-1']);
+        /** @var IPv4\SubnetCalculator $sub */
 
         // Then
         $this->expectException(\RuntimeException::class);
@@ -1417,11 +1421,11 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase     isIPAddressInSubnet
      * @dataProvider dataProviderForGetAllIps
-     * @param        string $ip_address
-     * @param        int    $network_size
-     * @param        array  $ip_addresses
+     * @param        string   $ip_address
+     * @param        int      $network_size
+     * @param        string[] $ip_addresses
      */
-    public function testIsIPAddressInSubnet($ip_address, $network_size, $ip_addresses)
+    public function testIsIPAddressInSubnet(string $ip_address, int $network_size, array $ip_addresses): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1438,7 +1442,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     /**
      * @testCase isIPAddressInSubnet for all IP addresses in a subnet
      */
-    public function testIsIPAddressInSubnetForAllIPAddressesInSubnet()
+    public function testIsIPAddressInSubnetForAllIPAddressesInSubnet(): void
     {
         foreach ($this->sub->getAllIPAddresses() as $ip_address) {
             // When
@@ -1456,7 +1460,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param        int    $network_size
      * @param        string $ip_address_to_check
      */
-    public function testIsIpAddressInSubnetWhenItIsNot($ip_address, $network_size, $ip_address_to_check)
+    public function testIsIpAddressInSubnetWhenItIsNot(string $ip_address, int $network_size, string $ip_address_to_check): void
     {
         // Given
         $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
@@ -1468,7 +1472,10 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $this->assertFalse($isIPInSubnet, "$ip_address_to_check");
     }
 
-    public function dataProviderForIpAddressesNotInSubnet()
+    /**
+     * @return mixed[][]
+     */
+    public function dataProviderForIpAddressesNotInSubnet(): array
     {
         return [
             ['192.168.112.203', 28, '10.168.112.194'],

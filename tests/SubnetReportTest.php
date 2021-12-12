@@ -14,16 +14,16 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
     /**
      * Set up
      */
-    public function setUp()
+    public function setUp(): void
     {
         $this->sub    = new IPv4\SubnetCalculator('192.168.112.203', 23);
         $this->report = new IPv4\SubnetReport();
     }
 
     /**
-     * @testCase createArrayReport
+     * @test createArrayReport
      */
-    public function testCreateArrayReport()
+    public function testCreateArrayReport(): void
     {
         // When
         $report = $this->report->createArrayReport($this->sub);
@@ -45,9 +45,9 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @testCase createJsonReport
+     * @test createJsonReport
      */
-    public function testCreateJsonReport()
+    public function testCreateJsonReport(): void
     {
         // When
         $json = $this->report->createJsonReport($this->sub);
@@ -57,9 +57,9 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @testCase printReport
+     * @test printReport
      */
-    public function testPrintReport()
+    public function testPrintReport(): void
     {
         // Then
         $this->expectOutputRegex('
@@ -87,9 +87,9 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @testCase createPrintableReport
+     * @test createPrintableReport
      */
-    public function testCreatePrintableReport()
+    public function testCreatePrintableReport(): void
     {
         // When
         $report = $this->report->createPrintableReport($this->sub);

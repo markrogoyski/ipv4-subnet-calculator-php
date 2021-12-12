@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace IPv4;
 
 /**
@@ -18,9 +21,9 @@ interface SubnetReportInterface
      *
      * @param SubnetCalculator $sub
      *
-     * @return array of subnet calculations
+     * @return mixed[] of subnet calculations
      */
-    public function createArrayReport(SubnetCalculator $sub);
+    public function createArrayReport(SubnetCalculator $sub): array;
 
     /**
      * Get subnet calculations as JSON string
@@ -42,7 +45,7 @@ interface SubnetReportInterface
      *
      * @param SubnetCalculator $sub
      */
-    public function printReport(SubnetCalculator $sub);
+    public function printReport(SubnetCalculator $sub): void;
 
     /**
      * Print a report of subnet calculations
@@ -54,5 +57,5 @@ interface SubnetReportInterface
      *
      * @return string Subnet Calculator report
      */
-    public function createPrintableReport(SubnetCalculator $sub);
+    public function createPrintableReport(SubnetCalculator $sub): string;
 }
