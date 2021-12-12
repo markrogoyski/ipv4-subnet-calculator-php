@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace IPv4\Tests;
 
 use IPv4;
@@ -29,7 +32,7 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $report = $this->report->createArrayReport($this->sub);
 
         // Then
-        $this->assertTrue(is_array($report));
+        $this->assertIsArray($report);
         $this->assertArrayHasKey('ip_address_with_network_size', $report);
         $this->assertArrayHasKey('ip_address', $report);
         $this->assertArrayHasKey('subnet_mask', $report);
@@ -53,7 +56,7 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $json = $this->report->createJsonReport($this->sub);
 
         // Then
-        $this->assertTrue(is_string($json));
+        $this->assertIsString($json);
     }
 
     /**
@@ -95,6 +98,6 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $report = $this->report->createPrintableReport($this->sub);
 
         // Then
-        $this->assertTrue(is_string($report));
+        $this->assertIsString($report);
     }
 }

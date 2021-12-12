@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace IPv4\Tests;
 
 use IPv4;
@@ -53,7 +56,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size]
+     * @return array[] [ip_address, network_size]
      */
     public function dataProviderForIpAddresses(): array
     {
@@ -112,7 +115,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, quads]
+     * @return array[] [ip_address, quads]
      */
     public function dataProviderForIpAddressQuads(): array
     {
@@ -203,7 +206,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, number_addresses]
+     * @return array[] [ip_address, network_size, number_addresses]
      */
     public function dataProviderForNumberOfAddresses(): array
     {
@@ -263,7 +266,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, number_addressable_hosts]
+     * @return array[] [ip_address, network_size, number_addressable_hosts]
      */
     public function dataProviderForNumberOfAddressableHosts(): array
     {
@@ -345,7 +348,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, lower_ip, upper_ip]
+     * @return array[] [ip_address, network_size, lower_ip, upper_ip]
      */
     public function dataProviderForIpAddressRange(): array
     {
@@ -427,7 +430,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, broadcast_address]
+     * @return array[] [ip_address, network_size, broadcast_address]
      */
     public function dataProviderForBroadcastAddress(): array
     {
@@ -507,7 +510,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, minHost, maxHost]
+     * @return array[] [ip_address, network_size, minHost, maxHost]
      */
     public function dataProviderForAddressableHostRange(): array
     {
@@ -567,7 +570,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMinHostQuads(): array
     {
@@ -606,7 +609,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMaxHostQuads(): array
     {
@@ -645,7 +648,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMinHostHex(): array
     {
@@ -684,7 +687,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMaxHostHex(): array
     {
@@ -723,7 +726,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMinHostBinary(): array
     {
@@ -762,7 +765,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForGetMaxHostBinary(): array
     {
@@ -803,7 +806,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [network size, subnet mask, hex, binary]
+     * @return array[] [network size, subnet mask, hex, binary]
      */
     public function dataProviderForSubnetMask(): array
     {
@@ -866,7 +869,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, network, quads, hex, binary]
+     * @return array[] [ip_address, network_size, network, quads, hex, binary]
      */
     public function dataProviderForNetworkPortion(): array
     {
@@ -929,7 +932,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, host, quads, hex, binary]
+     * @return array[] [ip_address, network_size, host, quads, hex, binary]
      */
     public function dataProviderForHostPortion(): array
     {
@@ -1074,7 +1077,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $report = $this->sub->getSubnetArrayReport();
 
         // Then
-        $this->assertTrue(is_array($report));
+        $this->assertIsArray($report);
         $this->assertArrayHasKey('ip_address_with_network_size', $report);
         $this->assertArrayHasKey('ip_address', $report);
         $this->assertArrayHasKey('subnet_mask', $report);
@@ -1098,7 +1101,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $json = $this->sub->getSubnetJsonReport();
 
         // Then
-        $this->assertTrue(is_string($json));
+        $this->assertIsString($json);
     }
 
     /**
@@ -1162,7 +1165,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         $report = $this->sub->getPrintableReport();
 
         // Then
-        $this->assertTrue(is_string($report));
+        $this->assertIsString($report);
     }
 
     /**
@@ -1171,13 +1174,13 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     public function testJsonSerializableInterface(): void
     {
         // When
-        $json = json_encode($this->sub);
+        $json = \json_encode($this->sub);
 
         // Then
         $this->assertIsString($json);
 
         // And
-        $decoded = json_decode($json, true);
+        $decoded = \json_decode($json, true);
         $this->assertArrayHasKey('ip_address_with_network_size', $decoded);
         $this->assertArrayHasKey('ip_address', $decoded);
         $this->assertArrayHasKey('subnet_mask', $decoded);
@@ -1193,7 +1196,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, number_addresses]
+     * @return array[] [ip_address, network_size, number_addresses]
      */
     public function dataProviderForGetAllIpsCount(): array
     {
@@ -1219,7 +1222,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, number_addresses]
+     * @return array[] [ip_address, network_size, number_addresses]
      */
     public function dataProviderForGetAllIpsHostOnlyCount(): array
     {
@@ -1326,7 +1329,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, [ip_addresses]]
+     * @return array[] [ip_address, network_size, [ip_addresses]]
      */
     public function dataProviderForGetAllIps(): array
     {
@@ -1359,7 +1362,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][] [ip_address, network_size, [ip_addresses]]
+     * @return array[] [ip_address, network_size, [ip_addresses]]
      */
     public function dataProviderForGetAllIpsHostsOnly(): array
     {
@@ -1473,7 +1476,7 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return mixed[][]
+     * @return array[]
      */
     public function dataProviderForIpAddressesNotInSubnet(): array
     {
