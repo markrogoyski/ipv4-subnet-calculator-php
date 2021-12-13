@@ -45,7 +45,7 @@ Setup
 ```javascript
 {
   "require": {
-      "markrogoyski/ipv4-subnet-calculator": "3.*"
+      "markrogoyski/ipv4-subnet-calculator": "4.*"
   }
 }
 ```
@@ -66,11 +66,13 @@ require_once(__DIR__ . '/vendor/autoload.php');
 Alternatively, use composer on the command line to require and install IPv4 SubnetCalculator:
 
 ```
-$ php composer.phar require markrogoyski/ipv4-subnet-calculator:3.*
+$ php composer.phar require markrogoyski/ipv4-subnet-calculator:4.*
 ```
 
 ### Minimum Requirements
- * PHP 5.5
+ * PHP 7.2
+
+ Note: For PHP 5.5 through 7.1, use v3.0 (`markrogoyski/ipv4-subnet-calculator:3.*`)
 
 Usage
 -----
@@ -333,8 +335,8 @@ Standards
 IPv4 Subnet Calculator (PHP) conforms to the following standards:
 
  * PSR-1 - Basic coding standard (http://www.php-fig.org/psr/psr-1/)
- * PSR-2 - Coding style guide (http://www.php-fig.org/psr/psr-2/)
  * PSR-4 - Autoloader (http://www.php-fig.org/psr/psr-4/)
+ * PSR-12 - Extended coding style guide (http://www.php-fig.org/psr/psr-12/)
 
 License
 -------
