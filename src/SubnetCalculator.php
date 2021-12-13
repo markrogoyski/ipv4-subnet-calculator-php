@@ -18,6 +18,7 @@ namespace IPv4;
  *   - Broadcast address
  *   - Min and max host
  *   - All IP addresses
+ *   - IPv4 ARPA Domain
  * Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
  *
  * Aggregated network calculation reports:
