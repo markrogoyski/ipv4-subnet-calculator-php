@@ -483,6 +483,31 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get the IPv4 Arpa Domain
+     *
+     * Reverse DNS lookups for IPv4 addresses use the special domain in-addr.arpa.
+     * In this domain, an IPv4 address is represented as a concatenated sequence of four decimal numbers,
+     * separated by dots, to which is appended the second level domain suffix .in-addr.arpa.
+     *
+     * The four decimal numbers are obtained by splitting the 32-bit IPv4 address into four octets and converting
+     * each octet into a decimal number. These decimal numbers are then concatenated in the order:
+     * least significant octet first (leftmost), to most significant octet last (rightmost).
+     * It is important to note that this is the reverse order to the usual dotted-decimal convention for writing
+     * IPv4 addresses in textual form.
+     *
+     * Ex: to do a reverse lookup of the IP address 8.8.4.4 the PTR record for the domain name 4.4.8.8.in-addr.arpa would be looked up.
+     *
+     * @link https://en.wikipedia.org/wiki/Reverse_DNS_lookup
+     *
+     * @return string
+     */
+    public function getIPv4ArpaDomain(): string
+    {
+        $reverseQuads = \implode('.', \array_reverse($this->quads));
+        return $reverseQuads . '.in-addr.arpa';
+    }
+
+    /**
      * Get subnet calculations as an associated array
      *
      * @return mixed[] of subnet calculations
