@@ -45,6 +45,7 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $this->assertArrayHasKey('broadcast_address', $report);
         $this->assertArrayHasKey('min_host', $report);
         $this->assertArrayHasKey('max_host', $report);
+        $this->assertArrayHasKey('ipv4_arpa_domain', $report);
     }
 
     /**
@@ -79,8 +80,9 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
                 Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+        \n
                 IP [ ] Address [ ] Range:                \s+ .+?        \n
                 Broadcast [ ] Address:                   \s+ .+?        \n
-                Min [ ] Host:                            \s  .+?        \n
-                Max [ ] Host:                            \s  .+?        \n
+                Min [ ] Host:                            \s+ .+?        \n
+                Max [ ] Host:                            \s+ .+?        \n
+                IPv4 [ ] ARPA [ ] Domain:                \s+ .+?        \n
                 $
             /xms
         ');

@@ -54,6 +54,7 @@ class SubnetReport implements SubnetReportInterface
             'broadcast_address'           => $sub->getBroadcastAddress(),
             'min_host'                    => $sub->getMinHost(),
             'max_host'                    => $sub->getMaxHost(),
+            'ipv4_arpa_domain'            => $sub->getIPv4ArpaDomain()
         ];
     }
 
@@ -110,6 +111,7 @@ class SubnetReport implements SubnetReportInterface
         $string .= \sprintf("%-28s %s\n", 'Broadcast Address:', $sub->getBroadcastAddress());
         $string .= \sprintf("%-28s %s\n", 'Min Host:', $sub->getMinHost());
         $string .= \sprintf("%-28s %s\n", 'Max Host:', $sub->getMaxHost());
+        $string .= \sprintf("%-28s %s\n", 'IPv4 ARPA Domain:', $sub->getIPv4ArpaDomain());
 
         return $string;
     }
