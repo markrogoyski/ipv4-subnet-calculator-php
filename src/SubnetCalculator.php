@@ -112,6 +112,16 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get the IP address as an integer
+     *
+     * @return int
+     */
+    public function getIPAddressInteger(): int
+    {
+        return \ip2long($this->ipAddress);
+    }
+
+    /**
      * Get network size
      *
      * @return int network size
@@ -251,6 +261,18 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get minimum host IP address as an Integer
+     *
+     * @return int min host portion as integer
+     */
+    public function getMinHostInteger(): int
+    {
+        return $this->networkSize === 32 || $this->networkSize === 31
+            ? \ip2long(\implode('.', $this->quads))
+            : \ip2long($this->minHostCalculation(self::FORMAT_QUADS, '.'));
+    }
+
+    /**
      * Get maximum host IP address as dotted quads: xxx.xxx.xxx.xxx
      *
      * @return string max host as dotted quads.
@@ -313,6 +335,18 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get maximum host IP address as an Integer
+     *
+     * @return int max host portion as integer
+     */
+    public function getMaxHostInteger(): int
+    {
+        return $this->networkSize === 32 || $this->networkSize === 31
+            ? \ip2long(\implode('.', $this->quads))
+            : \ip2long($this->maxHostCalculation(self::FORMAT_QUADS, '.'));
+    }
+
+    /**
      * Get subnet mask as dotted quads: xxx.xxx.xxx.xxx
      *
      * @return string subnet mask as dotted quads
@@ -350,6 +384,16 @@ class SubnetCalculator implements \JsonSerializable
     public function getSubnetMaskBinary(): string
     {
         return $this->subnetCalculation(self::FORMAT_BINARY);
+    }
+
+    /**
+     * Get subnet mask as an integer
+     *
+     * @return int
+     */
+    public function getSubnetMaskInteger(): int
+    {
+        return \ip2long($this->subnetCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -393,6 +437,16 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get network portion of IP address as an integer
+     *
+     * @return int
+     */
+    public function getNetworkPortionInteger(): int
+    {
+        return \ip2long($this->networkCalculation(self::FORMAT_QUADS, '.'));
+    }
+
+    /**
      * Get host portion of IP address as dotted quads: xxx.xxx.xxx.xxx
      *
      * @return string host portion as dotted quads
@@ -430,6 +484,16 @@ class SubnetCalculator implements \JsonSerializable
     public function getHostPortionBinary(): string
     {
         return $this->hostCalculation(self::FORMAT_BINARY);
+    }
+
+    /**
+     * Get host portion of IP address as an integer
+     *
+     * @return int
+     */
+    public function getHostPortionInteger(): int
+    {
+        return \ip2long($this->hostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**

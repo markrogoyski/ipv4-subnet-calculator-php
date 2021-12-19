@@ -28,24 +28,28 @@ class SubnetReport implements SubnetReportInterface
         return [
             'ip_address_with_network_size' => $sub->getIPAddress() . '/' . $sub->getNetworkSize(),
             'ip_address' => [
-                'quads'  => $sub->getIPAddress(),
-                'hex'    => $sub->getIPAddressHex(),
-                'binary' => $sub->getIPAddressBinary()
+                'quads'   => $sub->getIPAddress(),
+                'hex'     => $sub->getIPAddressHex(),
+                'binary'  => $sub->getIPAddressBinary(),
+                'integer' => $sub->getIPAddressInteger(),
             ],
             'subnet_mask' => [
-                'quads'  => $sub->getSubnetMask(),
-                'hex'    => $sub->getSubnetMaskHex(),
-                'binary' => $sub->getSubnetMaskBinary()
+                'quads'   => $sub->getSubnetMask(),
+                'hex'     => $sub->getSubnetMaskHex(),
+                'binary'  => $sub->getSubnetMaskBinary(),
+                'integer' => $sub->getSubnetMaskInteger(),
             ],
             'network_portion' => [
-                'quads'  => $sub->getNetworkPortion(),
-                'hex'    => $sub->getNetworkPortionHex(),
-                'binary' => $sub->getNetworkPortionBinary()
+                'quads'   => $sub->getNetworkPortion(),
+                'hex'     => $sub->getNetworkPortionHex(),
+                'binary'  => $sub->getNetworkPortionBinary(),
+                'integer' => $sub->getNetworkPortionInteger(),
             ],
             'host_portion' => [
-                'quads'  => $sub->getHostPortion(),
-                'hex'    => $sub->getHostPortionHex(),
-                'binary' => $sub->getHostPortionBinary()
+                'quads'   => $sub->getHostPortion(),
+                'hex'     => $sub->getHostPortionHex(),
+                'binary'  => $sub->getHostPortionBinary(),
+                'integer' => $sub->getHostPortionInteger(),
             ],
             'network_size'                => $sub->getNetworkSize(),
             'number_of_ip_addresses'      => $sub->getNumberIPAddresses(),
@@ -70,7 +74,7 @@ class SubnetReport implements SubnetReportInterface
      */
     public function createJsonReport(SubnetCalculator $sub)
     {
-        return \json_encode(self::createArrayReport($sub));
+        return \json_encode(self::createArrayReport($sub), \JSON_PRETTY_PRINT);
     }
 
     /**
@@ -98,12 +102,12 @@ class SubnetReport implements SubnetReportInterface
      */
     public function createPrintableReport(SubnetCalculator $sub): string
     {
-        $string  = \sprintf("%-18s %15s %8s %32s\n", "{$sub->getIPAddress()}/{$sub->getNetworkSize()}", 'Quads', 'Hex', 'Binary');
-        $string .= \sprintf("%-18s %15s %8s %32s\n", '------------------', '---------------', '--------', '--------------------------------');
-        $string .= \sprintf("%-18s %15s %8s %32s\n", 'IP Address:', $sub->getIPAddress(), $sub->getIPAddressHex(), $sub->getIPAddressBinary());
-        $string .= \sprintf("%-18s %15s %8s %32s\n", 'Subnet Mask:', $sub->getSubnetMask(), $sub->getSubnetMaskHex(), $sub->getSubnetMaskBinary());
-        $string .= \sprintf("%-18s %15s %8s %32s\n", 'Network Portion:', $sub->getNetworkPortion(), $sub->getNetworkPortionHex(), $sub->getNetworkPortionBinary());
-        $string .= \sprintf("%-18s %15s %8s %32s\n", 'Host Portion:', $sub->getHostPortion(), $sub->getHostPortionHex(), $sub->getHostPortionBinary());
+        $string  = \sprintf("%-18s %15s %8s %32s %10s\n", "{$sub->getIPAddress()}/{$sub->getNetworkSize()}", 'Quads', 'Hex', 'Binary', 'Integer');
+        $string .= \sprintf("%-18s %15s %8s %32s %10s\n", '------------------', '---------------', '--------', '--------------------------------', '----------');
+        $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'IP Address:', $sub->getIPAddress(), $sub->getIPAddressHex(), $sub->getIPAddressBinary(), $sub->getIPAddressInteger());
+        $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Subnet Mask:', $sub->getSubnetMask(), $sub->getSubnetMaskHex(), $sub->getSubnetMaskBinary(), $sub->getSubnetMaskInteger());
+        $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Network Portion:', $sub->getNetworkPortion(), $sub->getNetworkPortionHex(), $sub->getNetworkPortionBinary(), $sub->getNetworkPortionInteger());
+        $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Host Portion:', $sub->getHostPortion(), $sub->getHostPortionHex(), $sub->getHostPortionBinary(), $sub->getHostPortionInteger());
         $string .= \PHP_EOL;
         $string .= \sprintf("%-28s %d\n", 'Number of IP Addresses:', $sub->getNumberIPAddresses());
         $string .= \sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $sub->getNumberAddressableHosts());

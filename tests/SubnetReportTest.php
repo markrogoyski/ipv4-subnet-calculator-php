@@ -69,20 +69,20 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $this->expectOutputRegex('
             /
                 ^
-                \d+[.]\d+[.]\d+[.]\d+\/\d+ \s+ Quads \s+ Hex \s+ Binary \n
-                .+?                                                     \n
-                IP [ ] Address:      .+                                 \n
-                Subnet [ ] Mask:     .+                                 \n
-                Network [ ] Portion: .+                                 \n
-                Host [ ] Portion:    .+                                 \n
-                                                                        \n
-                Number [ ] of [ ] IP [ ] Addresses:      \s+ \d+        \n
-                Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+        \n
-                IP [ ] Address [ ] Range:                \s+ .+?        \n
-                Broadcast [ ] Address:                   \s+ .+?        \n
-                Min [ ] Host:                            \s+ .+?        \n
-                Max [ ] Host:                            \s+ .+?        \n
-                IPv4 [ ] ARPA [ ] Domain:                \s+ .+?        \n
+                \d+[.]\d+[.]\d+[.]\d+\/\d+ \s+ Quads \s+ Hex \s+ Binary \s+ Integer \n
+                .+?                                                                 \n
+                IP [ ] Address:      .+                                             \n
+                Subnet [ ] Mask:     .+                                             \n
+                Network [ ] Portion: .+                                             \n
+                Host [ ] Portion:    .+                                             \n
+                                                                                    \n
+                Number [ ] of [ ] IP [ ] Addresses:      \s+ \d+                    \n
+                Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+                    \n
+                IP [ ] Address [ ] Range:                \s+ .+?                    \n
+                Broadcast [ ] Address:                   \s+ .+?                    \n
+                Min [ ] Host:                            \s+ .+?                    \n
+                Max [ ] Host:                            \s+ .+?                    \n
+                IPv4 [ ] ARPA [ ] Domain:                \s+ .+?                    \n
                 $
             /xms
         ');
