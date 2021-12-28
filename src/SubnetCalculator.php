@@ -221,7 +221,7 @@ class SubnetCalculator implements \JsonSerializable
         if ($this->networkSize === 32 || $this->networkSize === 31) {
             return $this->quads;
         }
-        return \explode('.', $this->minHostCalculation('%d', '.'));
+        return \explode('.', $this->minHostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
