@@ -158,8 +158,9 @@ foreach ($sub->getAllHostIPAddresses() as $hostAddress) {
 ```php
 $boolTrue  = $sub->isIPAddressInSubnet('192.168.112.5');
 $boolFalse = $sub->isIPAddressInSubnet('192.168.111.5');
+```
 
-### Reverse DNS Lookup
+### Reverse DNS Lookup (ARPA Domain)
 ```php
 $ipv4ArpaDomain = $sub->getIPv4ArpaDomain(); // 203.112.168.192.in-addr.arpa
 ```
