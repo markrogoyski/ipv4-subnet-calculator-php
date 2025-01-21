@@ -138,7 +138,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getNumberIPAddresses(): int
     {
-        return \pow(2, (32 - $this->networkSize));
+        return $this->getNumberIPAddressesOfNetworkSize($this->networkSize);
     }
 
     /**
