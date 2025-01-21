@@ -396,6 +396,27 @@ class SubnetCalculator implements \JsonSerializable
         return \ip2long($this->subnetCalculation(self::FORMAT_QUADS, '.'));
     }
 
+
+    /**
+     * Split the network into smaller networks
+     *
+     * @return int
+     */
+    public function split(int $networkSize): \Generator
+    {
+        if ($networkSize <= $this->networkSize) {
+            throw new \RuntimeException('New networkSize must be larger than the base networkSize.');
+        }
+
+        [$startIp, $endIp] = $this->getIPAddressRangeAsInts();
+
+        $addressCount = $this->getNumberIPAddressesOfNetworkSize($networkSize);
+
+        for ($ip = $startIp; $ip <= $endIp; $ip+=$addressCount) {
+            yield new self(\long2ip($ip)  ,$networkSize);
+        }
+    }
+
     /**
      * Get network portion of IP address as dotted quads: xxx.xxx.xxx.xxx
      *
@@ -813,5 +834,15 @@ class SubnetCalculator implements \JsonSerializable
         }
 
         return [$startIp, $endIp];
+    }
+
+    /**
+     * Get the number of IP addresses in the given network size
+     *
+     * @return int Number of IP addresses
+     */
+    private function getNumberIPAddressesOfNetworkSize($networkSize): int
+    {
+        return \pow(2, (32 - $networkSize));
     }
 }
