@@ -400,21 +400,29 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Split the network into smaller networks
      *
-     * @return int
+     * @param int $networkSize
+     * @return array
      */
-    public function split(int $networkSize): \Generator
+    public function split(int $networkSize): array
     {
         if ($networkSize <= $this->networkSize) {
             throw new \RuntimeException('New networkSize must be larger than the base networkSize.');
+        }
+
+        if ($networkSize > 32) {
+            throw new \RuntimeException('New networkSize must be smaller than the maximum networkSize.');
         }
 
         [$startIp, $endIp] = $this->getIPAddressRangeAsInts();
 
         $addressCount = $this->getNumberIPAddressesOfNetworkSize($networkSize);
 
+        $ranges = [];
         for ($ip = $startIp; $ip <= $endIp; $ip+=$addressCount) {
-            yield new self(\long2ip($ip)  ,$networkSize);
+            $ranges[]=   new self(\long2ip($ip)  ,$networkSize);
         }
+
+        return $ranges;
     }
 
     /**
