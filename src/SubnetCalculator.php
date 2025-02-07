@@ -418,8 +418,8 @@ class SubnetCalculator implements \JsonSerializable
         $addressCount = $this->getNumberIPAddressesOfNetworkSize($networkSize);
 
         $ranges = [];
-        for ($ip = $startIp; $ip <= $endIp; $ip+=$addressCount) {
-            $ranges[]=   new self(\long2ip($ip)  ,$networkSize);
+        for ($ip = $startIp; $ip <= $endIp; $ip += $addressCount) {
+            $ranges[] = new SubnetCalculator(\long2ip($ip), $networkSize);
         }
 
         return $ranges;
