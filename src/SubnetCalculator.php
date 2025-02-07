@@ -138,7 +138,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getNumberIPAddresses(): int
     {
-        return \pow(2, (32 - $this->networkSize));
+        return $this->getNumberIPAddressesOfNetworkSize($this->networkSize);
     }
 
     /**
@@ -394,6 +394,35 @@ class SubnetCalculator implements \JsonSerializable
     public function getSubnetMaskInteger(): int
     {
         return \ip2long($this->subnetCalculation(self::FORMAT_QUADS, '.'));
+    }
+
+
+    /**
+     * Split the network into smaller networks
+     *
+     * @param int $networkSize
+     * @return array
+     */
+    public function split(int $networkSize): array
+    {
+        if ($networkSize <= $this->networkSize) {
+            throw new \RuntimeException('New networkSize must be larger than the base networkSize.');
+        }
+
+        if ($networkSize > 32) {
+            throw new \RuntimeException('New networkSize must be smaller than the maximum networkSize.');
+        }
+
+        [$startIp, $endIp] = $this->getIPAddressRangeAsInts();
+
+        $addressCount = $this->getNumberIPAddressesOfNetworkSize($networkSize);
+
+        $ranges = [];
+        for ($ip = $startIp; $ip <= $endIp; $ip+=$addressCount) {
+            $ranges[]=   new self(\long2ip($ip)  ,$networkSize);
+        }
+
+        return $ranges;
     }
 
     /**
@@ -813,5 +842,15 @@ class SubnetCalculator implements \JsonSerializable
         }
 
         return [$startIp, $endIp];
+    }
+
+    /**
+     * Get the number of IP addresses in the given network size
+     *
+     * @return int Number of IP addresses
+     */
+    private function getNumberIPAddressesOfNetworkSize($networkSize): int
+    {
+        return \pow(2, (32 - $networkSize));
     }
 }
