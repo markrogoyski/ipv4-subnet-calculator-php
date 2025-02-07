@@ -84,7 +84,16 @@ jobs:
       - name: Unit tests
         run: |
           mkdir -p build/logs
+          ./vendor/bin/phpunit --version
           ./vendor/bin/phpunit --configuration tests/phpunit.xml --coverage-clover build/logs/clover.xml
+
+      - name: PHP Code Sniffer
+        run: ./vendor/bin/phpcs --ignore=vendor --standard=tests/coding_standard.xml -s .
+
+      - name: PHP Stan
+        run: |
+          ./vendor/bin/phpstan --version
+          ./vendor/bin/phpstan analyze -c tests/phpstan.neon
 
       - name: Code Coverage (Coveralls)
         env:

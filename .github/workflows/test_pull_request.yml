@@ -49,6 +49,11 @@ jobs:
       - name: PHP Code Sniffer
         run: ./vendor/bin/phpcs --ignore=vendor --standard=tests/coding_standard.xml -s .
 
+      - name: PHP Stan
+        run: |
+          ./vendor/bin/phpstan --version
+          ./vendor/bin/phpstan analyze -c tests/phpstan.neon
+
   code-coverage:
     name: Code coverage
     runs-on: ubuntu-latest
