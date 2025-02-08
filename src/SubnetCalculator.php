@@ -419,7 +419,7 @@ class SubnetCalculator implements \JsonSerializable
 
         $ranges = [];
         for ($ip = $startIp; $ip <= $endIp; $ip += $addressCount) {
-            $ranges[] = new SubnetCalculator(\long2ip($ip), $networkSize);
+            $ranges[] = new SubnetCalculator($this->convertIpToDottedQuad($ip), $networkSize);
         }
 
         return $ranges;
@@ -535,7 +535,7 @@ class SubnetCalculator implements \JsonSerializable
         [$startIp, $endIp] = $this->getIPAddressRangeAsInts();
 
         for ($ip = $startIp; $ip <= $endIp; $ip++) {
-            yield \long2ip($ip);
+            yield $this->convertIpToDottedQuad($ip);
         }
     }
 
@@ -557,7 +557,7 @@ class SubnetCalculator implements \JsonSerializable
         }
 
         for ($ip = $startIp; $ip <= $endIp; $ip++) {
-            yield \long2ip($ip);
+            yield $this->convertIpToDottedQuad($ip);
         }
     }
 
@@ -860,16 +860,32 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Convert a dotted-quad IP address to an integer
      *
-     * @param string $ipAddress
+     * @param string $ipAddress Dotted-quad IP address
      *
-     * @return int
+     * @return int Integer representation of an IP address
      */
     private function convertIpToInt(string $ipAddress): int
     {
         $ipAsInt = \ip2long($ipAddress);
         if ($ipAsInt === false) {
-            throw new \RuntimeException('Invalid IP address. Could not convert dotted-quad string address into an integer: ' . $ipAddress);
+            throw new \RuntimeException('Invalid IP address. Could not convert dotted-quad string address to an integer: ' . $ipAddress);
         }
         return $ipAsInt;
+    }
+
+    /**
+     * Convert an integer IP address to a dotted-quad IP string
+     *
+     * @param int $ipAsInt Integer representation of an IP address
+     *
+     * @return string Dotted-quad IP address
+     */
+    private function convertIpToDottedQuad(int $ipAsInt): string
+    {
+        $ipDottedQuad = \long2ip($ipAsInt);
+        if ($ipDottedQuad == false) {
+            throw new \RuntimeException('Invalid IP address. Could not convert integer address to dotted-quad string: ' . $ipAsInt);
+        }
+        return $ipDottedQuad;
     }
 }
