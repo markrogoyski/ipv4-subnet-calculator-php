@@ -56,7 +56,7 @@ class SubnetCalculator implements \JsonSerializable
      * @param int                        $networkSize CIDR network size.
      * @param SubnetReportInterface|null $report
      */
-    public function __construct(string $ipAddress, int $networkSize, SubnetReportInterface $report = null)
+    public function __construct(string $ipAddress, int $networkSize, ?SubnetReportInterface $report = null)
     {
         $this->validateInputs($ipAddress, $networkSize);
 
@@ -118,7 +118,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getIPAddressInteger(): int
     {
-        return \ip2long($this->ipAddress);
+        return $this->convertIpToInt($this->ipAddress);
     }
 
     /**
@@ -268,8 +268,8 @@ class SubnetCalculator implements \JsonSerializable
     public function getMinHostInteger(): int
     {
         return $this->networkSize === 32 || $this->networkSize === 31
-            ? \ip2long(\implode('.', $this->quads))
-            : \ip2long($this->minHostCalculation(self::FORMAT_QUADS, '.'));
+            ? $this->convertIpToInt(\implode('.', $this->quads))
+            : $this->convertIpToInt($this->minHostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -342,8 +342,8 @@ class SubnetCalculator implements \JsonSerializable
     public function getMaxHostInteger(): int
     {
         return $this->networkSize === 32 || $this->networkSize === 31
-            ? \ip2long(\implode('.', $this->quads))
-            : \ip2long($this->maxHostCalculation(self::FORMAT_QUADS, '.'));
+            ? $this->convertIpToInt(\implode('.', $this->quads))
+            : $this->convertIpToInt($this->maxHostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -393,7 +393,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getSubnetMaskInteger(): int
     {
-        return \ip2long($this->subnetCalculation(self::FORMAT_QUADS, '.'));
+        return $this->convertIpToInt($this->subnetCalculation(self::FORMAT_QUADS, '.'));
     }
 
 
@@ -401,7 +401,7 @@ class SubnetCalculator implements \JsonSerializable
      * Split the network into smaller networks
      *
      * @param int $networkSize
-     * @return array
+     * @return SubnetCalculator[]
      */
     public function split(int $networkSize): array
     {
@@ -472,7 +472,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getNetworkPortionInteger(): int
     {
-        return \ip2long($this->networkCalculation(self::FORMAT_QUADS, '.'));
+        return $this->convertIpToInt($this->networkCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -522,7 +522,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getHostPortionInteger(): int
     {
-        return \ip2long($this->hostCalculation(self::FORMAT_QUADS, '.'));
+        return $this->convertIpToInt($this->hostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -847,10 +847,29 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Get the number of IP addresses in the given network size
      *
+     * @param int $networkSize
+     *
      * @return int Number of IP addresses
      */
     private function getNumberIPAddressesOfNetworkSize($networkSize): int
     {
         return \pow(2, (32 - $networkSize));
+    }
+
+
+    /**
+     * Convert a dotted-quad IP address to an integer
+     *
+     * @param string $ipAddress
+     *
+     * @return int
+     */
+    private function convertIpToInt(string $ipAddress): int
+    {
+        $ipAsInt = \ip2long($ipAddress);
+        if ($ipAsInt === false) {
+            throw new \RuntimeException('Invalid IP address. Could not convert dotted-quad string address into an integer: ' . $ipAddress);
+        }
+        return $ipAsInt;
     }
 }
