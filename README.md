@@ -166,7 +166,7 @@ $boolFalse = $sub->isIPAddressInSubnet('192.168.111.5');
 $ipv4ArpaDomain = $sub->getIPv4ArpaDomain(); // 203.112.168.192.in-addr.arpa
 ```
 
-### Split the network into smaller networks
+### Split the Network into Smaller Networks
 ```php
 $sub             = new IPv4\SubnetCalculator('192.168.112.203', 23);
 $smallerNetworks = $sub->split(25);  // Array of SubnetCalculators [192.168.112.0/25, 192.168.112.128/25, 192.168.113.0/25, 192.168.113.128/25
