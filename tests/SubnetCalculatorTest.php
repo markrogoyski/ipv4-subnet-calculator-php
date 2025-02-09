@@ -2026,4 +2026,21 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
         // Then
         $this->assertSame($splitRange, $expectedValue);
     }
+
+    /**
+     * @test convertIpToInt throws an exception if given an invalid IP address is provided as input. Logic error.
+     */
+    public function testInternalMethodConvertIpToIntImpossibleScenario()
+    {
+        // Given
+        $convertTpToInt = new \ReflectionMethod($this->sub, 'convertIpToInt');
+        $convertTpToInt->setAccessible(true);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Invalid IP address string');
+
+        // When
+        $convertTpToInt->invoke($this->sub, '300.300.300.300');
+    }
 }

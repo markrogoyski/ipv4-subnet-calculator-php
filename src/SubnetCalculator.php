@@ -868,7 +868,7 @@ class SubnetCalculator implements \JsonSerializable
     {
         $ipAsInt = \ip2long($ipAddress);
         if ($ipAsInt === false) {
-            throw new \RuntimeException('Invalid IP address. Could not convert dotted-quad string address to an integer: ' . $ipAddress);
+            throw new \RuntimeException('Invalid IP address string. Could not convert dotted-quad string address to an integer: ' . $ipAddress);
         }
         return $ipAsInt;
     }
@@ -884,7 +884,7 @@ class SubnetCalculator implements \JsonSerializable
     {
         $ipDottedQuad = \long2ip($ipAsInt);
         if ($ipDottedQuad == false) {
-            throw new \RuntimeException('Invalid IP address. Could not convert integer address to dotted-quad string: ' . $ipAsInt);
+            throw new \RuntimeException('Invalid IP address integer. Could not convert integer address to dotted-quad string: ' . $ipAsInt);
         }
         return $ipDottedQuad;
     }
