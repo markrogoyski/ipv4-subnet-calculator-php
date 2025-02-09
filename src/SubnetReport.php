@@ -26,7 +26,7 @@ class SubnetReport implements SubnetReportInterface
     public function createArrayReport(SubnetCalculator $sub): array
     {
         return [
-            'ip_address_with_network_size' => $sub->getIPAddress() . '/' . $sub->getNetworkSize(),
+            'ip_address_with_network_size' => $sub->getCidrNotation(),
             'ip_address' => [
                 'quads'   => $sub->getIPAddress(),
                 'hex'     => $sub->getIPAddressHex(),
@@ -102,7 +102,7 @@ class SubnetReport implements SubnetReportInterface
      */
     public function createPrintableReport(SubnetCalculator $sub): string
     {
-        $string  = \sprintf("%-18s %15s %8s %32s %10s\n", "{$sub->getIPAddress()}/{$sub->getNetworkSize()}", 'Quads', 'Hex', 'Binary', 'Integer');
+        $string  = \sprintf("%-18s %15s %8s %32s %10s\n", "{$sub->getCidrNotation()}", 'Quads', 'Hex', 'Binary', 'Integer');
         $string .= \sprintf("%-18s %15s %8s %32s %10s\n", '------------------', '---------------', '--------', '--------------------------------', '----------');
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'IP Address:', $sub->getIPAddress(), $sub->getIPAddressHex(), $sub->getIPAddressBinary(), $sub->getIPAddressInteger());
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Subnet Mask:', $sub->getSubnetMask(), $sub->getSubnetMaskHex(), $sub->getSubnetMaskBinary(), $sub->getSubnetMaskInteger());
