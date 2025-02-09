@@ -155,30 +155,6 @@ foreach ($sub->getAllHostIPAddresses() as $hostAddress) {
 }
 ```
 
-### Split the network into smaller networks
-```php
-    $sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
-    $smallerNetworks = $sub->splitNetwork(networkSize: 25);
-/*
-array:2 [▼
-  0 => IPv4\SubnetCalculator { ▼
-    -ipAddress: "192.168.112.0"
-    -networkSize: 24
-    -quads: array:4 [▶]
-    -subnetMask: 1099511627520
-    -report: IPv4\SubnetReport {#3436}
-  }
-  1 => IPv4\SubnetCalculator {#3438 ▼
-    -ipAddress: "192.168.113.0"
-    -networkSize: 24
-    -quads: array:4 [▶]
-    -subnetMask: 1099511627520
-    -report: IPv4\SubnetReport {#3439}
-  }
-]
-*/
-```
-
 ### Is IP Address in Subnet
 ```php
 $boolTrue  = $sub->isIPAddressInSubnet('192.168.112.5');
@@ -188,6 +164,12 @@ $boolFalse = $sub->isIPAddressInSubnet('192.168.111.5');
 ### Reverse DNS Lookup (ARPA Domain)
 ```php
 $ipv4ArpaDomain = $sub->getIPv4ArpaDomain(); // 203.112.168.192.in-addr.arpa
+```
+
+### Split the network into smaller networks
+```php
+$sub             = new IPv4\SubnetCalculator('192.168.112.203', 23);
+$smallerNetworks = $sub->split(25);  // Array of SubnetCalculators [192.168.112.0/25, 192.168.112.128/25, 192.168.113.0/25, 192.168.113.128/25
 ```
 
 ### Reports
