@@ -2027,23 +2027,24 @@ class SubnetCalculatorTest extends \PHPUnit\Framework\TestCase
      * @param string $inputString
      * @param int    $networkSize
      * @param int    $newNetworkSize
-     * @param array  $expectedValue
+     * @param array  $expectedSubnets
      */
-    public function testValidSplitIPV4(string $inputString, int $networkSize, int $newNetworkSize, array $expectedValue)
+    public function testValidSplitIPV4(string $inputString, int $networkSize, int $newNetworkSize, array $expectedSubnets)
     {
         // Given
         $subnet = new IPv4\SubnetCalculator($inputString, $networkSize);
 
         // When
-        $splitRange = array_map(
-            function ($range) {
-                return  $range->getIPAddress() . '/' . $range->getNetworkSize();
-            },
-            $subnet->split($newNetworkSize)
-        );
+        $splitSubnets = $subnet->split($newNetworkSize);
 
         // Then
-        $this->assertSame($splitRange, $expectedValue);
+        $splitSubnetCidrNotations = \array_map(
+            function ($newSplitSubnet) {
+                return  $newSplitSubnet->getCidrNotation();
+            },
+            $splitSubnets
+        );
+        $this->assertSame($expectedSubnets, $splitSubnetCidrNotations);
     }
 
     /**
