@@ -132,6 +132,17 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Get the CIDR notation of the subnet: IP Address/Network size.
+     * Example: 192.168.0.15/24
+     *
+     * @return string
+     */
+    public function getCidrNotation(): string
+    {
+        return $this->ipAddress . '/' . $this->networkSize;
+    }
+
+    /**
      * Get the number of IP addresses in the network
      *
      * @return int Number of IP addresses

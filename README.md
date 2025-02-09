@@ -84,7 +84,8 @@ $sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
 
 ### Various Network Information
 ```php
-$numbeIpAddresses     = $sub->getNumberIPAddresses();      // 512
+$cidrNotation         = $sub->getCidrNotation();           // 192.168.112.203/23
+$numberIpAddresses    = $sub->getNumberIPAddresses();      // 512
 $numberHosts          = $sub->getNumberAddressableHosts(); // 510
 $addressRange         = $sub->getIPAddressRange();         // [192.168.112.0, 192.168.113.255]
 $addressableHostRange = $sub->getAddressableHostRange();   // [192.168.112.1, 192.168.113.254]
