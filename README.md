@@ -79,9 +79,37 @@ Usage
 -----
 
 ### Create New SubnetCalculator
+
+#### Direct Constructor
 ```php
 // For network 192.168.112.203/23
 $sub = new IPv4\SubnetCalculator('192.168.112.203', 23);
+```
+
+#### Using Factory Methods
+
+##### From CIDR Notation
+```php
+// Create from CIDR notation string
+$sub = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
+```
+
+##### From Subnet Mask
+```php
+// Create from IP address and subnet mask
+$sub = IPv4\SubnetCalculatorFactory::fromMask('192.168.112.0', '255.255.254.0');
+```
+
+##### From IP Range
+```php
+// Create from IP address range (network and broadcast addresses)
+$sub = IPv4\SubnetCalculatorFactory::fromRange('192.168.112.0', '192.168.113.255');
+```
+
+##### From Required Host Count
+```php
+// Create the smallest subnet that can accommodate the required number of hosts
+$sub = IPv4\SubnetCalculatorFactory::fromHostCount('192.168.112.0', 100);  // Returns a /25 network with 126 usable hosts
 ```
 
 ### Various Network Information
