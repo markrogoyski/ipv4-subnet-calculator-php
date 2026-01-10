@@ -216,8 +216,11 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHost(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return $this->ipAddress;
+        }
+        if ($this->networkSize === 31) {
+            return $this->getNetworkPortion();
         }
         return $this->minHostCalculation(self::FORMAT_QUADS, '.');
     }
@@ -229,8 +232,11 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHostQuads(): array
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return $this->quads;
+        }
+        if ($this->networkSize === 31) {
+            return $this->getNetworkPortionQuads();
         }
         return \explode('.', $this->minHostCalculation(self::FORMAT_QUADS, '.'));
     }
@@ -242,13 +248,16 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHostHex(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return \implode('', \array_map(
                 function ($quad) {
                     return \sprintf(self::FORMAT_HEX, $quad);
                 },
                 $this->quads
             ));
+        }
+        if ($this->networkSize === 31) {
+            return $this->getNetworkPortionHex();
         }
         return $this->minHostCalculation(self::FORMAT_HEX);
     }
@@ -260,13 +269,16 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHostBinary(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return \implode('', \array_map(
                 function ($quad) {
                     return \sprintf(self::FORMAT_BINARY, $quad);
                 },
                 $this->quads
             ));
+        }
+        if ($this->networkSize === 31) {
+            return $this->getNetworkPortionBinary();
         }
         return $this->minHostCalculation(self::FORMAT_BINARY);
     }
@@ -278,9 +290,13 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMinHostInteger(): int
     {
-        return $this->networkSize === 32 || $this->networkSize === 31
-            ? $this->convertIpToInt(\implode('.', $this->quads))
-            : $this->convertIpToInt($this->minHostCalculation(self::FORMAT_QUADS, '.'));
+        if ($this->networkSize === 32) {
+            return $this->convertIpToInt(\implode('.', $this->quads));
+        }
+        if ($this->networkSize === 31) {
+            return $this->getNetworkPortionInteger();
+        }
+        return $this->convertIpToInt($this->minHostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
@@ -290,8 +306,11 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMaxHost(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return $this->ipAddress;
+        }
+        if ($this->networkSize === 31) {
+            return $this->getBroadcastAddress();
         }
         return $this->maxHostCalculation(self::FORMAT_QUADS, '.');
     }
@@ -299,12 +318,15 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Get maximum host IP address as array of quads: [xxx, xxx, xxx, xxx]
      *
-     * @return string[] min host portion as dotted quads
+     * @return string[] max host portion as dotted quads
      */
     public function getMaxHostQuads(): array
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return $this->quads;
+        }
+        if ($this->networkSize === 31) {
+            return \explode('.', $this->getBroadcastAddress());
         }
         return \explode('.', $this->maxHostCalculation(self::FORMAT_QUADS, '.'));
     }
@@ -316,12 +338,20 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMaxHostHex(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return \implode('', \array_map(
                 function ($quad) {
                     return \sprintf(self::FORMAT_HEX, $quad);
                 },
                 $this->quads
+            ));
+        }
+        if ($this->networkSize === 31) {
+            return \implode('', \array_map(
+                function ($quad) {
+                    return \sprintf(self::FORMAT_HEX, $quad);
+                },
+                \explode('.', $this->getBroadcastAddress())
             ));
         }
         return $this->maxHostCalculation(self::FORMAT_HEX);
@@ -330,16 +360,24 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Get maximum host IP address as binary
      *
-     * @return string man host portion as binary
+     * @return string max host portion as binary
      */
     public function getMaxHostBinary(): string
     {
-        if ($this->networkSize === 32 || $this->networkSize === 31) {
+        if ($this->networkSize === 32) {
             return \implode('', \array_map(
                 function ($quad) {
                     return \sprintf(self::FORMAT_BINARY, $quad);
                 },
                 $this->quads
+            ));
+        }
+        if ($this->networkSize === 31) {
+            return \implode('', \array_map(
+                function ($quad) {
+                    return \sprintf(self::FORMAT_BINARY, $quad);
+                },
+                \explode('.', $this->getBroadcastAddress())
             ));
         }
         return $this->maxHostCalculation(self::FORMAT_BINARY);
@@ -352,9 +390,13 @@ class SubnetCalculator implements \JsonSerializable
      */
     public function getMaxHostInteger(): int
     {
-        return $this->networkSize === 32 || $this->networkSize === 31
-            ? $this->convertIpToInt(\implode('.', $this->quads))
-            : $this->convertIpToInt($this->maxHostCalculation(self::FORMAT_QUADS, '.'));
+        if ($this->networkSize === 32) {
+            return $this->convertIpToInt(\implode('.', $this->quads));
+        }
+        if ($this->networkSize === 31) {
+            return $this->convertIpToInt($this->getBroadcastAddress());
+        }
+        return $this->convertIpToInt($this->maxHostCalculation(self::FORMAT_QUADS, '.'));
     }
 
     /**
