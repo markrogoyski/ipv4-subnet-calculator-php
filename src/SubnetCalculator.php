@@ -26,6 +26,13 @@ namespace IPv4;
  *  - JSON
  *  - String
  *  - Printed to STDOUT
+ *
+ * Special handling for /31 and /32 networks:
+ *  - /32: Single host network. Min and max host are the same as the IP address.
+ *  - /31: Point-to-point link per RFC 3021. Both addresses are usable hosts (no reserved
+ *         network or broadcast addresses). Min host is the lower IP, max host is the higher IP.
+ *
+ * @link https://datatracker.ietf.org/doc/html/rfc3021 RFC 3021 - Using 31-Bit Prefixes on IPv4 Point-to-Point Links
  */
 class SubnetCalculator implements \JsonSerializable
 {
@@ -155,6 +162,11 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Get the number of addressable hosts in the network
      *
+     * For most networks, this is the total IP count minus 2 (network and broadcast addresses).
+     * Special cases per RFC 3021:
+     *  - /32: Returns 1 (single host network)
+     *  - /31: Returns 2 (point-to-point link where both addresses are usable)
+     *
      * @return int Number of IP addresses that are addressable
      */
     public function getNumberAddressableHosts(): int
@@ -211,6 +223,11 @@ class SubnetCalculator implements \JsonSerializable
 
     /**
      * Get minimum host IP address as dotted quads: xxx.xxx.xxx.xxx
+     *
+     * For most networks, this is the network address + 1.
+     * Special cases:
+     *  - /32: Returns the IP address itself (single host)
+     *  - /31: Returns the network portion (lower IP of the point-to-point pair per RFC 3021)
      *
      * @return string min host as dotted quads
      */
@@ -301,6 +318,11 @@ class SubnetCalculator implements \JsonSerializable
 
     /**
      * Get maximum host IP address as dotted quads: xxx.xxx.xxx.xxx
+     *
+     * For most networks, this is the broadcast address - 1.
+     * Special cases:
+     *  - /32: Returns the IP address itself (single host)
+     *  - /31: Returns the broadcast address (higher IP of the point-to-point pair per RFC 3021)
      *
      * @return string max host as dotted quads.
      */
