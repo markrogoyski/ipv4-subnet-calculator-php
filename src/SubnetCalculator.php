@@ -652,6 +652,59 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /**
+     * Check if this subnet overlaps with another subnet.
+     *
+     * Two subnets overlap if they share any IP addresses.
+     * This is useful for network planning and conflict prevention,
+     * including firewall rule validation and routing table conflict detection.
+     *
+     * @param SubnetCalculator $other The other subnet to compare against
+     *
+     * @return bool True if the subnets share any IP addresses
+     */
+    public function overlaps(SubnetCalculator $other): bool
+    {
+        [$thisStart, $thisEnd] = $this->getIPAddressRangeAsInts();
+        [$otherStart, $otherEnd] = $other->getIPAddressRangeAsInts();
+
+        // Two ranges overlap if one starts before the other ends and vice versa
+        return $thisStart <= $otherEnd && $otherStart <= $thisEnd;
+    }
+
+    /**
+     * Check if this subnet fully contains another subnet.
+     *
+     * A subnet contains another if all IP addresses in the contained subnet
+     * are also within this subnet's range.
+     *
+     * @param SubnetCalculator $other The subnet to check for containment
+     *
+     * @return bool True if this subnet fully contains the other subnet
+     */
+    public function contains(SubnetCalculator $other): bool
+    {
+        [$thisStart, $thisEnd] = $this->getIPAddressRangeAsInts();
+        [$otherStart, $otherEnd] = $other->getIPAddressRangeAsInts();
+
+        // This subnet contains other if other's entire range is within this range
+        return $thisStart <= $otherStart && $thisEnd >= $otherEnd;
+    }
+
+    /**
+     * Check if this subnet is fully contained within another subnet.
+     *
+     * This is the inverse of contains(): $a->isContainedIn($b) === $b->contains($a)
+     *
+     * @param SubnetCalculator $other The subnet to check if this subnet is within
+     *
+     * @return bool True if this subnet is fully contained within the other subnet
+     */
+    public function isContainedIn(SubnetCalculator $other): bool
+    {
+        return $other->contains($this);
+    }
+
+    /**
      * Get the IPv4 Arpa Domain
      *
      * Reverse DNS lookups for IPv4 addresses use the special domain in-addr.arpa.
