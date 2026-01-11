@@ -28,13 +28,13 @@ class SubnetCalculatorFactory
     public static function fromCidr(string $cidr): SubnetCalculator
     {
         // Validate CIDR format
-        if (strpos($cidr, '/') === false) {
+        if (\strpos($cidr, '/') === false) {
             throw new \InvalidArgumentException("Invalid CIDR notation: missing '/' prefix delimiter in '{$cidr}'");
         }
 
-        $parts = explode('/', $cidr);
+        $parts = \explode('/', $cidr);
 
-        if (count($parts) !== 2) {
+        if (\count($parts) !== 2) {
             throw new \InvalidArgumentException("Invalid CIDR notation: multiple '/' found in '{$cidr}'");
         }
 
@@ -44,7 +44,7 @@ class SubnetCalculatorFactory
             throw new \InvalidArgumentException("Invalid CIDR notation: empty prefix in '{$cidr}'");
         }
 
-        if (!is_numeric($prefix)) {
+        if (!\is_numeric($prefix)) {
             throw new \InvalidArgumentException("Invalid CIDR notation: non-numeric prefix '{$prefix}' in '{$cidr}'");
         }
 
@@ -108,7 +108,7 @@ class SubnetCalculatorFactory
         }
 
         // Calculate network size from range size
-        $networkSize = 32 - (int) log($rangeSize, 2);
+        $networkSize = 32 - (int) \log($rangeSize, 2);
 
         // Validate that start IP is properly aligned for this network size
         // A properly aligned network address has all host bits set to 0
@@ -174,15 +174,15 @@ class SubnetCalculatorFactory
     private static function maskToNetworkSize(string $subnetMask): int
     {
         // Validate format
-        $quads = explode('.', $subnetMask);
-        if (count($quads) !== 4) {
+        $quads = \explode('.', $subnetMask);
+        if (\count($quads) !== 4) {
             throw new \InvalidArgumentException("Invalid subnet mask format: '{$subnetMask}'");
         }
 
         // Validate each octet and convert to integer
         $maskInt = 0;
         foreach ($quads as $i => $quad) {
-            if (!is_numeric($quad)) {
+            if (!\is_numeric($quad)) {
                 throw new \InvalidArgumentException("Invalid subnet mask: non-numeric octet in '{$subnetMask}'");
             }
             $octet = (int) $quad;
@@ -233,11 +233,11 @@ class SubnetCalculatorFactory
      */
     private static function validateAndConvertIp(string $ipAddress): int
     {
-        if (!filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        if (!\filter_var($ipAddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             throw new \UnexpectedValueException("Invalid IP address: '{$ipAddress}'");
         }
 
-        $long = ip2long($ipAddress);
+        $long = \ip2long($ipAddress);
         if ($long === false) {
             throw new \UnexpectedValueException("Invalid IP address: '{$ipAddress}'");
         }
@@ -295,7 +295,7 @@ class SubnetCalculatorFactory
         // prefix <= 32 - ceil(log2(hostCount + 2))
 
         $totalAddressesNeeded = $hostCount + 2;
-        $bitsNeeded = (int) ceil(log($totalAddressesNeeded, 2));
+        $bitsNeeded = (int) \ceil(\log($totalAddressesNeeded, 2));
         $networkSize = 32 - $bitsNeeded;
 
         // Ensure network size is valid
