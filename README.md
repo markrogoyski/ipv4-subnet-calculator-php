@@ -12,10 +12,20 @@ Features
 --------
 Given an IP address and CIDR network size, it calculates the network information and provides all-in-one aggregated reports.
 
+Includes flexible factory methods for creating subnet calculators from various input formats (CIDR notation, subnet mask, IP range, or required host count).
+
+### Use Cases
+ * Network planning and IP address allocation (IPAM)
+ * Firewall and routing configuration validation
+ * Network overlap and conflict detection
+ * DHCP scope planning
+ * DNS reverse zone configuration
+ * Network automation and infrastructure-as-code
+
 ### Calculations
  * IP address
  * Network size
- * Subnet mask 
+ * Subnet mask
  * Network portion
  * Host portion
  * Number of IP addresses in the network
@@ -25,6 +35,10 @@ Given an IP address and CIDR network size, it calculates the network information
  * Min and max host
  * All IP addresses
  * Is an IP address in the subnet
+ * Network overlap and conflict detection
+   * Check if subnets overlap
+   * Check if one subnet contains another
+   * Check if subnet is contained within another
  * IPv4 ARPA domain
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
@@ -189,6 +203,34 @@ foreach ($sub->getAllHostIPAddresses() as $hostAddress) {
 ```php
 $boolTrue  = $sub->isIPAddressInSubnet('192.168.112.5');
 $boolFalse = $sub->isIPAddressInSubnet('192.168.111.5');
+```
+
+### Network Overlap and Conflict Detection
+
+Useful for network planning, firewall rule validation, and routing table conflict detection.
+
+#### Check if Two Subnets Overlap
+```php
+$subnet1 = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet2 = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.128/25');
+
+$overlaps = $subnet1->overlaps($subnet2);  // true - they share IP addresses
+```
+
+#### Check if One Subnet Contains Another
+```php
+$large = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
+$small = IPv4\SubnetCalculatorFactory::fromCidr('10.1.2.0/24');
+
+$contains = $large->contains($small);  // true - 10.0.0.0/8 contains 10.1.2.0/24
+```
+
+#### Check if Subnet is Contained Within Another
+```php
+$small = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
+$large = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/12');
+
+$isContained = $small->isContainedIn($large);  // true - 172.16.0.0/16 is within 172.16.0.0/12
 ```
 
 ### Reverse DNS Lookup (ARPA Domain)
