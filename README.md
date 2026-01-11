@@ -39,6 +39,11 @@ Includes flexible factory methods for creating subnet calculators from various i
    * Check if subnets overlap
    * Check if one subnet contains another
    * Check if subnet is contained within another
+ * IP address range type detection
+   * Private, public, loopback, link-local, multicast
+   * Carrier-grade NAT, documentation, benchmarking
+   * Reserved, limited broadcast, "this" network
+   * RFC-compliant classification
  * IPv4 ARPA domain
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
@@ -232,6 +237,79 @@ $large = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/12');
 
 $isContained = $small->isContainedIn($large);  // true - 172.16.0.0/16 is within 172.16.0.0/12
 ```
+
+### IP Address Range Type Detection
+
+Useful for security validation, routing decisions, and network classification. All methods comply with IANA IPv4 Special-Purpose Address Registry and relevant RFCs.
+
+#### Check if IP is Private (RFC 1918)
+```php
+$private = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.100/24');
+$public  = IPv4\SubnetCalculatorFactory::fromCidr('8.8.8.8/32');
+
+$private->isPrivate();  // true - 192.168.0.0/16 is RFC 1918 private
+$public->isPrivate();   // false - 8.8.8.8 is public
+```
+
+#### Check if IP is Publicly Routable
+```php
+$ip = IPv4\SubnetCalculatorFactory::fromCidr('1.1.1.1/32');
+
+$ip->isPublic();  // true - not in any special-purpose range
+```
+
+#### Check Special-Purpose Ranges
+```php
+$ip = IPv4\SubnetCalculatorFactory::fromCidr('127.0.0.1/32');
+
+$ip->isLoopback();         // true - 127.0.0.0/8
+$ip->isLinkLocal();        // false
+$ip->isMulticast();        // false
+$ip->isCarrierGradeNat();  // false - CGN is 100.64.0.0/10
+$ip->isDocumentation();    // false - TEST-NET ranges
+$ip->isBenchmarking();     // false - 198.18.0.0/15
+$ip->isReserved();         // false - 240.0.0.0/4
+$ip->isLimitedBroadcast(); // false - only 255.255.255.255
+$ip->isThisNetwork();      // false - 0.0.0.0/8
+```
+
+#### Get Address Type Classification
+```php
+$classifications = [
+    '192.168.1.1'    => 'private',
+    '8.8.8.8'        => 'public',
+    '127.0.0.1'      => 'loopback',
+    '169.254.1.1'    => 'link-local',
+    '224.0.0.1'      => 'multicast',
+    '100.64.0.1'     => 'carrier-grade-nat',
+    '192.0.2.1'      => 'documentation',
+    '198.18.0.1'     => 'benchmarking',
+    '240.0.0.1'      => 'reserved',
+    '255.255.255.255'=> 'limited-broadcast',
+    '0.0.0.1'        => 'this-network',
+];
+
+foreach ($classifications as $ip => $expectedType) {
+    $subnet = IPv4\SubnetCalculatorFactory::fromCidr("{$ip}/32");
+    echo $subnet->getAddressType();  // Returns the expected type string
+}
+```
+
+#### Supported Range Types
+
+| Method | Range | RFC | Description |
+|--------|-------|-----|-------------|
+| `isPrivate()` | 10.0.0.0/8<br>172.16.0.0/12<br>192.168.0.0/16 | RFC 1918 | Private network addresses |
+| `isLoopback()` | 127.0.0.0/8 | RFC 1122 | Loopback addresses |
+| `isLinkLocal()` | 169.254.0.0/16 | RFC 3927 | Link-local/APIPA addresses |
+| `isMulticast()` | 224.0.0.0/4 | RFC 5771 | Multicast addresses |
+| `isCarrierGradeNat()` | 100.64.0.0/10 | RFC 6598 | Shared Address Space (CGN) |
+| `isDocumentation()` | 192.0.2.0/24<br>198.51.100.0/24<br>203.0.113.0/24 | RFC 5737 | TEST-NET-1/2/3 documentation |
+| `isBenchmarking()` | 198.18.0.0/15 | RFC 2544 | Benchmarking addresses |
+| `isReserved()` | 240.0.0.0/4 | RFC 1112 | Reserved for future use |
+| `isLimitedBroadcast()` | 255.255.255.255/32 | RFC 919 | Limited broadcast address |
+| `isThisNetwork()` | 0.0.0.0/8 | RFC 1122 | "This" network addresses |
+| `isPublic()` | All others | - | Publicly routable addresses |
 
 ### Reverse DNS Lookup (ARPA Domain)
 ```php
