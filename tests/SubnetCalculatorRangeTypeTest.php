@@ -643,26 +643,39 @@ class SubnetCalculatorRangeTypeTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test Special ranges are not considered public
+     * @test         Special ranges are not considered public
+     * @dataProvider dataProviderForSpecialRangesNotPublic
+     * @param        string $cidr        Subnet in CIDR notation
+     * @param        string $description Description of the special range type
      */
-    public function testSpecialRangesAreNotPublic(): void
+    public function testSpecialRangesAreNotPublic(string $cidr, string $description): void
     {
-        $specialCidrs = [
-            '127.0.0.1/32',        // Loopback
-            '169.254.1.1/32',      // Link-local
-            '224.0.0.1/32',        // Multicast
-            '100.64.0.1/32',       // CGN
-            '192.0.2.1/32',        // Documentation
-            '198.18.0.1/32',       // Benchmarking
-            '240.0.0.1/32',        // Reserved
-            '255.255.255.255/32',  // Limited broadcast
-            '0.0.0.1/32',          // This network
-        ];
+        // Given
+        $subnet = SubnetCalculatorFactory::fromCidr($cidr);
 
-        foreach ($specialCidrs as $cidr) {
-            $subnet = SubnetCalculatorFactory::fromCidr($cidr);
-            $this->assertFalse($subnet->isPublic(), "Expected {$cidr} to NOT be public");
-        }
+        // When
+        $result = $subnet->isPublic();
+
+        // Then
+        $this->assertFalse($result, "Expected {$cidr} ({$description}) to NOT be public");
+    }
+
+    /**
+     * @return array[] [cidr, description]
+     */
+    public function dataProviderForSpecialRangesNotPublic(): array
+    {
+        return [
+            ['127.0.0.1/32', 'Loopback'],
+            ['169.254.1.1/32', 'Link-local'],
+            ['224.0.0.1/32', 'Multicast'],
+            ['100.64.0.1/32', 'CGN'],
+            ['192.0.2.1/32', 'Documentation'],
+            ['198.18.0.1/32', 'Benchmarking'],
+            ['240.0.0.1/32', 'Reserved'],
+            ['255.255.255.255/32', 'Limited broadcast'],
+            ['0.0.0.1/32', 'This network'],
+        ];
     }
 
     /**

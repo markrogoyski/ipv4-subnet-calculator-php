@@ -230,34 +230,40 @@ class SubnetCalculatorWildcardMaskTest extends \PHPUnit\Framework\TestCase
      * *********************** */
 
     /**
-     * @test Wildcard mask is the bitwise inverse of subnet mask
+     * @test         Wildcard mask is the bitwise inverse of subnet mask
+     * @dataProvider dataProviderForWildcardMaskInverse
+     * @param        string $cidr Subnet in CIDR notation
      */
-    public function testWildcardMaskIsInverseOfSubnetMask(): void
+    public function testWildcardMaskIsInverseOfSubnetMask(string $cidr): void
     {
-        $testCases = [
-            '10.0.0.0/8',
-            '172.16.0.0/16',
-            '192.168.1.0/24',
-            '192.168.1.0/30',
-            '10.0.0.0/31',
-            '192.168.1.1/32',
+        // Given
+        $subnet = SubnetCalculatorFactory::fromCidr($cidr);
+
+        // When
+        $subnetMaskInt = $subnet->getSubnetMaskInteger();
+        $wildcardMaskInt = $subnet->getWildcardMaskInteger();
+
+        // Then - Subnet mask OR wildcard mask should equal all 1s (0xFFFFFFFF)
+        $combined = sprintf('%u', $subnetMaskInt | $wildcardMaskInt);
+        $this->assertSame('4294967295', $combined, "For {$cidr}, subnet mask OR wildcard mask should be 0xFFFFFFFF");
+
+        // And - Subnet mask AND wildcard mask should equal 0
+        $this->assertSame(0, $subnetMaskInt & $wildcardMaskInt, "For {$cidr}, subnet mask AND wildcard mask should be 0");
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public function dataProviderForWildcardMaskInverse(): array
+    {
+        return [
+            ['10.0.0.0/8'],
+            ['172.16.0.0/16'],
+            ['192.168.1.0/24'],
+            ['192.168.1.0/30'],
+            ['10.0.0.0/31'],
+            ['192.168.1.1/32'],
         ];
-
-        foreach ($testCases as $cidr) {
-            $subnet = SubnetCalculatorFactory::fromCidr($cidr);
-
-            // Subnet mask OR wildcard mask should equal all 1s (0xFFFFFFFF)
-            $subnetMaskInt = $subnet->getSubnetMaskInteger();
-            $wildcardMaskInt = $subnet->getWildcardMaskInteger();
-
-            // Use sprintf to handle unsigned integer comparison
-            $combined = sprintf('%u', $subnetMaskInt | $wildcardMaskInt);
-
-            $this->assertSame('4294967295', $combined, "For {$cidr}, subnet mask OR wildcard mask should be 0xFFFFFFFF");
-
-            // Subnet mask AND wildcard mask should equal 0
-            $this->assertSame(0, $subnetMaskInt & $wildcardMaskInt, "For {$cidr}, subnet mask AND wildcard mask should be 0");
-        }
     }
 
     /**
@@ -282,24 +288,34 @@ class SubnetCalculatorWildcardMaskTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @test Wildcard mask quads can be joined to form dotted notation
+     * @test         Wildcard mask quads can be joined to form dotted notation
+     * @dataProvider dataProviderForQuadsJoinToDottedNotation
+     * @param        string $cidr Subnet in CIDR notation
      */
-    public function testQuadsJoinToFormDottedNotation(): void
+    public function testQuadsJoinToFormDottedNotation(string $cidr): void
     {
-        $testCases = [
-            '10.0.0.0/8',
-            '172.16.0.0/16',
-            '192.168.1.0/24',
-            '192.168.1.0/30',
+        // Given
+        $subnet = SubnetCalculatorFactory::fromCidr($cidr);
+
+        // When
+        $quads = $subnet->getWildcardMaskQuads();
+        $dottedFromQuads = implode('.', $quads);
+
+        // Then
+        $this->assertSame($subnet->getWildcardMask(), $dottedFromQuads, "Quads for {$cidr} should join to form dotted notation");
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public function dataProviderForQuadsJoinToDottedNotation(): array
+    {
+        return [
+            ['10.0.0.0/8'],
+            ['172.16.0.0/16'],
+            ['192.168.1.0/24'],
+            ['192.168.1.0/30'],
         ];
-
-        foreach ($testCases as $cidr) {
-            $subnet = SubnetCalculatorFactory::fromCidr($cidr);
-            $quads = $subnet->getWildcardMaskQuads();
-            $dottedFromQuads = implode('.', $quads);
-
-            $this->assertSame($subnet->getWildcardMask(), $dottedFromQuads, "Quads for {$cidr} should join to form dotted notation");
-        }
     }
 
     /* *********************** *

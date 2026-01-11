@@ -21,36 +21,69 @@ class SubnetCalculatorUtilityTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @test         isIPAddressInSubnet
-     * @dataProvider dataProviderForGetAllIps
-     * @param        string   $ip_address
-     * @param        int      $network_size
-     * @param        string[] $ip_addresses
+     * @dataProvider dataProviderForIsIPAddressInSubnet
+     * @param        string $subnet_ip       IP address defining the subnet
+     * @param        int    $network_size    CIDR network size
+     * @param        string $ip_to_check     IP address to check if it's in the subnet
      */
-    public function testIsIPAddressInSubnet(string $ip_address, int $network_size, array $ip_addresses): void
+    public function testIsIPAddressInSubnet(string $subnet_ip, int $network_size, string $ip_to_check): void
     {
         // Given
-        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
+        $sub = new IPv4\SubnetCalculator($subnet_ip, $network_size);
 
-        foreach ($ip_addresses as $ip_address) {
-            // When
-            $isIPInSubnet = $sub->isIPAddressInSubnet($ip_address);
+        // When
+        $isIPInSubnet = $sub->isIPAddressInSubnet($ip_to_check);
 
-            // Then
-            $this->assertTrue($isIPInSubnet);
-        }
+        // Then
+        $this->assertTrue($isIPInSubnet, "Expected {$ip_to_check} to be in subnet {$subnet_ip}/{$network_size}");
     }
 
     /**
-     * @return array[] [ip_address, network_size, [ip_addresses]]
+     * @return array[] [subnet_ip, network_size, ip_to_check]
      */
-    public function dataProviderForGetAllIps(): array
+    public function dataProviderForIsIPAddressInSubnet(): array
     {
         return [
-            ['192.168.112.203', 28, ['192.168.112.192', '192.168.112.193', '192.168.112.194', '192.168.112.195', '192.168.112.196', '192.168.112.197', '192.168.112.198', '192.168.112.199', '192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206', '192.168.112.207']],
-            ['192.168.112.203', 29, ['192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203', '192.168.112.204', '192.168.112.205', '192.168.112.206', '192.168.112.207']],
-            ['192.168.112.203', 30, ['192.168.112.200', '192.168.112.201', '192.168.112.202', '192.168.112.203']],
-            ['192.168.112.203', 31, ['192.168.112.202', '192.168.112.203']],
-            ['192.168.112.203', 32, ['192.168.112.203']],
+            // /28 network - 192.168.112.192/28
+            ['192.168.112.203', 28, '192.168.112.192'],
+            ['192.168.112.203', 28, '192.168.112.193'],
+            ['192.168.112.203', 28, '192.168.112.194'],
+            ['192.168.112.203', 28, '192.168.112.195'],
+            ['192.168.112.203', 28, '192.168.112.196'],
+            ['192.168.112.203', 28, '192.168.112.197'],
+            ['192.168.112.203', 28, '192.168.112.198'],
+            ['192.168.112.203', 28, '192.168.112.199'],
+            ['192.168.112.203', 28, '192.168.112.200'],
+            ['192.168.112.203', 28, '192.168.112.201'],
+            ['192.168.112.203', 28, '192.168.112.202'],
+            ['192.168.112.203', 28, '192.168.112.203'],
+            ['192.168.112.203', 28, '192.168.112.204'],
+            ['192.168.112.203', 28, '192.168.112.205'],
+            ['192.168.112.203', 28, '192.168.112.206'],
+            ['192.168.112.203', 28, '192.168.112.207'],
+
+            // /29 network - 192.168.112.200/29
+            ['192.168.112.203', 29, '192.168.112.200'],
+            ['192.168.112.203', 29, '192.168.112.201'],
+            ['192.168.112.203', 29, '192.168.112.202'],
+            ['192.168.112.203', 29, '192.168.112.203'],
+            ['192.168.112.203', 29, '192.168.112.204'],
+            ['192.168.112.203', 29, '192.168.112.205'],
+            ['192.168.112.203', 29, '192.168.112.206'],
+            ['192.168.112.203', 29, '192.168.112.207'],
+
+            // /30 network - 192.168.112.200/30
+            ['192.168.112.203', 30, '192.168.112.200'],
+            ['192.168.112.203', 30, '192.168.112.201'],
+            ['192.168.112.203', 30, '192.168.112.202'],
+            ['192.168.112.203', 30, '192.168.112.203'],
+
+            // /31 network - 192.168.112.202/31
+            ['192.168.112.203', 31, '192.168.112.202'],
+            ['192.168.112.203', 31, '192.168.112.203'],
+
+            // /32 network - 192.168.112.203/32
+            ['192.168.112.203', 32, '192.168.112.203'],
         ];
     }
 
