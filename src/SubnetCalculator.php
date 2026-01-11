@@ -704,6 +704,297 @@ class SubnetCalculator implements \JsonSerializable
         return $other->contains($this);
     }
 
+    /* ******************************************* *
+     * PRIVATE/RESERVED IP RANGE DETECTION METHODS
+     * ******************************************* */
+
+    /**
+     * Check if the IP address is in a private range (RFC 1918).
+     *
+     * Private address ranges:
+     *   - 10.0.0.0/8     (10.0.0.0 - 10.255.255.255)
+     *   - 172.16.0.0/12  (172.16.0.0 - 172.31.255.255)
+     *   - 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc1918 RFC 1918 - Address Allocation for Private Internets
+     *
+     * @return bool True if the IP address is in a private range
+     */
+    public function isPrivate(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 10.0.0.0/8: 10.0.0.0 - 10.255.255.255
+        if ($this->isInRange($ip, 0x0A000000, 0x0AFFFFFF)) {
+            return true;
+        }
+
+        // 172.16.0.0/12: 172.16.0.0 - 172.31.255.255
+        if ($this->isInRange($ip, 0xAC100000, 0xAC1FFFFF)) {
+            return true;
+        }
+
+        // 192.168.0.0/16: 192.168.0.0 - 192.168.255.255
+        if ($this->isInRange($ip, 0xC0A80000, 0xC0A8FFFF)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the IP address is publicly routable.
+     *
+     * An IP is public if it is not in any of the special-purpose address ranges:
+     * private, loopback, link-local, multicast, CGN, documentation, benchmarking,
+     * reserved, limited broadcast, or "this" network.
+     *
+     * @return bool True if the IP address is publicly routable
+     */
+    public function isPublic(): bool
+    {
+        return !$this->isPrivate()
+            && !$this->isLoopback()
+            && !$this->isLinkLocal()
+            && !$this->isMulticast()
+            && !$this->isCarrierGradeNat()
+            && !$this->isDocumentation()
+            && !$this->isBenchmarking()
+            && !$this->isReserved()
+            && !$this->isThisNetwork();
+    }
+
+    /**
+     * Check if the IP address is in the loopback range (127.0.0.0/8).
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc1122 RFC 1122 - Requirements for Internet Hosts
+     *
+     * @return bool True if the IP address is in the loopback range
+     */
+    public function isLoopback(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 127.0.0.0/8: 127.0.0.0 - 127.255.255.255
+        return $this->isInRange($ip, 0x7F000000, 0x7FFFFFFF);
+    }
+
+    /**
+     * Check if the IP address is link-local (169.254.0.0/16).
+     *
+     * Link-local addresses are used for automatic private IP addressing (APIPA)
+     * when DHCP is not available.
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc3927 RFC 3927 - Dynamic Configuration of IPv4 Link-Local Addresses
+     *
+     * @return bool True if the IP address is link-local
+     */
+    public function isLinkLocal(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 169.254.0.0/16: 169.254.0.0 - 169.254.255.255
+        return $this->isInRange($ip, 0xA9FE0000, 0xA9FEFFFF);
+    }
+
+    /**
+     * Check if the IP address is multicast (224.0.0.0/4).
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc5771 RFC 5771 - IANA Guidelines for IPv4 Multicast Address Assignments
+     *
+     * @return bool True if the IP address is multicast
+     */
+    public function isMulticast(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 224.0.0.0/4: 224.0.0.0 - 239.255.255.255
+        return $this->isInRange($ip, 0xE0000000, 0xEFFFFFFF);
+    }
+
+    /**
+     * Check if the IP address is in Carrier-Grade NAT range (100.64.0.0/10).
+     *
+     * Also known as Shared Address Space, used by ISPs for CGN deployments.
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc6598 RFC 6598 - IANA-Reserved IPv4 Prefix for Shared Address Space
+     *
+     * @return bool True if the IP address is in the CGN range
+     */
+    public function isCarrierGradeNat(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 100.64.0.0/10: 100.64.0.0 - 100.127.255.255
+        return $this->isInRange($ip, 0x64400000, 0x647FFFFF);
+    }
+
+    /**
+     * Check if the IP address is reserved for documentation (RFC 5737).
+     *
+     * Documentation ranges (TEST-NET-1, TEST-NET-2, TEST-NET-3):
+     *   - 192.0.2.0/24   (TEST-NET-1)
+     *   - 198.51.100.0/24 (TEST-NET-2)
+     *   - 203.0.113.0/24  (TEST-NET-3)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc5737 RFC 5737 - IPv4 Address Blocks Reserved for Documentation
+     *
+     * @return bool True if the IP address is reserved for documentation
+     */
+    public function isDocumentation(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 192.0.2.0/24 (TEST-NET-1): 192.0.2.0 - 192.0.2.255
+        if ($this->isInRange($ip, 0xC0000200, 0xC00002FF)) {
+            return true;
+        }
+
+        // 198.51.100.0/24 (TEST-NET-2): 198.51.100.0 - 198.51.100.255
+        if ($this->isInRange($ip, 0xC6336400, 0xC63364FF)) {
+            return true;
+        }
+
+        // 203.0.113.0/24 (TEST-NET-3): 203.0.113.0 - 203.0.113.255
+        if ($this->isInRange($ip, 0xCB007100, 0xCB0071FF)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if the IP address is reserved for benchmarking (198.18.0.0/15).
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc2544 RFC 2544 - Benchmarking Methodology for Network Interconnect Devices
+     *
+     * @return bool True if the IP address is reserved for benchmarking
+     */
+    public function isBenchmarking(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 198.18.0.0/15: 198.18.0.0 - 198.19.255.255
+        return $this->isInRange($ip, 0xC6120000, 0xC613FFFF);
+    }
+
+    /**
+     * Check if the IP address is reserved for future use (240.0.0.0/4).
+     *
+     * Note: This includes 255.255.255.255 (limited broadcast), which can be
+     * separately identified using isLimitedBroadcast().
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc1112 RFC 1112 - Host Extensions for IP Multicasting
+     *
+     * @return bool True if the IP address is reserved for future use
+     */
+    public function isReserved(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 240.0.0.0/4: 240.0.0.0 - 255.255.255.255
+        return $this->isInRange($ip, 0xF0000000, 0xFFFFFFFF);
+    }
+
+    /**
+     * Check if the IP address is the broadcast address (255.255.255.255/32).
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc919 RFC 919 - Broadcasting Internet Datagrams
+     *
+     * @return bool True if the IP address is the limited broadcast address
+     */
+    public function isLimitedBroadcast(): bool
+    {
+        return $this->ipAddress === '255.255.255.255';
+    }
+
+    /**
+     * Check if the IP address is in the "this" network range (0.0.0.0/8).
+     *
+     * Addresses in this range represent "this host on this network" and are
+     * only valid as source addresses.
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc1122 RFC 1122 - Requirements for Internet Hosts
+     *
+     * @return bool True if the IP address is in the "this" network range
+     */
+    public function isThisNetwork(): bool
+    {
+        $ip = $this->getIPAddressInteger();
+
+        // 0.0.0.0/8: 0.0.0.0 - 0.255.255.255
+        return $this->isInRange($ip, 0x00000000, 0x00FFFFFF);
+    }
+
+    /**
+     * Get the address type classification.
+     *
+     * Returns a string identifying the type of address. The order of checks matters:
+     * more specific types (like limited-broadcast) are checked before broader types
+     * (like reserved) that would also match.
+     *
+     * @return string Address type: 'private', 'public', 'loopback', 'link-local',
+     *                'multicast', 'carrier-grade-nat', 'documentation', 'benchmarking',
+     *                'reserved', 'limited-broadcast', 'this-network'
+     */
+    public function getAddressType(): string
+    {
+        // Check specific types first, then broader types
+        if ($this->isThisNetwork()) {
+            return 'this-network';
+        }
+        if ($this->isPrivate()) {
+            return 'private';
+        }
+        if ($this->isLoopback()) {
+            return 'loopback';
+        }
+        if ($this->isLinkLocal()) {
+            return 'link-local';
+        }
+        if ($this->isCarrierGradeNat()) {
+            return 'carrier-grade-nat';
+        }
+        if ($this->isDocumentation()) {
+            return 'documentation';
+        }
+        if ($this->isBenchmarking()) {
+            return 'benchmarking';
+        }
+        if ($this->isMulticast()) {
+            return 'multicast';
+        }
+        // Check limited broadcast before reserved (since it's a subset)
+        if ($this->isLimitedBroadcast()) {
+            return 'limited-broadcast';
+        }
+        if ($this->isReserved()) {
+            return 'reserved';
+        }
+
+        return 'public';
+    }
+
+    /**
+     * Check if an IP integer is within a given range (inclusive).
+     *
+     * @param int $ip    IP address as integer
+     * @param int $start Start of range as integer
+     * @param int $end   End of range as integer
+     *
+     * @return bool True if the IP is within the range
+     */
+    private function isInRange(int $ip, int $start, int $end): bool
+    {
+        // Handle PHP's signed integer representation for high IP addresses
+        // Convert to unsigned for comparison using sprintf
+        $ipUnsigned    = \sprintf('%u', $ip);
+        $startUnsigned = \sprintf('%u', $start);
+        $endUnsigned   = \sprintf('%u', $end);
+
+        return $ipUnsigned >= $startUnsigned && $ipUnsigned <= $endUnsigned;
+    }
+
     /**
      * Get the IPv4 Arpa Domain
      *
