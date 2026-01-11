@@ -471,6 +471,61 @@ class SubnetCalculator implements \JsonSerializable
         return $this->convertIpToInt($this->subnetCalculation(self::FORMAT_QUADS, '.'));
     }
 
+    /**
+     * Get wildcard mask as dotted quads: xxx.xxx.xxx.xxx
+     *
+     * The wildcard mask is the inverse of the subnet mask, commonly used in
+     * Cisco ACLs (Access Control Lists) and OSPF network statements.
+     * For a /24 (subnet mask 255.255.255.0), the wildcard mask is 0.0.0.255.
+     *
+     * @see https://www.cisco.com/c/en/us/support/docs/security/ios-firewall/23602-confaccesslists.html Cisco IOS ACL Configuration Guide
+     *
+     * @return string wildcard mask as dotted quads
+     */
+    public function getWildcardMask(): string
+    {
+        return $this->wildcardCalculation(self::FORMAT_QUADS, '.');
+    }
+
+    /**
+     * Get wildcard mask as array of quads: [xxx, xxx, xxx, xxx]
+     *
+     * @return string[] of four elements containing the four quads of the wildcard mask.
+     */
+    public function getWildcardMaskQuads(): array
+    {
+        return \explode('.', $this->wildcardCalculation(self::FORMAT_QUADS, '.'));
+    }
+
+    /**
+     * Get wildcard mask as hexadecimal
+     *
+     * @return string wildcard mask in hex
+     */
+    public function getWildcardMaskHex(): string
+    {
+        return $this->wildcardCalculation(self::FORMAT_HEX);
+    }
+
+    /**
+     * Get wildcard mask as binary
+     *
+     * @return string wildcard mask in binary
+     */
+    public function getWildcardMaskBinary(): string
+    {
+        return $this->wildcardCalculation(self::FORMAT_BINARY);
+    }
+
+    /**
+     * Get wildcard mask as an integer
+     *
+     * @return int
+     */
+    public function getWildcardMaskInteger(): int
+    {
+        return $this->convertIpToInt($this->wildcardCalculation(self::FORMAT_QUADS, '.'));
+    }
 
     /**
      * Split the network into smaller networks
@@ -1139,6 +1194,29 @@ class SubnetCalculator implements \JsonSerializable
             \sprintf($format, ($this->subnetMask >> 16) & 0xFF),
             \sprintf($format, ($this->subnetMask >>  8) & 0xFF),
             \sprintf($format, ($this->subnetMask >>  0) & 0xFF),
+        ];
+
+        return implode($separator, $maskQuads);
+    }
+
+    /**
+     * Wildcard mask calculation
+     *
+     * The wildcard mask is the bitwise inverse of the subnet mask.
+     *
+     * @param string $format    sprintf format to determine if decimal, hex or binary
+     * @param string $separator implode separator for formatting quads vs hex and binary
+     *
+     * @return string wildcard mask
+     */
+    private function wildcardCalculation(string $format, string $separator = ''): string
+    {
+        $wildcardMask = ~$this->subnetMask;
+        $maskQuads = [
+            \sprintf($format, ($wildcardMask >> 24) & 0xFF),
+            \sprintf($format, ($wildcardMask >> 16) & 0xFF),
+            \sprintf($format, ($wildcardMask >>  8) & 0xFF),
+            \sprintf($format, ($wildcardMask >>  0) & 0xFF),
         ];
 
         return implode($separator, $maskQuads);
