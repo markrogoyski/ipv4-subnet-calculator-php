@@ -698,7 +698,7 @@ class SubnetCalculator implements \JsonSerializable
      *
      * @return bool
      */
-    public function isIPAddressInSubnet($ipAddressString): bool
+    public function isIPAddressInSubnet(string $ipAddressString): bool
     {
         $ipAddress = \ip2long($ipAddressString);
         [$startIp, $endIp] = $this->getIPAddressRangeAsInts();
@@ -1331,12 +1331,8 @@ class SubnetCalculator implements \JsonSerializable
     private function getIPAddressRangeAsInts(): array
     {
         [$startIp, $endIp] = $this->getIPAddressRange();
-        $startIp = \ip2long($startIp);
-        $endIp   = \ip2long($endIp);
-
-        if ($startIp === false || $endIp === false) {
-            throw new \RuntimeException('IP address range calculation failed: ' . \print_r($this->getIPAddressRange(), true));
-        }
+        $startIp = $this->convertIpToInt($startIp);
+        $endIp   = $this->convertIpToInt($endIp);
 
         return [$startIp, $endIp];
     }
