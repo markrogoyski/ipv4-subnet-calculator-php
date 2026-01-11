@@ -26,6 +26,7 @@ Includes flexible factory methods for creating subnet calculators from various i
  * IP address
  * Network size
  * Subnet mask
+ * Wildcard mask
  * Network portion
  * Host portion
  * Number of IP addresses in the network
@@ -158,6 +159,17 @@ $subnetMaskQuads   = $sub->getSubnetMaskQuads();   // [255, 255, 254, 0]
 $subnetMaskHex     = $sub->getSubnetMaskHex();     // FFFFFE00
 $subnetMaskBinary  = $sub->getSubnetMaskBinary();  // 11111111111111111111111000000000
 $subnetMaskInteger = $sub->getSubnetMaskInteger(); // 4294966784
+```
+
+### Wildcard Mask
+Wildcard masks are the inverse of subnet masks, commonly used in Cisco ACLs and OSPF configurations.
+
+```php
+$wildcardMask        = $sub->getWildcardMask();        // 0.0.1.255
+$wildcardMaskQuads   = $sub->getWildcardMaskQuads();   // [0, 0, 1, 255]
+$wildcardMaskHex     = $sub->getWildcardMaskHex();     // 000001FF
+$wildcardMaskBinary  = $sub->getWildcardMaskBinary();  // 00000000000000000000000111111111
+$wildcardMaskInteger = $sub->getWildcardMaskInteger(); // 511
 ```
 
 ### Network Portion

@@ -29,6 +29,13 @@
   - `getAddressType()`: Get address type classification as string
   - Useful for security validation, routing decisions, and network classification
 
+- **Wildcard mask calculations**: New methods for wildcard masks (inverse of subnet masks), commonly used in Cisco ACLs and OSPF configurations:
+  - `getWildcardMask()`: Returns wildcard mask in dotted quad notation (e.g., "0.0.0.255")
+  - `getWildcardMaskQuads()`: Returns wildcard mask as array of quads (e.g., ['0', '0', '0', '255'])
+  - `getWildcardMaskHex()`: Returns wildcard mask in hexadecimal format (e.g., "000000FF")
+  - `getWildcardMaskBinary()`: Returns wildcard mask in binary format (e.g., "00000000000000000000000011111111")
+  - `getWildcardMaskInteger()`: Returns wildcard mask as integer value (e.g., 255)
+
 ### Improvements
 - **Test organization**: Refactored test suite into smaller, focused test files grouped by functionality for better maintainability and clarity
 
