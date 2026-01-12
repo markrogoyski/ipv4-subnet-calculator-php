@@ -759,6 +759,125 @@ class SubnetCalculator implements \JsonSerializable
         return $other->contains($this);
     }
 
+    /* ****************************** *
+     * ADJACENT SUBNET NAVIGATION
+     * ****************************** */
+
+    /**
+     * Get the next subnet of the same size.
+     *
+     * Returns a new SubnetCalculator representing the subnet immediately following
+     * this one in the IP address space, using the same network size (CIDR prefix).
+     *
+     * Useful for sequential IP allocation and network expansion planning.
+     *
+     * @return SubnetCalculator The next adjacent subnet
+     *
+     * @throws \RuntimeException If the next subnet would exceed the valid IPv4 range (255.255.255.255)
+     */
+    public function getNextSubnet(): SubnetCalculator
+    {
+        $addressCount = $this->getNumberIPAddresses();
+        $currentNetworkStart = $this->getNetworkPortionInteger();
+
+        // Calculate next subnet start as unsigned integer
+        $nextNetworkStartUnsigned = (int) \sprintf('%u', $currentNetworkStart) + $addressCount;
+
+        // Check if we would exceed the valid IPv4 range (max is 4294967295 = 255.255.255.255)
+        // The next subnet start must be within valid range, AND the entire subnet must fit
+        $maxValidIp = 4294967295; // 0xFFFFFFFF
+        if ($nextNetworkStartUnsigned > $maxValidIp || ($nextNetworkStartUnsigned + $addressCount - 1) > $maxValidIp) {
+            throw new \RuntimeException('Next subnet would exceed valid IPv4 address range.');
+        }
+
+        // Convert back to signed int for long2ip
+        $nextNetworkStart = $nextNetworkStartUnsigned > 2147483647
+            ? $nextNetworkStartUnsigned - 4294967296
+            : $nextNetworkStartUnsigned;
+
+        $nextIp = $this->convertIpToDottedQuad((int) $nextNetworkStart);
+
+        return new SubnetCalculator($nextIp, $this->networkSize);
+    }
+
+    /**
+     * Get the previous subnet of the same size.
+     *
+     * Returns a new SubnetCalculator representing the subnet immediately preceding
+     * this one in the IP address space, using the same network size (CIDR prefix).
+     *
+     * Useful for navigating backward through allocated IP ranges.
+     *
+     * @return SubnetCalculator The previous adjacent subnet
+     *
+     * @throws \RuntimeException If the previous subnet would be below 0.0.0.0
+     */
+    public function getPreviousSubnet(): SubnetCalculator
+    {
+        $addressCount = $this->getNumberIPAddresses();
+        $currentNetworkStart = $this->getNetworkPortionInteger();
+
+        // Convert to unsigned for calculation
+        $currentNetworkStartUnsigned = (int) \sprintf('%u', $currentNetworkStart);
+
+        // Check if we would go below 0.0.0.0
+        if ($currentNetworkStartUnsigned < $addressCount) {
+            throw new \RuntimeException('Previous subnet would be below valid IPv4 address range (0.0.0.0).');
+        }
+
+        $previousNetworkStartUnsigned = $currentNetworkStartUnsigned - $addressCount;
+
+        // Convert back to signed int for long2ip
+        $previousNetworkStart = $previousNetworkStartUnsigned > 2147483647
+            ? $previousNetworkStartUnsigned - 4294967296
+            : $previousNetworkStartUnsigned;
+
+        $previousIp = $this->convertIpToDottedQuad((int) $previousNetworkStart);
+
+        return new SubnetCalculator($previousIp, $this->networkSize);
+    }
+
+    /**
+     * Get multiple adjacent subnets.
+     *
+     * Returns an array of SubnetCalculator objects representing adjacent subnets
+     * of the same size. Positive count returns subnets forward (higher IPs),
+     * negative count returns subnets backward (lower IPs).
+     *
+     * Useful for bulk allocation planning or viewing a range of subnets.
+     *
+     * @param int $count Number of subnets to return (positive = forward, negative = backward)
+     *
+     * @return SubnetCalculator[] Array of adjacent subnets
+     *
+     * @throws \RuntimeException If any requested subnet would exceed valid IPv4 range
+     */
+    public function getAdjacentSubnets(int $count): array
+    {
+        if ($count === 0) {
+            return [];
+        }
+
+        $subnets = [];
+        $current = $this;
+
+        if ($count > 0) {
+            // Forward direction
+            for ($i = 0; $i < $count; $i++) {
+                $current = $current->getNextSubnet();
+                $subnets[] = $current;
+            }
+        } else {
+            // Backward direction
+            for ($i = 0; $i > $count; $i--) {
+                $current = $current->getPreviousSubnet();
+                $subnets[] = $current;
+            }
+        }
+
+        return $subnets;
+    }
+
     /* ******************************************* *
      * PRIVATE/RESERVED IP RANGE DETECTION METHODS
      * ******************************************* */
