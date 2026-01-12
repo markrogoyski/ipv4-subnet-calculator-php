@@ -46,3 +46,48 @@
 
 ### Fixed
 - **RFC 3021 compliance for /31 networks**: Fixed getMinHost(), getMaxHost(), and their variant methods (*Quads, *Hex, *Binary, *Integer) to correctly calculate host ranges for /31 point-to-point networks. Previously these methods returned the input IP for both min and max; they now correctly return the lower IP (network portion) as min host and higher IP (broadcast) as max host. This aligns with getNumberAddressableHosts() which already correctly reported 2 usable hosts for /31 networks.
+
+## v4.1.0 - 2024-02-09
+
+### New Features
+- Network splitting capability via `split` method
+- CIDR notation retrieval through `getCidrNotation`
+
+### Improvements
+- Enhanced compatibility extending through PHP 8.4
+
+## v4.0.0 - 2023-12-29
+
+### New Features
+- IPv4 ARPA Domain functionality for reverse DNS lookups
+- IP address integer representations:
+  - `getIPAddressInteger`
+  - `getMinHostInteger`
+  - `getMaxHostInteger`
+  - `getSubnetMaskInteger`
+  - `getNetworkPortionInteger`
+  - `getHostPortionInteger`
+
+### Improvements
+- ARPA domain and integer values integrated into reports
+- PHP minimum version requirement raised to 7.2
+
+## v3.1.0 - 2023-12-19
+
+### New Features
+- IP address subnet membership validation
+
+## v3.0.0 - 2023-10-27
+
+### New Features
+- Complete IP address enumeration capability
+- Host IP address listing
+- JsonSerializable interface implementation
+- SubnetReport interface for custom reporting options
+
+## v2.1.0 - 2023-04-30
+
+### New Features
+- Minimum host calculation
+- Maximum host calculation
+- Addressable host range specification
