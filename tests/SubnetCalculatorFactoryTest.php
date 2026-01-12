@@ -425,6 +425,129 @@ class SubnetCalculatorFactoryTest extends TestCase
         SubnetCalculatorFactory::fromHostCount('invalid', 10);
     }
 
+    /* ********************************** *
+     * optimalPrefixForHosts() - Valid Cases
+     * ********************************** */
+
+    /**
+     * @test
+     * @dataProvider dataProviderForOptimalPrefixForHostsValid
+     * @param int $hostCount
+     * @param int $expectedPrefix
+     * @param int $expectedActualHosts
+     */
+    public function testOptimalPrefixForHostsReturnsCorrectPrefix(
+        int $hostCount,
+        int $expectedPrefix,
+        int $expectedActualHosts
+    ): void {
+        // When
+        $prefix = SubnetCalculatorFactory::optimalPrefixForHosts($hostCount);
+
+        // Then
+        $this->assertSame($expectedPrefix, $prefix);
+
+        // Verify the prefix provides at least the requested hosts
+        $subnet = new SubnetCalculator('10.0.0.0', $prefix);
+        $this->assertGreaterThanOrEqual($hostCount, $subnet->getNumberAddressableHosts());
+        $this->assertSame($expectedActualHosts, $subnet->getNumberAddressableHosts());
+    }
+
+    /**
+     * @return array[] [hostCount, expectedPrefix, expectedActualHosts]
+     */
+    public function dataProviderForOptimalPrefixForHostsValid(): array
+    {
+        return [
+            // Basic cases
+            'Single host /32'        => [1, 32, 1],
+            'RFC 3021 /31 for 2'     => [2, 31, 2],
+            'Need /29 for 3 hosts'   => [3, 29, 6],
+            'Exact fit /29 for 6'    => [6, 29, 6],
+            'Need /28 for 7 hosts'   => [7, 28, 14],
+            'Exact fit /28 for 14'   => [14, 28, 14],
+            'Common office 50'       => [50, 26, 62],
+            'Need /25 for 100'       => [100, 25, 126],
+            'Full /24 = 254 hosts'   => [254, 24, 254],
+            'Need /23 for 255'       => [255, 23, 510],
+            'Exact fit /23 for 510'  => [510, 23, 510],
+            'Full /16 hosts'         => [65534, 16, 65534],
+
+            // +1 boundary cases (ceiling logic validation)
+            'Need /27 for 15 hosts'  => [15, 27, 30],
+            'Need /26 for 31 hosts'  => [31, 26, 62],
+            'Need /25 for 63 hosts'  => [63, 25, 126],
+            'Need /24 for 127 hosts' => [127, 24, 254],
+            'Need /22 for 511 hosts' => [511, 22, 1022],
+
+            // Large power-of-2 boundaries
+            'Exact fit /22'          => [1022, 22, 1022],
+            'Need /21 for 1023'      => [1023, 21, 2046],
+            'Exact fit /17'          => [32766, 17, 32766],
+
+            // Mid-range values
+            'Mid-range 500'          => [500, 23, 510],
+            'Mid-range 1000'         => [1000, 22, 1022],
+            'Mid-range 10000'        => [10000, 18, 16382],
+
+            // Maximum valid boundaries
+            'Just under maximum'     => [2147483645, 1, 2147483646],
+            'Maximum /1 network'     => [2147483646, 1, 2147483646],
+        ];
+    }
+
+    /* ************************************ *
+     * optimalPrefixForHosts() - Error Cases
+     * ************************************ */
+
+    /**
+     * @test
+     */
+    public function testOptimalPrefixForHostsThrowsExceptionForZeroHosts(): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+
+        // When
+        SubnetCalculatorFactory::optimalPrefixForHosts(0);
+    }
+
+    /**
+     * @test
+     */
+    public function testOptimalPrefixForHostsThrowsExceptionForNegativeHosts(): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+
+        // When
+        SubnetCalculatorFactory::optimalPrefixForHosts(-1);
+    }
+
+    /**
+     * @test
+     */
+    public function testOptimalPrefixForHostsThrowsExceptionForOneOverMaximum(): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+
+        // When - 2147483647 is one over the maximum (2147483646)
+        SubnetCalculatorFactory::optimalPrefixForHosts(2147483647);
+    }
+
+    /**
+     * @test
+     */
+    public function testOptimalPrefixForHostsThrowsExceptionForTooManyHosts(): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+
+        // When
+        SubnetCalculatorFactory::optimalPrefixForHosts(4294967295);
+    }
+
     /* ****************** *
      * Integration Tests
      * ****************** */

@@ -163,6 +163,40 @@ class SubnetCalculatorFactory
     }
 
     /**
+     * Calculate the optimal CIDR prefix for a given host count.
+     *
+     * Returns the smallest prefix (largest network) that can accommodate
+     * the specified number of hosts.
+     *
+     * For standard networks (/1 to /30), usable hosts = 2^(32-prefix) - 2
+     * For /31 (RFC 3021), usable hosts = 2
+     * For /32, usable hosts = 1
+     *
+     * @param int $hostCount Number of hosts required
+     *
+     * @return int Optimal CIDR prefix (network size)
+     *
+     * @throws \InvalidArgumentException If host count is invalid (zero, negative, or too large)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc3021 RFC 3021 - Using 31-Bit Prefixes on IPv4 Point-to-Point Links
+     */
+    public static function optimalPrefixForHosts(int $hostCount): int
+    {
+        // Validate host count
+        if ($hostCount <= 0) {
+            throw new \InvalidArgumentException("Host count must be positive, got {$hostCount}");
+        }
+
+        // Maximum possible hosts in IPv4 (for /1 network)
+        // 2^31 - 2 = 2147483646
+        if ($hostCount > 2147483646) {
+            throw new \InvalidArgumentException("Host count {$hostCount} exceeds maximum possible hosts in IPv4");
+        }
+
+        return self::calculateOptimalNetworkSize($hostCount);
+    }
+
+    /**
      * Convert a subnet mask to a network size (CIDR prefix)
      *
      * @param string $subnetMask Subnet mask in dotted quad notation
