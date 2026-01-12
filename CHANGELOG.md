@@ -1,5 +1,13 @@
 # IPv4 SubnetCalculator Change log
 
+## v4.4.0 - TBD
+
+### New Features
+- **Adjacent subnet navigation**: New methods for navigating to neighboring subnets of the same size:
+  - `getNextSubnet()`: Get the immediately following subnet in IP address space
+  - `getPreviousSubnet()`: Get the immediately preceding subnet in IP address space
+  - `getAdjacentSubnets()`: Get multiple adjacent subnets in either direction (positive count for forward, negative for backward)
+
 ## v4.3.0 - 2026-01-11
 
 ### New Features

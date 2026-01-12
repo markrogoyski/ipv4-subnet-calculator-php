@@ -36,6 +36,10 @@ Includes flexible factory methods for creating subnet calculators from various i
  * Min and max host
  * All IP addresses
  * Is an IP address in the subnet
+ * Adjacent subnet navigation
+   * Navigate to next/previous subnets of the same size
+   * Get multiple adjacent subnets in either direction
+   * Useful for sequential IP allocation and network expansion planning
  * Network overlap and conflict detection
    * Check if subnets overlap
    * Check if one subnet contains another
@@ -332,6 +336,52 @@ $ipv4ArpaDomain = $sub->getIPv4ArpaDomain(); // 203.112.168.192.in-addr.arpa
 ```php
 $sub             = new IPv4\SubnetCalculator('192.168.112.203', 23);
 $smallerNetworks = $sub->split(25);  // Array of SubnetCalculators [192.168.112.0/25, 192.168.112.128/25, 192.168.113.0/25, 192.168.113.128/25
+```
+
+### Adjacent Subnet Navigation
+
+Navigate to neighboring subnets of the same size for sequential IP allocation and network expansion planning.
+
+#### Get Next Subnet
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$next   = $subnet->getNextSubnet();  // Returns SubnetCalculator for 192.168.2.0/24
+
+// Works with any network size
+$smallSubnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/30');
+$next        = $smallSubnet->getNextSubnet();  // Returns 10.0.0.4/30
+```
+
+#### Get Previous Subnet
+```php
+$subnet   = IPv4\SubnetCalculatorFactory::fromCidr('192.168.5.0/24');
+$previous = $subnet->getPreviousSubnet();  // Returns SubnetCalculator for 192.168.4.0/24
+```
+
+#### Get Multiple Adjacent Subnets
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.10.0/24');
+
+// Get next 3 subnets (forward direction)
+$nextSubnets = $subnet->getAdjacentSubnets(3);
+// Returns: [192.168.11.0/24, 192.168.12.0/24, 192.168.13.0/24]
+
+// Get previous 3 subnets (backward direction)
+$previousSubnets = $subnet->getAdjacentSubnets(-3);
+// Returns: [192.168.9.0/24, 192.168.8.0/24, 192.168.7.0/24]
+```
+
+#### Chaining Navigation
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+
+// Chain multiple operations
+$targetSubnet = $subnet->getNextSubnet()
+                       ->getNextSubnet()
+                       ->getNextSubnet();  // Results in 10.0.3.0/24
+
+// Navigate forward and back
+$back = $subnet->getNextSubnet()->getPreviousSubnet();  // Back to 10.0.0.0/24
 ```
 
 ### Reports
