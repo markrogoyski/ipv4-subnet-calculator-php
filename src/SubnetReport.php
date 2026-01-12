@@ -15,7 +15,7 @@ class SubnetReport implements SubnetReportInterface
 {
     /**
      * Get subnet calculations as an associated array
-     * Contains IP address, subnet mask, network portion and host portion.
+     * Contains IP address, IP address type, subnet mask, wildcard mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexadecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      *
@@ -33,11 +33,18 @@ class SubnetReport implements SubnetReportInterface
                 'binary'  => $sub->getIPAddressBinary(),
                 'integer' => $sub->getIPAddressInteger(),
             ],
+            'ip_address_type' => $sub->getAddressType(),
             'subnet_mask' => [
                 'quads'   => $sub->getSubnetMask(),
                 'hex'     => $sub->getSubnetMaskHex(),
                 'binary'  => $sub->getSubnetMaskBinary(),
                 'integer' => $sub->getSubnetMaskInteger(),
+            ],
+            'wildcard_mask' => [
+                'quads'   => $sub->getWildcardMask(),
+                'hex'     => $sub->getWildcardMaskHex(),
+                'binary'  => $sub->getWildcardMaskBinary(),
+                'integer' => $sub->getWildcardMaskInteger(),
             ],
             'network_portion' => [
                 'quads'   => $sub->getNetworkPortion(),
@@ -64,7 +71,7 @@ class SubnetReport implements SubnetReportInterface
 
     /**
      * Get subnet calculations as JSON string
-     * Contains IP address, subnet mask, network portion and host portion.
+     * Contains IP address, IP address type, subnet mask, wildcard mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexadecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      *
@@ -79,7 +86,7 @@ class SubnetReport implements SubnetReportInterface
 
     /**
      * Print a report of subnet calculations.
-     * Contains IP address, subnet mask, network portion and host portion.
+     * Contains IP address, IP address type, subnet mask, wildcard mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexadecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      *
@@ -92,7 +99,7 @@ class SubnetReport implements SubnetReportInterface
 
     /**
      * Print a report of subnet calculations
-     * Contains IP address, subnet mask, network portion and host portion.
+     * Contains IP address, IP address type, subnet mask, wildcard mask, network portion and host portion.
      * Each of the above is provided in dotted quads, hexadecimal, and binary notation.
      * Also contains number of IP addresses and number of addressable hosts, IP address range, and broadcast address.
      *
@@ -106,9 +113,11 @@ class SubnetReport implements SubnetReportInterface
         $string .= \sprintf("%-18s %15s %8s %32s %10s\n", '------------------', '---------------', '--------', '--------------------------------', '----------');
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'IP Address:', $sub->getIPAddress(), $sub->getIPAddressHex(), $sub->getIPAddressBinary(), $sub->getIPAddressInteger());
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Subnet Mask:', $sub->getSubnetMask(), $sub->getSubnetMaskHex(), $sub->getSubnetMaskBinary(), $sub->getSubnetMaskInteger());
+        $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Wildcard Mask:', $sub->getWildcardMask(), $sub->getWildcardMaskHex(), $sub->getWildcardMaskBinary(), $sub->getWildcardMaskInteger());
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Network Portion:', $sub->getNetworkPortion(), $sub->getNetworkPortionHex(), $sub->getNetworkPortionBinary(), $sub->getNetworkPortionInteger());
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Host Portion:', $sub->getHostPortion(), $sub->getHostPortionHex(), $sub->getHostPortionBinary(), $sub->getHostPortionInteger());
         $string .= \PHP_EOL;
+        $string .= \sprintf("%-28s %s\n", 'IP Address Type:', $sub->getAddressType());
         $string .= \sprintf("%-28s %d\n", 'Number of IP Addresses:', $sub->getNumberIPAddresses());
         $string .= \sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $sub->getNumberAddressableHosts());
         $string .= \sprintf("%-28s %s\n", 'IP Address Range:', \implode(' - ', $sub->getIPAddressRange()));

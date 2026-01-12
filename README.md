@@ -344,9 +344,11 @@ $sub->printSubnetReport();
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
+Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111        511
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
+IP Address Type:             private
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
@@ -371,12 +373,21 @@ $sub->getSubnetArrayReport();
             [integer] => 3232264395
         )
 
+    [ip_address_type] => private
     [subnet_mask] => Array
         (
             [quads] => 255.255.254.0
             [hex] => FFFFFE00
             [binary] => 11111111111111111111111000000000
             [integer] => 4294966784
+        )
+
+    [wildcard_mask] => Array
+        (
+            [quads] => 0.0.1.255
+            [hex] => 000001FF
+            [binary] => 00000000000000000000000111111111
+            [integer] => 511
         )
 
     [network_portion] => Array
@@ -424,11 +435,18 @@ $sub->getSubnetJSONReport();
         "binary": "11000000101010000111000011001011",
         "integer": 3232264395
     },
+    "ip_address_type": "private",
     "subnet_mask": {
         "quads": "255.255.254.0",
         "hex": "FFFFFE00",
         "binary": "11111111111111111111111000000000",
         "integer": 4294966784
+    },
+    "wildcard_mask": {
+        "quads": "0.0.1.255",
+        "hex": "000001FF",
+        "binary": "00000000000000000000000111111111",
+        "integer": 511
     },
     "network_portion": {
         "quads": "192.168.112.0",
@@ -465,9 +483,11 @@ $stringReport = $sub->getPrintableReport();
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
+Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111        511
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
+IP Address Type:             private
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
@@ -486,9 +506,11 @@ print($sub);
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
+Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111        511
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
+IP Address Type:             private
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255

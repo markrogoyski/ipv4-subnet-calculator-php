@@ -30,7 +30,9 @@ class SubnetCalculatorReportTest extends \PHPUnit\Framework\TestCase
         $this->assertIsArray($report);
         $this->assertArrayHasKey('ip_address_with_network_size', $report);
         $this->assertArrayHasKey('ip_address', $report);
+        $this->assertArrayHasKey('ip_address_type', $report);
         $this->assertArrayHasKey('subnet_mask', $report);
+        $this->assertArrayHasKey('wildcard_mask', $report);
         $this->assertArrayHasKey('network_portion', $report);
         $this->assertArrayHasKey('host_portion', $report);
         $this->assertArrayHasKey('network_size', $report);
@@ -89,15 +91,18 @@ class SubnetCalculatorReportTest extends \PHPUnit\Framework\TestCase
                 .+?                                                                 \n
                 IP [ ] Address:      .+                                             \n
                 Subnet [ ] Mask:     .+                                             \n
+                Wildcard [ ] Mask:   .+                                             \n
                 Network [ ] Portion: .+                                             \n
                 Host [ ] Portion:    .+                                             \n
                                                                                     \n
+                IP [ ] Address [ ] Type:                 \s+ .+?                    \n
                 Number [ ] of [ ] IP [ ] Addresses:      \s+ \d+                    \n
                 Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+                    \n
                 IP [ ] Address [ ] Range:                \s+ .+?                    \n
                 Broadcast [ ] Address:                   \s+ .+?                    \n
                 Min [ ] Host:                            \s  .+?                    \n
                 Max [ ] Host:                            \s  .+?                    \n
+                IPv4 [ ] ARPA [ ] Domain:                \s+ .+?                    \n
                 $
             /xms
         ');
@@ -133,7 +138,9 @@ class SubnetCalculatorReportTest extends \PHPUnit\Framework\TestCase
         $decoded = \json_decode($json, true);
         $this->assertArrayHasKey('ip_address_with_network_size', $decoded);
         $this->assertArrayHasKey('ip_address', $decoded);
+        $this->assertArrayHasKey('ip_address_type', $decoded);
         $this->assertArrayHasKey('subnet_mask', $decoded);
+        $this->assertArrayHasKey('wildcard_mask', $decoded);
         $this->assertArrayHasKey('network_portion', $decoded);
         $this->assertArrayHasKey('host_portion', $decoded);
         $this->assertArrayHasKey('network_size', $decoded);
