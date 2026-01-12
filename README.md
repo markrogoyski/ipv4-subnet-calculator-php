@@ -93,7 +93,7 @@ $ php composer.phar require markrogoyski/ipv4-subnet-calculator:4.*
 ### Minimum Requirements
  * PHP 7.2
 
- Note: For PHP 5.5 through 7.1, use v3.0 (`markrogoyski/ipv4-subnet-calculator:3.*`)
+ Note: For PHP 5.5 through 7.1, use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0) (`markrogoyski/ipv4-subnet-calculator:3.*`)
 
 Usage
 -----
