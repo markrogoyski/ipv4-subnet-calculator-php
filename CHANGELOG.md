@@ -1,6 +1,6 @@
 # IPv4 SubnetCalculator Change log
 
-## v4.3.0 - TBD
+## v4.3.0 - 2026-01-11
 
 ### New Features
 - **SubnetCalculatorFactory**: New factory class for creating SubnetCalculator instances from various input formats:
