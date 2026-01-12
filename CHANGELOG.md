@@ -7,6 +7,10 @@
   - `getNextSubnet()`: Get the immediately following subnet in IP address space
   - `getPreviousSubnet()`: Get the immediately preceding subnet in IP address space
   - `getAdjacentSubnets()`: Get multiple adjacent subnets in either direction (positive count for forward, negative for backward)
+- **Optimal prefix calculation**: New utility method for calculating the smallest CIDR prefix that accommodates a given host count:
+  - `SubnetCalculatorFactory::optimalPrefixForHosts()`: Calculate optimal prefix without creating a SubnetCalculator instance
+  - Returns the smallest prefix (largest network) needed for the specified number of hosts
+  - Useful for network planning and subnet sizing calculations
 
 ## v4.3.0 - 2026-01-11
 

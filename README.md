@@ -136,6 +136,18 @@ $sub = IPv4\SubnetCalculatorFactory::fromRange('192.168.112.0', '192.168.113.255
 $sub = IPv4\SubnetCalculatorFactory::fromHostCount('192.168.112.0', 100);  // Returns a /25 network with 126 usable hosts
 ```
 
+##### Calculate Optimal Prefix for Host Count
+```php
+// Calculate the optimal CIDR prefix (network size) for a given number of hosts
+// Returns just the prefix number without creating a SubnetCalculator instance
+$prefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(100);  // Returns 25 (/25 provides 126 usable hosts)
+$prefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(500);  // Returns 23 (/23 provides 510 usable hosts)
+
+// Handles RFC 3021 special cases
+$prefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(1);    // Returns 32 (single host /32)
+$prefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(2);    // Returns 31 (point-to-point /31)
+```
+
 ### Various Network Information
 ```php
 $cidrNotation         = $sub->getCidrNotation();           // 192.168.112.203/23
