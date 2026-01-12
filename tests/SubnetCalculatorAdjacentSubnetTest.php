@@ -93,6 +93,54 @@ class SubnetCalculatorAdjacentSubnetTest extends TestCase
                 24,
                 '192.168.1.0',
             ],
+            // High IP addresses (≥128.0.0.0) - tests signed/unsigned conversion
+            'High IP /24 basic' => [
+                '200.0.0.0',
+                24,
+                '200.0.1.0',
+            ],
+            'High IP /24 near max' => [
+                '250.0.0.0',
+                24,
+                '250.0.1.0',
+            ],
+            'High IP /16' => [
+                '200.0.0.0',
+                16,
+                '200.1.0.0',
+            ],
+            'IP at 128.0.0.0 boundary' => [
+                '128.0.0.0',
+                24,
+                '128.0.1.0',
+            ],
+            // Multiple octet crossings
+            'Crosses second and third octet' => [
+                '10.255.255.0',
+                24,
+                '11.0.0.0',
+            ],
+            'Large subnet crosses first octet' => [
+                '10.0.0.0',
+                8,
+                '11.0.0.0',
+            ],
+            // Very large subnets
+            '/1 subnet (half internet)' => [
+                '0.0.0.0',
+                1,
+                '128.0.0.0',
+            ],
+            '/2 subnet' => [
+                '0.0.0.0',
+                2,
+                '64.0.0.0',
+            ],
+            '/3 subnet' => [
+                '0.0.0.0',
+                3,
+                '32.0.0.0',
+            ],
         ];
     }
 
@@ -203,6 +251,59 @@ class SubnetCalculatorAdjacentSubnetTest extends TestCase
                 '192.168.1.50',
                 24,
                 '192.168.0.0',
+            ],
+            // High IP addresses (≥128.0.0.0) - tests signed/unsigned conversion
+            'High IP /24 basic' => [
+                '200.0.1.0',
+                24,
+                '200.0.0.0',
+            ],
+            'High IP /24 near max' => [
+                '250.0.1.0',
+                24,
+                '250.0.0.0',
+            ],
+            'High IP /16' => [
+                '200.1.0.0',
+                16,
+                '200.0.0.0',
+            ],
+            'IP at 128.0.0.0 boundary' => [
+                '128.0.1.0',
+                24,
+                '128.0.0.0',
+            ],
+            'Crossing below 128.0.0.0' => [
+                '128.0.0.0',
+                24,
+                '127.255.255.0',
+            ],
+            // Multiple octet crossings
+            'Crosses second and third octet' => [
+                '11.0.0.0',
+                24,
+                '10.255.255.0',
+            ],
+            'Large subnet crosses first octet' => [
+                '11.0.0.0',
+                8,
+                '10.0.0.0',
+            ],
+            // Very large subnets
+            '/1 subnet (half internet)' => [
+                '128.0.0.0',
+                1,
+                '0.0.0.0',
+            ],
+            '/2 subnet' => [
+                '64.0.0.0',
+                2,
+                '0.0.0.0',
+            ],
+            '/3 subnet' => [
+                '32.0.0.0',
+                3,
+                '0.0.0.0',
             ],
         ];
     }
@@ -385,6 +486,162 @@ class SubnetCalculatorAdjacentSubnetTest extends TestCase
 
         // When
         $subnet->getAdjacentSubnets(-2);
+    }
+
+    /* ************************** *
+     * Large Adjacent Count Tests
+     * ************************** */
+
+    /**
+     * @test
+     */
+    public function getAdjacentSubnetsHandlesLargeForwardCount(): void
+    {
+        // Given
+        $subnet = new SubnetCalculator('192.168.0.0', 24);
+
+        // When
+        $adjacentSubnets = $subnet->getAdjacentSubnets(100);
+
+        // Then
+        $this->assertCount(100, $adjacentSubnets);
+        $this->assertSame('192.168.1.0', $adjacentSubnets[0]->getNetworkPortion());
+        $this->assertSame('192.168.100.0', $adjacentSubnets[99]->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getAdjacentSubnetsHandlesLargeBackwardCount(): void
+    {
+        // Given
+        $subnet = new SubnetCalculator('192.168.200.0', 24);
+
+        // When
+        $adjacentSubnets = $subnet->getAdjacentSubnets(-100);
+
+        // Then
+        $this->assertCount(100, $adjacentSubnets);
+        $this->assertSame('192.168.199.0', $adjacentSubnets[0]->getNetworkPortion());
+        $this->assertSame('192.168.100.0', $adjacentSubnets[99]->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getAdjacentSubnetsWithHighIpAddresses(): void
+    {
+        // Given - tests signed/unsigned conversion with multiple subnets
+        $subnet = new SubnetCalculator('200.0.0.0', 24);
+
+        // When
+        $adjacentSubnets = $subnet->getAdjacentSubnets(5);
+
+        // Then
+        $this->assertCount(5, $adjacentSubnets);
+        $this->assertSame('200.0.1.0', $adjacentSubnets[0]->getNetworkPortion());
+        $this->assertSame('200.0.5.0', $adjacentSubnets[4]->getNetworkPortion());
+    }
+
+    /* ************************* *
+     * Exact Boundary Tests
+     * ************************* */
+
+    /**
+     * @test
+     */
+    public function getNextSubnetReachesExactlyMaxBoundary(): void
+    {
+        // Given - 255.255.255.0/24 + 1 would start at 256.0.0.0 which is invalid
+        // But 255.255.254.0/24 + 1 = 255.255.255.0/24 which is valid
+        $subnet = new SubnetCalculator('255.255.254.0', 24);
+
+        // When
+        $nextSubnet = $subnet->getNextSubnet();
+
+        // Then
+        $this->assertSame('255.255.255.0', $nextSubnet->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getPreviousSubnetReachesExactlyMinBoundary(): void
+    {
+        // Given - 0.0.1.0/24 - 1 = 0.0.0.0/24 which is valid
+        $subnet = new SubnetCalculator('0.0.1.0', 24);
+
+        // When
+        $previousSubnet = $subnet->getPreviousSubnet();
+
+        // Then
+        $this->assertSame('0.0.0.0', $previousSubnet->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getNextSubnetWithSlash32AtSecondToLastAddress(): void
+    {
+        // Given - 255.255.255.254/32 + 1 = 255.255.255.255/32 (valid, last address)
+        $subnet = new SubnetCalculator('255.255.255.254', 32);
+
+        // When
+        $nextSubnet = $subnet->getNextSubnet();
+
+        // Then
+        $this->assertSame('255.255.255.255', $nextSubnet->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getPreviousSubnetWithSlash32AtSecondAddress(): void
+    {
+        // Given - 0.0.0.1/32 - 1 = 0.0.0.0/32 (valid, first address)
+        $subnet = new SubnetCalculator('0.0.0.1', 32);
+
+        // When
+        $previousSubnet = $subnet->getPreviousSubnet();
+
+        // Then
+        $this->assertSame('0.0.0.0', $previousSubnet->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getAdjacentSubnetsReachesExactBoundaryForward(): void
+    {
+        // Given - start at 255.255.252.0/24, can get exactly 3 more subnets
+        $subnet = new SubnetCalculator('255.255.252.0', 24);
+
+        // When
+        $adjacentSubnets = $subnet->getAdjacentSubnets(3);
+
+        // Then
+        $this->assertCount(3, $adjacentSubnets);
+        $this->assertSame('255.255.253.0', $adjacentSubnets[0]->getNetworkPortion());
+        $this->assertSame('255.255.254.0', $adjacentSubnets[1]->getNetworkPortion());
+        $this->assertSame('255.255.255.0', $adjacentSubnets[2]->getNetworkPortion());
+    }
+
+    /**
+     * @test
+     */
+    public function getAdjacentSubnetsReachesExactBoundaryBackward(): void
+    {
+        // Given - start at 0.0.3.0/24, can get exactly 3 previous subnets
+        $subnet = new SubnetCalculator('0.0.3.0', 24);
+
+        // When
+        $adjacentSubnets = $subnet->getAdjacentSubnets(-3);
+
+        // Then
+        $this->assertCount(3, $adjacentSubnets);
+        $this->assertSame('0.0.2.0', $adjacentSubnets[0]->getNetworkPortion());
+        $this->assertSame('0.0.1.0', $adjacentSubnets[1]->getNetworkPortion());
+        $this->assertSame('0.0.0.0', $adjacentSubnets[2]->getNetworkPortion());
     }
 
     /* ***************************** *
