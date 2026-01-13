@@ -54,6 +54,11 @@ Includes flexible factory methods for creating subnet calculators from various i
    * Carrier-grade NAT, documentation, benchmarking
    * Reserved, limited broadcast, "this" network
    * RFC-compliant classification
+ * Network class information (legacy)
+   * Get network class (A, B, C, D, E)
+   * Get default classful mask and prefix
+   * Check if subnet uses classful default mask
+   * Useful for education, certifications, and legacy systems
  * IPv4 ARPA domain
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
@@ -444,6 +449,56 @@ foreach ($classifications as $ip => $expectedType) {
 | `isLimitedBroadcast()` | 255.255.255.255/32 | RFC 919 | Limited broadcast address |
 | `isThisNetwork()` | 0.0.0.0/8 | RFC 1122 | "This" network addresses |
 | `isPublic()` | All others | - | Publicly routable addresses |
+
+### Network Class Information (Legacy)
+
+While classful networking is obsolete (RFC 4632 established CIDR), legacy network class information is still referenced in education, certifications, and some legacy systems.
+
+#### Get Network Class
+```php
+$classA = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
+$classB = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
+$classC = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$classD = IPv4\SubnetCalculatorFactory::fromCidr('224.0.0.1/32');
+$classE = IPv4\SubnetCalculatorFactory::fromCidr('240.0.0.0/32');
+
+$classA->getNetworkClass();  // 'A'
+$classB->getNetworkClass();  // 'B'
+$classC->getNetworkClass();  // 'C'
+$classD->getNetworkClass();  // 'D' (Multicast)
+$classE->getNetworkClass();  // 'E' (Reserved)
+```
+
+#### Get Default Classful Mask
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+
+$subnet->getDefaultClassMask();    // '255.0.0.0' (Class A default)
+$subnet->getDefaultClassPrefix();  // 8 (Class A default /8)
+```
+
+#### Check if Subnet Uses Classful Mask
+```php
+$classfulA   = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
+$subnettedA  = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+$classfulB   = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
+$supernettedB = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/12');
+
+$classfulA->isClassful();     // true - /8 matches Class A default
+$subnettedA->isClassful();    // false - /24 is subnetted from Class A
+$classfulB->isClassful();     // true - /16 matches Class B default
+$supernettedB->isClassful();  // false - /12 is supernetted from Class B
+```
+
+#### Class Definitions
+
+| Class | First Octet | Default Mask | Default Prefix | Purpose |
+|-------|-------------|--------------|----------------|---------|
+| A | 0-127 | 255.0.0.0 | /8 | Large networks (includes 0.x.x.x and 127.x.x.x) |
+| B | 128-191 | 255.255.0.0 | /16 | Medium networks |
+| C | 192-223 | 255.255.255.0 | /24 | Small networks |
+| D | 224-239 | N/A | N/A | Multicast |
+| E | 240-255 | N/A | N/A | Reserved for future use |
 
 ### Reverse DNS Lookup (ARPA Domain)
 ```php

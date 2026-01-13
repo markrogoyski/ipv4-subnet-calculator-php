@@ -19,6 +19,13 @@
   - Returns the smallest prefix (largest network) needed for the specified number of hosts
   - Useful for network planning and subnet sizing calculations
 
+- **Network class information (legacy)**: New methods for obtaining classful network information (RFC 791):
+  - `getNetworkClass()`: Get the legacy network class ('A', 'B', 'C', 'D', or 'E')
+  - `getDefaultClassMask()`: Get the default classful mask (e.g., '255.0.0.0' for Class A)
+  - `getDefaultClassPrefix()`: Get the default classful prefix (8, 16, or 24; null for D/E)
+  - `isClassful()`: Check if the current subnet uses the classful default mask
+  - While classful networking is obsolete (RFC 4632), it is useful for education, certifications, and legacy systems
+
 ## v4.3.0 - 2026-01-11
 
 ### New Features

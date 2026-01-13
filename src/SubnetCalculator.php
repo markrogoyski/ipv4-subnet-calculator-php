@@ -1299,6 +1299,151 @@ class SubnetCalculator implements \JsonSerializable
         return $ipUnsigned >= $startUnsigned && $ipUnsigned <= $endUnsigned;
     }
 
+    /* ****************************************** *
+     * NETWORK CLASS INFORMATION (LEGACY) METHODS
+     * ****************************************** */
+
+    /**
+     * Get the legacy network class.
+     *
+     * Returns the classful network class based on the first octet of the IP address.
+     * While classful networking is obsolete (RFC 4632 established CIDR), it's still
+     * referenced in education, certifications, and some legacy systems.
+     *
+     * Network class definitions (RFC 791):
+     *   Class A: 0-127   (leading bit 0)     - Note: 0 is "this network", 127 is loopback
+     *   Class B: 128-191 (leading bits 10)
+     *   Class C: 192-223 (leading bits 110)
+     *   Class D: 224-239 (leading bits 1110) - Multicast
+     *   Class E: 240-255 (leading bits 1111) - Reserved for future use
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc791 RFC 791 - Internet Protocol
+     * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - CIDR (obsoletes classful routing)
+     *
+     * @return string 'A', 'B', 'C', 'D' (multicast), or 'E' (reserved)
+     */
+    public function getNetworkClass(): string
+    {
+        $firstOctet = (int) $this->quads[0];
+
+        // Class A: 0-127 (includes 0.x.x.x "this network" and 127.x.x.x loopback)
+        if ($firstOctet <= 127) {
+            return 'A';
+        }
+
+        // Class B: 128-191
+        if ($firstOctet <= 191) {
+            return 'B';
+        }
+
+        // Class C: 192-223
+        if ($firstOctet <= 223) {
+            return 'C';
+        }
+
+        // Class D: 224-239 (Multicast)
+        if ($firstOctet <= 239) {
+            return 'D';
+        }
+
+        // Class E: 240-255 (Reserved)
+        return 'E';
+    }
+
+    /**
+     * Get the default classful mask for this IP.
+     *
+     * Returns the default subnet mask for the IP's network class. Classes D and E
+     * (multicast and reserved) do not have a default mask and return null.
+     *
+     * Default masks:
+     *   Class A: 255.0.0.0 (/8)
+     *   Class B: 255.255.0.0 (/16)
+     *   Class C: 255.255.255.0 (/24)
+     *   Class D/E: null (no default mask)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc791 RFC 791 - Internet Protocol
+     *
+     * @return string|null Dotted quad mask (e.g., "255.0.0.0" for Class A), or null for D/E
+     */
+    public function getDefaultClassMask(): ?string
+    {
+        $class = $this->getNetworkClass();
+
+        switch ($class) {
+            case 'A':
+                return '255.0.0.0';
+            case 'B':
+                return '255.255.0.0';
+            case 'C':
+                return '255.255.255.0';
+            default:
+                // Class D (multicast) and E (reserved) have no default mask
+                return null;
+        }
+    }
+
+    /**
+     * Get the default classful prefix.
+     *
+     * Returns the default CIDR prefix for the IP's network class. Classes D and E
+     * (multicast and reserved) do not have a default prefix and return null.
+     *
+     * Default prefixes:
+     *   Class A: 8
+     *   Class B: 16
+     *   Class C: 24
+     *   Class D/E: null (no default prefix)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc791 RFC 791 - Internet Protocol
+     *
+     * @return int|null CIDR prefix (8, 16, 24), or null for D/E
+     */
+    public function getDefaultClassPrefix(): ?int
+    {
+        $class = $this->getNetworkClass();
+
+        switch ($class) {
+            case 'A':
+                return 8;
+            case 'B':
+                return 16;
+            case 'C':
+                return 24;
+            default:
+                // Class D (multicast) and E (reserved) have no default prefix
+                return null;
+        }
+    }
+
+    /**
+     * Check if the current subnet uses the classful default mask.
+     *
+     * Returns true if the network size matches the default classful prefix for
+     * this IP's class. Classes D and E always return false as they have no
+     * default mask.
+     *
+     * Examples:
+     *   10.0.0.0/8 → true (Class A with default /8)
+     *   10.0.0.0/24 → false (Class A but subnetted to /24)
+     *   172.16.0.0/16 → true (Class B with default /16)
+     *   172.16.0.0/12 → false (Class B but supernetted to /12)
+     *   224.0.0.1/32 → false (Class D, no default)
+     *
+     * @return bool True if the subnet uses the classful default mask
+     */
+    public function isClassful(): bool
+    {
+        $defaultPrefix = $this->getDefaultClassPrefix();
+
+        // Class D and E have no default prefix, so they can never be classful
+        if ($defaultPrefix === null) {
+            return false;
+        }
+
+        return $this->networkSize === $defaultPrefix;
+    }
+
     /**
      * Get the IPv4 Arpa Domain
      *
