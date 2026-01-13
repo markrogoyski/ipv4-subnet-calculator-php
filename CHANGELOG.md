@@ -3,6 +3,13 @@
 ## v4.4.0 - TBD
 
 ### New Features
+- **CIDR aggregation and supernetting**: New factory methods for combining multiple subnets into larger summary routes:
+  - `SubnetCalculatorFactory::aggregate()`: Combine contiguous subnets into the minimal set of larger CIDR blocks
+  - `SubnetCalculatorFactory::summarize()`: Find the smallest single supernet that contains all input subnets
+  - Automatically handles overlapping subnets, duplicates, and proper CIDR alignment
+  - Returns optimally-sized CIDR blocks for efficient route summarization
+  - Useful for BGP route aggregation, reducing routing table size, OSPF area design, and network planning
+
 - **Subnet exclusion and difference operations**: New methods for calculating remaining address space after removing (excluding) subnets:
   - `exclude()`: Remove a single subnet from this subnet, returning the remaining address space as an array of optimally-sized CIDR blocks
   - `excludeAll()`: Remove multiple subnets from this subnet, applying exclusions sequentially

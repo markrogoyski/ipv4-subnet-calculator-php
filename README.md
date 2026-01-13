@@ -65,6 +65,11 @@ Includes flexible factory methods for creating subnet calculators from various i
    * Calculate utilization for specific host requirements
    * Calculate wasted addresses for capacity planning
    * Useful for choosing optimal subnet sizes and minimizing IP waste
+ * CIDR aggregation and supernetting
+   * Aggregate multiple contiguous subnets into larger summary routes
+   * Summarize subnets into a single covering supernet
+   * Reduce routing table size through route optimization
+   * Useful for BGP route summarization and network design
  * IPv4 ARPA domain
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
@@ -616,6 +621,157 @@ Output:
 */
 
 // Conclusion: /25 provides the best balance (79% utilization, only 26 wasted addresses)
+```
+
+### CIDR Aggregation and Supernetting
+
+Combine multiple subnets into larger summary routes to reduce routing table size. Essential for BGP route summarization, OSPF area design, and efficient network addressing plans.
+
+#### Aggregate Multiple Subnets
+
+The `aggregate()` method combines contiguous subnets into the minimal set of larger CIDR blocks. Only truly contiguous subnets are merged - gaps are preserved.
+
+```php
+// Example 1: Two adjacent /24s combine into one /23
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+// Returns: [192.168.0.0/23]
+
+// Example 2: Four consecutive /24s become one /22
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.2.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.3.0/24'),
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+// Returns: [10.0.0.0/22]
+
+// Example 3: Non-contiguous subnets remain separate
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24'),  // Gap at .1.0/24
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+// Returns: [192.168.0.0/24, 192.168.2.0/24] - cannot combine due to gap
+```
+
+#### Summarize to Single Supernet
+
+The `summarize()` method finds the smallest single CIDR block that contains all input subnets. Unlike `aggregate()`, this always returns a single subnet but may include addresses not in the original subnets (fills gaps).
+
+```php
+// Example 1: Perfect fit - no extra addresses
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+];
+
+$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+// Returns: 192.168.0.0/23 (perfect fit, no waste)
+
+// Example 2: Has gap - includes extra addresses to cover range
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24'),  // Missing .1.0/24
+];
+
+$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+// Returns: 192.168.0.0/22
+// Includes .0.x, .1.x (not in input!), .2.x, and .3.x (not in input!)
+
+// Example 3: Sparse subnets need large covering block
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/32'),
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.255/32'),
+];
+
+$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+// Returns: 10.0.0.0/24 (includes all 254 addresses between them)
+```
+
+#### Practical Use Cases
+
+##### BGP Route Summarization
+```php
+// Your organization has these 4 regional office subnets
+$offices = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.1.0.0/24'),  // Office A
+    IPv4\SubnetCalculatorFactory::fromCidr('10.1.1.0/24'),  // Office B
+    IPv4\SubnetCalculatorFactory::fromCidr('10.1.2.0/24'),  // Office C
+    IPv4\SubnetCalculatorFactory::fromCidr('10.1.3.0/24'),  // Office D
+];
+
+$summary = IPv4\SubnetCalculatorFactory::aggregate($offices);
+// Returns: [10.1.0.0/22]
+// Advertise this single route instead of 4 individual routes
+```
+
+##### Multiple Data Centers
+```php
+// Aggregate separate data center allocations
+$datacenters = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($datacenters);
+// Returns: [10.0.0.0/23, 192.168.0.0/23]
+// Two summary routes for two non-contiguous regions
+```
+
+##### Finding Covering Supernet for ACLs
+```php
+// Allow access to multiple department subnets with one firewall rule
+$departments = [
+    IPv4\SubnetCalculatorFactory::fromCidr('172.16.1.0/24'),  // Engineering
+    IPv4\SubnetCalculatorFactory::fromCidr('172.16.2.0/24'),  // Sales
+    IPv4\SubnetCalculatorFactory::fromCidr('172.16.3.0/24'),  // Marketing
+];
+
+$allowRule = IPv4\SubnetCalculatorFactory::summarize($departments);
+// Returns: 172.16.0.0/22
+// One ACL entry instead of three (includes .0.0/24 which may be acceptable)
+```
+
+#### Behavior Notes
+
+**Deduplication and Overlap Handling**: Both methods automatically handle duplicates and overlapping subnets.
+```php
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/23'),  // Larger subnet
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),  // Contained within /23
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),  // Duplicate
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+// Returns: [192.168.0.0/23] - duplicates removed, smaller subnet absorbed
+```
+
+**Alignment Requirements**: Subnets must be properly aligned to merge. Misaligned adjacent blocks cannot combine.
+```php
+$subnets = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),  // Starts at odd boundary
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.2.0/24'),
+];
+
+$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+// Returns: [10.0.1.0/24, 10.0.2.0/24]
+// Cannot merge - 10.0.1.0 is not aligned for /23 (would need to start at 10.0.0.0)
+```
+
+**Empty Input**: `aggregate()` returns empty array; `summarize()` throws exception.
+```php
+IPv4\SubnetCalculatorFactory::aggregate([]);   // Returns: []
+IPv4\SubnetCalculatorFactory::summarize([]);   // Throws: InvalidArgumentException
 ```
 
 ### Reverse DNS Lookup (ARPA Domain)

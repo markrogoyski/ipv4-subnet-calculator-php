@@ -300,6 +300,242 @@ class SubnetCalculatorFactory
     }
 
     /**
+     * Aggregate multiple subnets into the smallest possible supernet(s).
+     *
+     * Combines contiguous subnets into larger summary routes to reduce routing
+     * table size. Returns an array of SubnetCalculator objects representing
+     * the minimal set of CIDR blocks that cover all input subnets.
+     *
+     * If subnets are not fully contiguous, multiple supernets will be returned.
+     * Overlapping and duplicate subnets are handled by removing redundant entries.
+     *
+     * @param SubnetCalculator[] $subnets Array of subnets to aggregate
+     *
+     * @return SubnetCalculator[] Array of aggregated supernets
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - Classless Inter-domain Routing (CIDR)
+     */
+    public static function aggregate(array $subnets): array
+    {
+        if (empty($subnets)) {
+            return [];
+        }
+
+        // Normalize all subnets to their network addresses and collect as [start, end, prefix] tuples
+        $ranges = [];
+        foreach ($subnets as $subnet) {
+            $start = self::ipToUnsigned($subnet->getNetworkPortionInteger());
+            $end = $start + $subnet->getNumberIPAddresses() - 1;
+            $ranges[] = [$start, $end, $subnet->getNetworkSize()];
+        }
+
+        // Sort by start address, then by end address (larger ranges first)
+        \usort($ranges, function ($a, $b) {
+            if ($a[0] !== $b[0]) {
+                return $a[0] <=> $b[0];
+            }
+            return $b[1] <=> $a[1]; // Larger ranges first when same start
+        });
+
+        // Remove subnets contained within others
+        $filtered = [];
+        foreach ($ranges as $range) {
+            $isContained = false;
+            foreach ($filtered as $existing) {
+                if ($range[0] >= $existing[0] && $range[1] <= $existing[1]) {
+                    $isContained = true;
+                    break;
+                }
+            }
+            if (!$isContained) {
+                // Also remove any existing ranges that this one contains
+                $filtered = \array_filter($filtered, function ($existing) use ($range) {
+                    return !($existing[0] >= $range[0] && $existing[1] <= $range[1]);
+                });
+                $filtered[] = $range;
+            }
+        }
+
+        // Re-sort after filtering
+        \usort($filtered, function ($a, $b) {
+            return $a[0] <=> $b[0];
+        });
+
+        // Convert back to [start, prefix] format for aggregation
+        $blocks = [];
+        foreach ($filtered as $range) {
+            $blocks[] = [$range[0], $range[2]];
+        }
+
+        // Iteratively merge adjacent subnets
+        $merged = true;
+        while ($merged) {
+            $merged = false;
+            $newBlocks = [];
+            $used = [];
+
+            for ($i = 0; $i < \count($blocks); $i++) {
+                if (isset($used[$i])) {
+                    continue;
+                }
+
+                $current = $blocks[$i];
+                $foundMerge = false;
+
+                // Try to find a partner to merge with
+                for ($j = $i + 1; $j < \count($blocks); $j++) {
+                    if (isset($used[$j])) {
+                        continue;
+                    }
+
+                    $other = $blocks[$j];
+
+                    // Check if they can be merged (but not below /1 since /0 is not supported)
+                    if ($current[1] === $other[1] && $current[1] > 1) {
+                        $prefix = $current[1];
+                        $blockSize = 1 << (32 - $prefix);
+
+                        // Check if they are adjacent
+                        $currentEnd = $current[0] + $blockSize - 1;
+                        if ($currentEnd + 1 === $other[0]) {
+                            // Check if the merged block would be aligned
+                            $newPrefix = $prefix - 1;
+                            $newBlockSize = 1 << (32 - $newPrefix);
+                            if (($current[0] % $newBlockSize) === 0) {
+                                // Merge them
+                                $newBlocks[] = [$current[0], $newPrefix];
+                                $used[$i] = true;
+                                $used[$j] = true;
+                                $merged = true;
+                                $foundMerge = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!$foundMerge) {
+                    $newBlocks[] = $current;
+                    $used[$i] = true;
+                }
+            }
+
+            $blocks = $newBlocks;
+
+            // Re-sort blocks by start address
+            \usort($blocks, function ($a, $b) {
+                return $a[0] <=> $b[0];
+            });
+        }
+
+        // Convert back to SubnetCalculator objects
+        $result = [];
+        foreach ($blocks as $block) {
+            $ip = self::unsignedToIp($block[0]);
+            $result[] = new SubnetCalculator($ip, (int) $block[1]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Find the smallest single supernet that contains all given subnets.
+     *
+     * Returns the minimal CIDR block that encompasses all input subnets.
+     * Unlike aggregate(), this always returns a single subnet, but may include
+     * addresses not in any of the input subnets (gaps are filled).
+     *
+     * @param SubnetCalculator[] $subnets Array of subnets to summarize
+     *
+     * @return SubnetCalculator The smallest supernet containing all inputs
+     *
+     * @throws \InvalidArgumentException If the subnet array is empty
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - Classless Inter-domain Routing (CIDR)
+     */
+    public static function summarize(array $subnets): SubnetCalculator
+    {
+        if (empty($subnets)) {
+            throw new \InvalidArgumentException('Cannot summarize empty subnet array');
+        }
+
+        if (\count($subnets) === 1) {
+            $subnet = $subnets[0];
+            return new SubnetCalculator($subnet->getNetworkPortion(), $subnet->getNetworkSize());
+        }
+
+        // Find the minimum start IP and maximum end IP
+        $minStart = null;
+        $maxEnd = null;
+
+        foreach ($subnets as $subnet) {
+            $start = self::ipToUnsigned($subnet->getNetworkPortionInteger());
+            $end = $start + $subnet->getNumberIPAddresses() - 1;
+
+            if ($minStart === null || $start < $minStart) {
+                $minStart = $start;
+            }
+            if ($maxEnd === null || $end > $maxEnd) {
+                $maxEnd = $end;
+            }
+        }
+
+        // Find the smallest prefix that covers this range
+        // Start from /32 and work backwards until we find one that covers the range
+        for ($prefix = 32; $prefix >= 1; $prefix--) {
+            $blockSize = 1 << (32 - $prefix);
+            // Find the network address for this prefix that contains minStart
+            $networkStart = ((int) ($minStart / $blockSize)) * $blockSize;
+            $networkEnd = $networkStart + $blockSize - 1;
+
+            if ($networkStart <= $minStart && $networkEnd >= $maxEnd) {
+                $ip = self::unsignedToIp((int) $networkStart);
+                return new SubnetCalculator($ip, $prefix);
+            }
+        }
+
+        // If we get here, the subnets span the entire IP space and would require /0
+        throw new \InvalidArgumentException(
+            'Cannot summarize: result would require /0 which is not a valid network size'
+        );
+    }
+
+    /**
+     * Convert a signed IP integer to unsigned for comparison
+     *
+     * @param int $ip Signed IP integer
+     *
+     * @return int Unsigned IP integer
+     */
+    private static function ipToUnsigned(int $ip): int
+    {
+        if ($ip < 0) {
+            return $ip + 4294967296;
+        }
+        return $ip;
+    }
+
+    /**
+     * Convert an unsigned IP integer back to a dotted-quad string
+     *
+     * @param int $ip Unsigned IP integer
+     *
+     * @return string Dotted-quad IP address
+     */
+    private static function unsignedToIp(int $ip): string
+    {
+        // Convert to signed for long2ip if needed
+        if ($ip > 2147483647) {
+            $ip = $ip - 4294967296;
+        }
+        $result = \long2ip($ip);
+        if (!$result) {
+            throw new \RuntimeException("Failed to convert IP integer to string: {$ip}");
+        }
+        return $result;
+    }
+
+    /**
      * Calculate the optimal network size for a given host count
      *
      * For standard networks (/1 to /30), usable hosts = 2^(32-prefix) - 2
