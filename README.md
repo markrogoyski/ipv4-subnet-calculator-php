@@ -3,16 +3,13 @@
 IPv4 Subnet Calculator (PHP)
 ============================
 
-Network calculator for subnet mask and other classless (CIDR) network information.
+Comprehensive PHP library for IPv4 subnet calculations, network planning, and CIDR operations.
 
 [![Coverage Status](https://coveralls.io/repos/github/markrogoyski/ipv4-subnet-calculator-php/badge.svg?branch=master)](https://coveralls.io/github/markrogoyski/ipv4-subnet-calculator-php?branch=master)
 [![License](https://poser.pugx.org/markrogoyski/math-php/license)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator-php)
 
 Features
 --------
-Given an IP address and CIDR network size, it calculates the network information and provides all-in-one aggregated reports.
-
-Includes flexible factory methods for creating subnet calculators from various input formats (CIDR notation, subnet mask, IP range, or required host count).
 
 ### Use Cases
  * Network planning and IP address allocation (IPAM)
@@ -23,65 +20,24 @@ Includes flexible factory methods for creating subnet calculators from various i
  * Network automation and infrastructure-as-code
 
 ### Calculations
- * IP address
- * Network size
- * Subnet mask
- * Wildcard mask
- * Network portion
- * Host portion
- * Number of IP addresses in the network
- * Number of addressable hosts in the network
- * IP address range
- * Broadcast address
- * Min and max host
- * All IP addresses
- * Is an IP address in the subnet
- * Adjacent subnet navigation
-   * Navigate to next/previous subnets of the same size
-   * Get multiple adjacent subnets in either direction
-   * Useful for sequential IP allocation and network expansion planning
- * Network overlap and conflict detection
-   * Check if subnets overlap
-   * Check if one subnet contains another
-   * Check if subnet is contained within another
+ * IP address, network size, subnet mask, wildcard mask
+ * Network/host portions and IP address ranges
+ * Broadcast address, min/max hosts, all IP addresses
+ * Check if IP address is in subnet
+ * Network overlap and containment checking
  * Subnet exclusion and difference operations
-   * Remove (exclude) one or more subnets from a larger subnet
-   * Calculate the remaining address space after exclusions
-   * Returns minimal set of CIDR blocks representing the difference
-   * Useful for reserving IP ranges, carving out address space, and IPAM planning
- * IP address range type detection
-   * Private, public, loopback, link-local, multicast
-   * Carrier-grade NAT, documentation, benchmarking
-   * Reserved, limited broadcast, "this" network
-   * RFC-compliant classification
- * Network class information (legacy)
-   * Get network class (A, B, C, D, E)
-   * Get default classful mask and prefix
-   * Check if subnet uses classful default mask
-   * Useful for education, certifications, and legacy systems
- * Utilization statistics
-   * Calculate usable host percentage (efficiency)
-   * Count unusable addresses (network/broadcast overhead)
-   * Calculate utilization for specific host requirements
-   * Calculate wasted addresses for capacity planning
-   * Useful for choosing optimal subnet sizes and minimizing IP waste
+ * Adjacent subnet navigation
+ * IP address type detection (private, public, loopback, multicast, etc.)
+ * Network class information (legacy classful networking)
+ * Utilization statistics and efficiency analysis
  * CIDR aggregation and supernetting
-   * Aggregate multiple contiguous subnets into larger summary routes
-   * Summarize subnets into a single covering supernet
-   * Reduce routing table size through route optimization
-   * Useful for BGP route summarization and network design
  * IPv4 ARPA domain
-
-Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
 
 ### Aggregated Network Calculation Reports
  * Associative array
  * JSON
  * String
  * Printed to STDOUT
-
-### Standard Interfaces
- * JsonSerializable
 
 Setup
 -----
