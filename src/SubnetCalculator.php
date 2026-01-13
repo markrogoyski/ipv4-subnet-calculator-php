@@ -1444,6 +1444,108 @@ class SubnetCalculator implements \JsonSerializable
         return $this->networkSize === $defaultPrefix;
     }
 
+    /* ************************** *
+     * UTILIZATION STATISTICS
+     * ************************** */
+
+    /**
+     * Get the percentage of addresses that are usable hosts.
+     *
+     * Calculates (usable hosts / total IP addresses) * 100.
+     *
+     * Special cases per RFC 3021:
+     *   - /31: 100% (2 usable of 2 total - no network/broadcast overhead)
+     *   - /32: 100% (1 usable of 1 total - single host)
+     *
+     * Helpful for capacity planning and choosing optimal subnet sizes.
+     *
+     * @return float Percentage (0.0 to 100.0)
+     */
+    public function getUsableHostPercentage(): float
+    {
+        $totalAddresses = $this->getNumberIPAddresses();
+        $usableHosts = $this->getNumberAddressableHosts();
+
+        return ($usableHosts / $totalAddresses) * 100.0;
+    }
+
+    /**
+     * Get the number of addresses not usable as hosts.
+     *
+     * For most networks, this is 2 (network address + broadcast address).
+     * Special cases per RFC 3021:
+     *   - /31: 0 (both addresses are usable - point-to-point link)
+     *   - /32: 0 (single host network)
+     *
+     * @return int Number of unusable addresses
+     */
+    public function getUnusableAddressCount(): int
+    {
+        $totalAddresses = $this->getNumberIPAddresses();
+        $usableHosts = $this->getNumberAddressableHosts();
+
+        return $totalAddresses - $usableHosts;
+    }
+
+    /**
+     * Calculate efficiency for a given host requirement.
+     *
+     * Returns what percentage of usable addresses would be utilized
+     * if the specified number of hosts were deployed in this subnet.
+     *
+     * Values > 100% indicate the subnet is too small to accommodate
+     * the required number of hosts.
+     *
+     * Helpful for evaluating subnet sizing decisions.
+     *
+     * @param int $requiredHosts Number of hosts needed (must be >= 0)
+     *
+     * @return float Percentage (0.0 to 100.0+), or > 100 if insufficient
+     *
+     * @throws \InvalidArgumentException If $requiredHosts is negative
+     */
+    public function getUtilizationForHosts(int $requiredHosts): float
+    {
+        if ($requiredHosts < 0) {
+            throw new \InvalidArgumentException('Required hosts cannot be negative.');
+        }
+
+        if ($requiredHosts === 0) {
+            return 0.0;
+        }
+
+        $usableHosts = $this->getNumberAddressableHosts();
+
+        return ($requiredHosts / $usableHosts) * 100.0;
+    }
+
+    /**
+     * Get wasted addresses for a given host requirement.
+     *
+     * Returns the number of usable addresses that would remain unused
+     * if the specified number of hosts were deployed in this subnet.
+     *
+     * A negative value indicates the subnet is too small (insufficient capacity).
+     *
+     * Helpful for capacity planning and minimizing IP address waste.
+     *
+     * @param int $requiredHosts Number of hosts needed (must be >= 0)
+     *
+     * @return int Number of unused usable addresses (negative if insufficient)
+     *
+     * @throws \InvalidArgumentException If $requiredHosts is negative
+     */
+    public function getWastedAddresses(int $requiredHosts): int
+    {
+        if ($requiredHosts < 0) {
+            throw new \InvalidArgumentException('Required hosts cannot be negative.');
+        }
+
+        $usableHosts = $this->getNumberAddressableHosts();
+
+        return $usableHosts - $requiredHosts;
+    }
+
     /**
      * Get the IPv4 Arpa Domain
      *

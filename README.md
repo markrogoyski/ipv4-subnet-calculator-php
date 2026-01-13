@@ -59,6 +59,12 @@ Includes flexible factory methods for creating subnet calculators from various i
    * Get default classful mask and prefix
    * Check if subnet uses classful default mask
    * Useful for education, certifications, and legacy systems
+ * Utilization statistics
+   * Calculate usable host percentage (efficiency)
+   * Count unusable addresses (network/broadcast overhead)
+   * Calculate utilization for specific host requirements
+   * Calculate wasted addresses for capacity planning
+   * Useful for choosing optimal subnet sizes and minimizing IP waste
  * IPv4 ARPA domain
 
 Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
@@ -499,6 +505,118 @@ $supernettedB->isClassful();  // false - /12 is supernetted from Class B
 | C | 192-223 | 255.255.255.0 | /24 | Small networks |
 | D | 224-239 | N/A | N/A | Multicast |
 | E | 240-255 | N/A | N/A | Reserved for future use |
+
+### Utilization Statistics
+
+Analyze subnet efficiency and perform capacity planning. These methods help choose optimal subnet sizes and minimize IP address waste.
+
+#### Get Usable Host Percentage
+
+Calculate what percentage of the subnet's total IP addresses are usable as hosts (accounting for network and broadcast address overhead).
+
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+
+$percentage = $subnet->getUsableHostPercentage();  // 99.22% (254 usable of 256 total)
+
+// RFC 3021 special cases - no overhead
+$p2p = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/31');
+$p2p->getUsableHostPercentage();  // 100.0% (2 usable of 2 total)
+
+$single = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.1/32');
+$single->getUsableHostPercentage();  // 100.0% (1 usable of 1 total)
+```
+
+#### Count Unusable Addresses
+
+Get the count of addresses that cannot be used as hosts (network address + broadcast address).
+
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+
+$unusable = $subnet->getUnusableAddressCount();  // 2 (network + broadcast)
+
+// RFC 3021 special cases - no unusable addresses
+$p2p = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/31');
+$p2p->getUnusableAddressCount();  // 0 (both addresses usable)
+
+$single = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.1/32');
+$single->getUnusableAddressCount();  // 0 (single host)
+```
+
+#### Calculate Utilization for Host Requirements
+
+Determine how efficiently a subnet would be utilized for a specific number of required hosts.
+
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');  // 254 usable hosts
+
+// Good fit - 78.74% utilization
+$utilization = $subnet->getUtilizationForHosts(200);  // 78.74%
+
+// Perfect fit - 100% utilization
+$utilization = $subnet->getUtilizationForHosts(254);  // 100.0%
+
+// Oversized subnet - wasting addresses
+$utilization = $subnet->getUtilizationForHosts(50);   // 19.69% (inefficient)
+
+// Insufficient capacity - more than 100%
+$utilization = $subnet->getUtilizationForHosts(300);  // 118.11% (too small!)
+```
+
+#### Calculate Wasted Addresses
+
+Determine how many usable addresses would be wasted (or how many more are needed) for a specific host requirement.
+
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');  // 254 usable hosts
+
+// 54 addresses wasted
+$wasted = $subnet->getWastedAddresses(200);  // 54 (254 - 200)
+
+// Perfect fit - no waste
+$wasted = $subnet->getWastedAddresses(254);  // 0
+
+// Lots of wasted addresses
+$wasted = $subnet->getWastedAddresses(50);   // 204 (254 - 50)
+
+// Insufficient capacity - negative value
+$wasted = $subnet->getWastedAddresses(300);  // -46 (need 46 more addresses!)
+```
+
+#### Practical Use Case - Choosing Optimal Subnet Size
+
+```php
+// You need to allocate 100 hosts
+$requiredHosts = 100;
+
+// Compare different subnet sizes
+$sizes = [24, 25, 26, 27];
+
+foreach ($sizes as $size) {
+    $subnet = IPv4\SubnetCalculatorFactory::fromCidr("192.168.1.0/{$size}");
+    $usableHosts = $subnet->getNumberAddressableHosts();
+
+    // Skip if subnet is too small
+    if ($usableHosts < $requiredHosts) {
+        continue;
+    }
+
+    $utilization = $subnet->getUtilizationForHosts($requiredHosts);
+    $wasted = $subnet->getWastedAddresses($requiredHosts);
+
+    echo "/{$size}: {$usableHosts} usable, {$utilization}% utilized, {$wasted} wasted\n";
+}
+
+/*
+Output:
+/24: 254 usable, 39.37% utilized, 154 wasted (inefficient - too large)
+/25: 126 usable, 79.37% utilized, 26 wasted (good fit!)
+/26: 62 usable, -38% utilized, -38 wasted (insufficient capacity)
+*/
+
+// Conclusion: /25 provides the best balance (79% utilization, only 26 wasted addresses)
+```
 
 ### Reverse DNS Lookup (ARPA Domain)
 ```php

@@ -26,6 +26,13 @@
   - `isClassful()`: Check if the current subnet uses the classful default mask
   - While classful networking is obsolete (RFC 4632), it is useful for education, certifications, and legacy systems
 
+- **Utilization statistics**: New methods for analyzing subnet efficiency and capacity planning:
+  - `getUsableHostPercentage()`: Calculate percentage of addresses that are usable hosts (accounts for network/broadcast overhead)
+  - `getUnusableAddressCount()`: Get count of unusable addresses (network + broadcast, or 0 for /31 and /32)
+  - `getUtilizationForHosts($requiredHosts)`: Calculate utilization percentage for a given host requirement (values >100% indicate insufficient capacity)
+  - `getWastedAddresses($requiredHosts)`: Calculate wasted/unused addresses for a given host requirement (negative values indicate insufficient capacity)
+  - Useful for capacity planning, choosing optimal subnet sizes, and minimizing IP address waste
+
 ## v4.3.0 - 2026-01-11
 
 ### New Features
