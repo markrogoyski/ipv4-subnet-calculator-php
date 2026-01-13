@@ -34,6 +34,12 @@ class SubnetReport implements SubnetReportInterface
                 'integer' => $sub->getIPAddressInteger(),
             ],
             'ip_address_type' => $sub->getAddressType(),
+            'network_class' => [
+                'class'          => $sub->getNetworkClass(),
+                'default_mask'   => $sub->getDefaultClassMask(),
+                'default_prefix' => $sub->getDefaultClassPrefix(),
+                'is_classful'    => $sub->isClassful(),
+            ],
             'subnet_mask' => [
                 'quads'   => $sub->getSubnetMask(),
                 'hex'     => $sub->getSubnetMaskHex(),
@@ -118,6 +124,10 @@ class SubnetReport implements SubnetReportInterface
         $string .= \sprintf("%-18s %15s %8s %32s %10d\n", 'Host Portion:', $sub->getHostPortion(), $sub->getHostPortionHex(), $sub->getHostPortionBinary(), $sub->getHostPortionInteger());
         $string .= \PHP_EOL;
         $string .= \sprintf("%-28s %s\n", 'IP Address Type:', $sub->getAddressType());
+        $string .= \sprintf("%-28s %s\n", 'Network Class:', $sub->getNetworkClass());
+        if ($sub->getDefaultClassMask() !== null) {
+            $string .= \sprintf("%-28s %s\n", 'Classful:', $sub->isClassful() ? 'Yes' : 'No (subnetted/supernetted)');
+        }
         $string .= \sprintf("%-28s %d\n", 'Number of IP Addresses:', $sub->getNumberIPAddresses());
         $string .= \sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $sub->getNumberAddressableHosts());
         $string .= \sprintf("%-28s %s\n", 'IP Address Range:', \implode(' - ', $sub->getIPAddressRange()));

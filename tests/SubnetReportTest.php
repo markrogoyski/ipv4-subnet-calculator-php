@@ -36,6 +36,7 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
         $this->assertArrayHasKey('ip_address_with_network_size', $report);
         $this->assertArrayHasKey('ip_address', $report);
         $this->assertArrayHasKey('ip_address_type', $report);
+        $this->assertArrayHasKey('network_class', $report);
         $this->assertArrayHasKey('subnet_mask', $report);
         $this->assertArrayHasKey('wildcard_mask', $report);
         $this->assertArrayHasKey('network_portion', $report);
@@ -80,6 +81,8 @@ class SubnetReportTest extends \PHPUnit\Framework\TestCase
                 Host [ ] Portion:    .+                                             \n
                                                                                     \n
                 IP [ ] Address [ ] Type:                 \s+ .+?                    \n
+                Network [ ] Class:                       \s+ [A-E]                  \n
+                (Classful:                               \s+ .+?                    \n)?
                 Number [ ] of [ ] IP [ ] Addresses:      \s+ \d+                    \n
                 Number [ ] of [ ] Addressable [ ] Hosts: \s+ \d+                    \n
                 IP [ ] Address [ ] Range:                \s+ .+?                    \n

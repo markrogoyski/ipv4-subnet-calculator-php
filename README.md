@@ -846,6 +846,8 @@ Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 323
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
 IP Address Type:             private
+Network Class:               C
+Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
@@ -871,6 +873,14 @@ $sub->getSubnetArrayReport();
         )
 
     [ip_address_type] => private
+    [network_class] => Array
+        (
+            [class] => C
+            [default_mask] => 255.255.255.0
+            [default_prefix] => 24
+            [is_classful] => false
+        )
+
     [subnet_mask] => Array
         (
             [quads] => 255.255.254.0
@@ -933,6 +943,12 @@ $sub->getSubnetJSONReport();
         "integer": 3232264395
     },
     "ip_address_type": "private",
+    "network_class": {
+        "class": "C",
+        "default_mask": "255.255.255.0",
+        "default_prefix": 24,
+        "is_classful": false
+    },
     "subnet_mask": {
         "quads": "255.255.254.0",
         "hex": "FFFFFE00",
@@ -985,6 +1001,8 @@ Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 323
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
 IP Address Type:             private
+Network Class:               C
+Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
@@ -1008,6 +1026,8 @@ Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 323
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
 IP Address Type:             private
+Network Class:               C
+Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
