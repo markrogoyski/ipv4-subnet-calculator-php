@@ -530,8 +530,16 @@ class SubnetCalculator implements \JsonSerializable
     /**
      * Split the network into smaller networks
      *
-     * @param int $networkSize
-     * @return SubnetCalculator[]
+     * Divides this subnet into multiple smaller subnets of the specified prefix length.
+     * The split is based on the actual network boundaries, not the input IP address.
+     * For example, splitting 192.168.1.100/24 into /26s will produce the same result
+     * as splitting 192.168.1.0/24 into /26s (four /26 subnets starting at .0, .64, .128, .192).
+     *
+     * @param int $networkSize The new prefix length (must be larger than current prefix)
+     *
+     * @return SubnetCalculator[] Array of subnet objects representing the split networks
+     *
+     * @throws \RuntimeException If networkSize is not larger than current prefix or exceeds 32
      */
     public function split(int $networkSize): array
     {
@@ -1842,7 +1850,7 @@ class SubnetCalculator implements \JsonSerializable
      */
     private function getNumberIPAddressesOfNetworkSize($networkSize): int
     {
-        return \pow(2, (32 - $networkSize));
+        return 1 << (32 - $networkSize);
     }
 
 

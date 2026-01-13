@@ -726,6 +726,36 @@ class SubnetCalculatorExcludeTest extends TestCase
                     ['network' => '200.200.200.3', 'prefix' => 32],
                 ],
             ],
+            // Large high-IP network tests (signed integer edge cases)
+            'Exclude first half of 200.0.0.0/8' => [
+                '200.0.0.0', 8,
+                '200.0.0.0', 9,
+                [['network' => '200.128.0.0', 'prefix' => 9]],
+            ],
+            'Exclude second half of 200.0.0.0/8' => [
+                '200.0.0.0', 8,
+                '200.128.0.0', 9,
+                [['network' => '200.0.0.0', 'prefix' => 9]],
+            ],
+            'Exclude /16 from 200.0.0.0/8' => [
+                '200.0.0.0', 8,
+                '200.100.0.0', 16,
+                [
+                    ['network' => '200.0.0.0', 'prefix' => 10],
+                    ['network' => '200.64.0.0', 'prefix' => 11],
+                    ['network' => '200.96.0.0', 'prefix' => 14],
+                    ['network' => '200.101.0.0', 'prefix' => 16],
+                    ['network' => '200.102.0.0', 'prefix' => 15],
+                    ['network' => '200.104.0.0', 'prefix' => 13],
+                    ['network' => '200.112.0.0', 'prefix' => 12],
+                    ['network' => '200.128.0.0', 'prefix' => 9],
+                ],
+            ],
+            'Exclude from 255.0.0.0/8 (highest range)' => [
+                '255.0.0.0', 8,
+                '255.0.0.0', 9,
+                [['network' => '255.128.0.0', 'prefix' => 9]],
+            ],
         ];
     }
 
