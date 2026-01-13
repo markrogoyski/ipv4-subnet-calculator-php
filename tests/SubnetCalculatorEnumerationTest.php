@@ -79,13 +79,10 @@ class SubnetCalculatorEnumerationTest extends \PHPUnit\Framework\TestCase
     public function testGetAllIPsCount(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
-        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
-        $count = 0;
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach ($sub->getAllIPAddresses() as $ip) {
-            $count++;
-        }
+        $count = \iterator_count($sub->getAllIPAddresses());
 
         // Then
         $this->assertEquals($number_addresses, $count);
@@ -102,13 +99,10 @@ class SubnetCalculatorEnumerationTest extends \PHPUnit\Framework\TestCase
     public function testGetAllHostIPsCount(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
-        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
-        $count = 0;
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach ($sub->getAllHostIPAddresses() as $ip) {
-            $count++;
-        }
+        $count = \iterator_count($sub->getAllHostIPAddresses());
 
         // Then
         $this->assertEquals($number_addresses, $count);
@@ -256,13 +250,10 @@ class SubnetCalculatorEnumerationTest extends \PHPUnit\Framework\TestCase
     public function testGetAllIPsCountHighIpAddresses(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
-        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
-        $count = 0;
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach ($sub->getAllIPAddresses() as $ip) {
-            $count++;
-        }
+        $count = \iterator_count($sub->getAllIPAddresses());
 
         // Then
         $this->assertEquals($number_addresses, $count);
@@ -301,13 +292,10 @@ class SubnetCalculatorEnumerationTest extends \PHPUnit\Framework\TestCase
     public function testGetAllHostIPsCountHighIpAddresses(string $ip_address, int $network_size, int $number_addresses): void
     {
         // Given
-        $sub   = new IPv4\SubnetCalculator($ip_address, $network_size);
-        $count = 0;
+        $sub = new IPv4\SubnetCalculator($ip_address, $network_size);
 
         // When
-        foreach ($sub->getAllHostIPAddresses() as $ip) {
-            $count++;
-        }
+        $count = \iterator_count($sub->getAllHostIPAddresses());
 
         // Then
         $this->assertEquals($number_addresses, $count);
