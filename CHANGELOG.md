@@ -3,10 +3,17 @@
 ## v4.4.0 - TBD
 
 ### New Features
+- **Subnet exclusion and difference operations**: New methods for calculating remaining address space after removing (excluding) subnets:
+  - `exclude()`: Remove a single subnet from this subnet, returning the remaining address space as an array of optimally-sized CIDR blocks
+  - `excludeAll()`: Remove multiple subnets from this subnet, applying exclusions sequentially
+  - Returns minimal set of CIDR blocks covering the remaining space
+  - Useful for IP address management (IPAM), reserving address ranges, carving out specific blocks from larger allocations, and network planning
+
 - **Adjacent subnet navigation**: New methods for navigating to neighboring subnets of the same size:
   - `getNextSubnet()`: Get the immediately following subnet in IP address space
   - `getPreviousSubnet()`: Get the immediately preceding subnet in IP address space
   - `getAdjacentSubnets()`: Get multiple adjacent subnets in either direction (positive count for forward, negative for backward)
+
 - **Optimal prefix calculation**: New utility method for calculating the smallest CIDR prefix that accommodates a given host count:
   - `SubnetCalculatorFactory::optimalPrefixForHosts()`: Calculate optimal prefix without creating a SubnetCalculator instance
   - Returns the smallest prefix (largest network) needed for the specified number of hosts

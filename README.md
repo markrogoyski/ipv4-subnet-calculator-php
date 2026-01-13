@@ -44,6 +44,11 @@ Includes flexible factory methods for creating subnet calculators from various i
    * Check if subnets overlap
    * Check if one subnet contains another
    * Check if subnet is contained within another
+ * Subnet exclusion and difference operations
+   * Remove (exclude) one or more subnets from a larger subnet
+   * Calculate the remaining address space after exclusions
+   * Returns minimal set of CIDR blocks representing the difference
+   * Useful for reserving IP ranges, carving out address space, and IPAM planning
  * IP address range type detection
    * Private, public, loopback, link-local, multicast
    * Carrier-grade NAT, documentation, benchmarking
@@ -264,6 +269,107 @@ $small = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
 $large = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/12');
 
 $isContained = $small->isContainedIn($large);  // true - 172.16.0.0/16 is within 172.16.0.0/12
+```
+
+### Subnet Exclusion and Difference Operations
+
+Calculate what remains of a subnet after excluding (removing) one or more other subnets. Useful for IP address management (IPAM), reserving address ranges, and carving out specific blocks from larger allocations.
+
+The exclusion methods return the minimal set of CIDR blocks that represent the remaining address space.
+
+#### Exclude a Single Subnet
+```php
+// Allocate a /24 network but reserve the first /26 for infrastructure
+$allocated = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$reserved  = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/26');
+
+$available = $allocated->exclude($reserved);
+// Returns: [192.168.1.64/26, 192.168.1.128/25]
+// Available address space: 192.168.1.64-192.168.1.255 (192 addresses)
+```
+
+#### Exclude Multiple Subnets
+```php
+// Allocate a /24 but reserve multiple ranges
+$allocated = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+
+$reserved = [
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/26'),   // First quarter for infrastructure
+    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.128/26'), // Third quarter for management
+];
+
+$available = $allocated->excludeAll($reserved);
+// Returns: [10.0.0.64/26, 10.0.0.192/26]
+// Available: 10.0.0.64-127 and 10.0.0.192-255 (128 addresses)
+```
+
+#### Practical Use Cases
+
+##### Reserve Network and Broadcast Addresses
+```php
+// Remove network and broadcast addresses from a subnet
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+
+$exclusions = [
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/32'),   // Network address
+    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.255/32'), // Broadcast address
+];
+
+$usableSpace = $subnet->excludeAll($exclusions);
+// Returns CIDR blocks representing 192.168.1.1-254 (254 addresses)
+```
+
+##### Carve Out Reserved Ranges from Large Allocation
+```php
+// ISP allocates a /16 but needs to exclude documentation ranges
+$allocation = IPv4\SubnetCalculatorFactory::fromCidr('192.0.0.0/16');
+$testNet1   = IPv4\SubnetCalculatorFactory::fromCidr('192.0.2.0/24'); // TEST-NET-1
+
+$usableSpace = $allocation->exclude($testNet1);
+// Returns optimal CIDR blocks for all addresses except 192.0.2.0/24
+```
+
+##### Sequential Subnet Carving
+```php
+// Start with a large block and carve out assignments
+$pool = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/16');
+
+// Assign subnets to different departments
+$engineering = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/20');
+$sales       = IPv4\SubnetCalculatorFactory::fromCidr('10.0.16.0/20');
+$hr          = IPv4\SubnetCalculatorFactory::fromCidr('10.0.32.0/20');
+
+$remainingPool = $pool->excludeAll([$engineering, $sales, $hr]);
+// Returns remaining unallocated address space
+```
+
+#### Behavior Notes
+
+**Non-overlapping subnets**: If the excluded subnet doesn't overlap with the base subnet, returns the original subnet unchanged.
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$other  = IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24');
+
+$result = $subnet->exclude($other);
+// Returns: [192.168.1.0/24] (unchanged)
+```
+
+**Full exclusion**: If the excluded subnet fully contains the base subnet, returns an empty array.
+```php
+$small = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/25');
+$large = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+
+$result = $small->exclude($large);
+// Returns: [] (nothing remains)
+```
+
+**Optimal CIDR blocks**: Results are always properly aligned CIDR blocks (not arbitrary ranges).
+```php
+$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+$middle = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.100/32');
+
+$result = $subnet->exclude($middle);
+// Returns 8 optimally-sized CIDR blocks representing addresses 10.0.0.0-99 and 10.0.0.101-255
 ```
 
 ### IP Address Range Type Detection

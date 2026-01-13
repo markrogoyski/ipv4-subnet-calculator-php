@@ -760,6 +760,136 @@ class SubnetCalculator implements \JsonSerializable
     }
 
     /* ****************************** *
+     * EXCLUDE/DIFFERENCE OPERATIONS
+     * ****************************** */
+
+    /**
+     * Exclude a subnet from this subnet.
+     *
+     * Returns an array of subnets representing the remainder after removing
+     * the excluded subnet. Useful for carving out reserved ranges.
+     *
+     * The result is the minimal set of CIDR blocks covering the remaining space.
+     * If the subnets don't overlap, returns this subnet unchanged.
+     * If the excluded subnet fully contains this subnet, returns an empty array.
+     *
+     * @param SubnetCalculator $exclude Subnet to exclude
+     *
+     * @return SubnetCalculator[] Remaining subnets (empty if fully excluded)
+     */
+    public function exclude(SubnetCalculator $exclude): array
+    {
+        // If no overlap, return this subnet unchanged
+        if (!$this->overlaps($exclude)) {
+            return [new SubnetCalculator($this->getNetworkPortion(), $this->networkSize)];
+        }
+
+        // If exclude fully contains this subnet, nothing remains
+        if ($exclude->contains($this)) {
+            return [];
+        }
+
+        // If this subnet fully contains exclude, we need to split
+        // Recursively split this subnet in half until we isolate the excluded portion
+        return $this->excludeRecursive($exclude);
+    }
+
+    /**
+     * Exclude multiple subnets from this subnet.
+     *
+     * Applies multiple exclusions sequentially. The result is the set of subnets
+     * remaining after all exclusions are applied.
+     *
+     * @param SubnetCalculator[] $excludes Subnets to exclude
+     *
+     * @return SubnetCalculator[] Remaining subnets
+     */
+    public function excludeAll(array $excludes): array
+    {
+        if (empty($excludes)) {
+            return [new SubnetCalculator($this->getNetworkPortion(), $this->networkSize)];
+        }
+
+        // Start with this subnet
+        $remaining = [new SubnetCalculator($this->getNetworkPortion(), $this->networkSize)];
+
+        // Apply each exclusion to all remaining subnets
+        foreach ($excludes as $exclude) {
+            $newRemaining = [];
+            foreach ($remaining as $subnet) {
+                $afterExclude = $subnet->exclude($exclude);
+                foreach ($afterExclude as $s) {
+                    $newRemaining[] = $s;
+                }
+            }
+            $remaining = $newRemaining;
+        }
+
+        return $remaining;
+    }
+
+    /**
+     * Recursively exclude a subnet by splitting into halves.
+     *
+     * This method splits the current subnet into two halves and recursively
+     * processes each half. Halves that don't overlap with the exclusion are
+     * kept as-is. Halves that are fully contained by the exclusion are discarded.
+     * Halves that partially overlap are split further.
+     *
+     * @param SubnetCalculator $exclude Subnet to exclude
+     *
+     * @return SubnetCalculator[] Remaining subnets
+     */
+    private function excludeRecursive(SubnetCalculator $exclude): array
+    {
+        // Can't split smaller than /32
+        if ($this->networkSize >= 32) {
+            // This /32 overlaps with exclude, so it's excluded
+            return [];
+        }
+
+        // Split into two halves
+        $newPrefix = $this->networkSize + 1;
+        $firstHalf = new SubnetCalculator($this->getNetworkPortion(), $newPrefix);
+        $secondHalfStart = $this->getNetworkPortionInteger() + ($this->getNumberIPAddresses() / 2);
+        // Handle signed/unsigned conversion
+        $secondHalfIp = $this->convertIpToDottedQuad((int) $secondHalfStart);
+        $secondHalf = new SubnetCalculator($secondHalfIp, $newPrefix);
+
+        $result = [];
+
+        // Process first half
+        if (!$firstHalf->overlaps($exclude)) {
+            // No overlap, keep the whole half
+            $result[] = $firstHalf;
+        } elseif ($exclude->contains($firstHalf)) {
+            // Fully excluded, discard
+        } else {
+            // Partial overlap, recurse
+            $subResult = $firstHalf->excludeRecursive($exclude);
+            foreach ($subResult as $s) {
+                $result[] = $s;
+            }
+        }
+
+        // Process second half
+        if (!$secondHalf->overlaps($exclude)) {
+            // No overlap, keep the whole half
+            $result[] = $secondHalf;
+        } elseif ($exclude->contains($secondHalf)) {
+            // Fully excluded, discard
+        } else {
+            // Partial overlap, recurse
+            $subResult = $secondHalf->excludeRecursive($exclude);
+            foreach ($subResult as $s) {
+                $result[] = $s;
+            }
+        }
+
+        return $result;
+    }
+
+    /* ****************************** *
      * ADJACENT SUBNET NAVIGATION
      * ****************************** */
 
