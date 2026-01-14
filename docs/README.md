@@ -115,7 +115,7 @@ $wasted = $subnet->getWastedAddresses(100);
 $subnet->printSubnetReport();
 
 // Get as JSON
-$json = $subnet->getSubnetJSONReport();
+$json = $subnet->getSubnetJsonReport();
 
 // Get as array
 $array = $subnet->getSubnetArrayReport();

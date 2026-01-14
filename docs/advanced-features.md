@@ -247,7 +247,7 @@ $subnets = [
 $aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
 // Returns: [10.0.0.0/22]
 
-echo "Aggregated {count($subnets)} /24s into: {$aggregated[0]->getCidrNotation()}\n";
+echo "Aggregated " . count($subnets) . " /24s into: {$aggregated[0]->getCidrNotation()}\n";
 ```
 
 #### Example 3: Non-contiguous Subnets Remain Separate

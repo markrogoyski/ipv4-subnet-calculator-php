@@ -237,7 +237,7 @@ $subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
 $subnet->printSubnetReport();
 
 // Get as JSON
-$json = $subnet->getSubnetJSONReport();
+$json = $subnet->getSubnetJsonReport();
 
 // Get as array
 $array = $subnet->getSubnetArrayReport();

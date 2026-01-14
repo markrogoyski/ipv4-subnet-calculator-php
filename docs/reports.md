@@ -174,7 +174,7 @@ Get subnet information as a JSON string:
 
 ```php
 $subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-$json = $subnet->getSubnetJSONReport();
+$json = $subnet->getSubnetJsonReport();
 
 // Parse JSON
 $data = json_decode($json, true);
@@ -252,7 +252,7 @@ function getSubnetInfo($cidr) {
         $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
 
         header('Content-Type: application/json');
-        echo $subnet->getSubnetJSONReport();
+        echo $subnet->getSubnetJsonReport();
     } catch (\Exception $e) {
         http_response_code(400);
         echo json_encode(['error' => $e->getMessage()]);
@@ -344,7 +344,7 @@ $subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
 
 // These are equivalent:
 $json = json_encode($subnet);
-$json = $subnet->getSubnetJSONReport();
+$json = $subnet->getSubnetJsonReport();
 
 // Pretty print JSON
 $prettyJson = json_encode($subnet, JSON_PRETTY_PRINT);
@@ -385,7 +385,7 @@ try {
     $cidr = $_GET['cidr'] ?? '';
     $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
 
-    echo $subnet->getSubnetJSONReport();
+    echo $subnet->getSubnetJsonReport();
 } catch (\Exception $e) {
     http_response_code(400);
     echo json_encode([

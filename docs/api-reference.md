@@ -743,9 +743,9 @@ Get subnet information as associative array.
 
 **Returns:** Associative array with complete subnet information
 
-### getSubnetJSONReport()
+### getSubnetJsonReport()
 ```php
-getSubnetJSONReport(): string
+getSubnetJsonReport(): string
 ```
 Get subnet information as JSON string.
 
@@ -824,7 +824,7 @@ Serialize to JSON (implements JsonSerializable).
 
 ### Documentation
 - `printSubnetReport()` - Print to console
-- `getSubnetJSONReport()` - Export to JSON
+- `getSubnetJsonReport()` - Export to JSON
 - `getSubnetArrayReport()` - Get as array
 
 ---
