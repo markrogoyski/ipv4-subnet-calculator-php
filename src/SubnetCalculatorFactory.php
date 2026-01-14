@@ -373,10 +373,6 @@ class SubnetCalculatorFactory
 
                 // Try to find a partner to merge with
                 for ($j = $i + 1; $j < \count($blocks); $j++) {
-                    if (isset($used[$j])) {
-                        continue;
-                    }
-
                     $other = $blocks[$j];
 
                     // Check if they can be merged (but not below /1 since /0 is not supported)
