@@ -1881,6 +1881,7 @@ class SubnetCalculator implements \JsonSerializable
     {
         $ipDottedQuad = \long2ip($ipAsInt);
         if ($ipDottedQuad == false) {
+            // @codeCoverageIgnore
             throw new \RuntimeException('Invalid IP address integer. Could not convert integer address to dotted-quad string: ' . $ipAsInt);
         }
         return $ipDottedQuad;

@@ -203,6 +203,7 @@ class SubnetCalculatorFactoryTest extends TestCase
             'Invalid mask format'      => ['192.168.1.0', '255.255.255'],
             'Non-numeric mask'         => ['192.168.1.0', 'invalid'],
             'Zero mask'                => ['192.168.1.0', '0.0.0.0'],
+            'Non-numeric octet alpha'  => ['192.168.1.0', '255.abc.255.0'],
         ];
     }
 
@@ -323,6 +324,22 @@ class SubnetCalculatorFactoryTest extends TestCase
 
         // When
         SubnetCalculatorFactory::fromRange('192.168.1.0', 'invalid');
+    }
+
+    /**
+     * @test Entire IPv4 space would require /0 which is invalid
+     */
+    public function testFromRangeThrowsExceptionForEntireIpv4Space(): void
+    {
+        // Given - The entire IPv4 address space (0.0.0.0 to 255.255.255.255)
+        // This would require a /0 network which is not valid
+
+        // Then
+        $this->expectException(\UnexpectedValueException::class);
+        $this->expectExceptionMessage('Network size 0 not valid');
+
+        // When
+        SubnetCalculatorFactory::fromRange('0.0.0.0', '255.255.255.255');
     }
 
     /* *************************** *
@@ -507,6 +524,7 @@ class SubnetCalculatorFactoryTest extends TestCase
     {
         // Then
         $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Host count must be positive, got 0');
 
         // When
         SubnetCalculatorFactory::optimalPrefixForHosts(0);
@@ -519,6 +537,7 @@ class SubnetCalculatorFactoryTest extends TestCase
     {
         // Then
         $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Host count must be positive, got -1');
 
         // When
         SubnetCalculatorFactory::optimalPrefixForHosts(-1);

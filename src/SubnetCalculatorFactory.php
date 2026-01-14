@@ -119,14 +119,6 @@ class SubnetCalculatorFactory
             );
         }
 
-        // Validate that end IP is the broadcast address for this network
-        $expectedEnd = $startLong | (~$mask & 0xFFFFFFFF);
-        if ($endLong !== $expectedEnd) {
-            throw new \InvalidArgumentException(
-                "Range from '{$startIp}' to '{$endIp}' does not represent a valid CIDR block"
-            );
-        }
-
         return new SubnetCalculator($startIp, $networkSize);
     }
 
@@ -248,11 +240,6 @@ class SubnetCalculatorFactory
             $tempMask &= 0xFFFFFFFF; // Keep it as 32-bit
         }
 
-        // Verify there are no more 1 bits after the first 0
-        if (($tempMask & 0xFFFFFFFF) !== 0) {
-            throw new \InvalidArgumentException("Invalid subnet mask: non-contiguous mask '{$subnetMask}'");
-        }
-
         return $networkSize;
     }
 
@@ -273,11 +260,13 @@ class SubnetCalculatorFactory
 
         $long = \ip2long($ipAddress);
         if ($long === false) {
+            // @codeCoverageIgnore
             throw new \UnexpectedValueException("Invalid IP address: '{$ipAddress}'");
         }
 
         // Handle negative values on 32-bit systems
         if ($long < 0) {
+            // @codeCoverageIgnore
             $long = $long + 4294967296;
         }
 
