@@ -294,5 +294,5 @@ Now that you have the basics, explore more advanced features:
 
 - [Project README](../README.md) - Project overview and quick reference
 - [GitHub Repository](https://github.com/markrogoyski/ipv4-subnet-calculator-php)
-- [Packagist Package](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator-php)
+- [Packagist Package](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator)
 - [Report Issues](https://github.com/markrogoyski/ipv4-subnet-calculator-php/issues)

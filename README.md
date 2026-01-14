@@ -6,7 +6,7 @@ IPv4 Subnet Calculator (PHP)
 Comprehensive PHP library for IPv4 subnet calculations, network planning, and CIDR operations.
 
 [![Coverage Status](https://coveralls.io/repos/github/markrogoyski/ipv4-subnet-calculator-php/badge.svg?branch=master)](https://coveralls.io/github/markrogoyski/ipv4-subnet-calculator-php?branch=master)
-[![License](https://poser.pugx.org/markrogoyski/ipv4-subnet-calculator/license)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator-php)
+[![License](https://poser.pugx.org/markrogoyski/ipv4-subnet-calculator/license)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator)
 [![Latest Stable Version](https://poser.pugx.org/markrogoyski/ipv4-subnet-calculator/v)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator)
 [![Downloads](https://poser.pugx.org/markrogoyski/ipv4-subnet-calculator/downloads)](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator)
 

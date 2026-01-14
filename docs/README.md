@@ -251,7 +251,7 @@ Found an issue or have a suggestion for improving the documentation?
 
 - [Main README](../README.md) - Project overview and quick reference
 - [GitHub Repository](https://github.com/markrogoyski/ipv4-subnet-calculator-php)
-- [Packagist Package](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator-php)
+- [Packagist Package](https://packagist.org/packages/markrogoyski/ipv4-subnet-calculator)
 - [IPv4 Address Space](https://www.iana.org/assignments/ipv4-address-space/)
 - [CIDR Notation](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing)
 
