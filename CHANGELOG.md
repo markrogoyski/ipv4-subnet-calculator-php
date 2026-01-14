@@ -40,6 +40,12 @@
   - `getWastedAddresses($requiredHosts)`: Calculate wasted/unused addresses for a given host requirement (negative values indicate insufficient capacity)
   - Useful for capacity planning, choosing optimal subnet sizes, and minimizing IP address waste
 
+### Documentation
+- **Comprehensive documentation reorganization**: Restructured documentation for improved usability:
+  - Simplified README with quick start, focused examples, and clear navigation
+  - New [docs/](docs/) directory with complete feature guides, API reference, real-world examples, and learning paths
+  - Practical real-world examples including IPAM, firewall rules, BGP route optimization, DHCP, DNS, and network automation
+
 ## v4.3.0 - 2026-01-11
 
 ### New Features
