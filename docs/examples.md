@@ -408,7 +408,7 @@ class BGPRouteOptimizer {
             echo "Region: {$region}\n";
             echo str_repeat('-', 80) . "\n";
 
-            echo "Original routes ({count($subnets)}):\n";
+            echo "Original routes (" . \count($subnets) . "):\n";
             foreach ($subnets as $subnet) {
                 echo "  {$subnet->getCidrNotation()}\n";
             }
