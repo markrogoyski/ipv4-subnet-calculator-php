@@ -5,32 +5,22 @@ declare(strict_types=1);
 namespace IPv4;
 
 /**
- * Network calculator for subnet mask and other classless (CIDR) network information.
+ * IPv4 subnet calculator for CIDR operations, network planning, and IP address management.
  *
- * Given an IP address and CIDR network size, it calculates the following information:
- *   - IP address network subnet masks, network and host portions, and provides aggregated reports.
- *   - Subnet mask
- *   - Network portion
- *   - Host portion
- *   - Number of IP addresses in the network
- *   - Number of addressable hosts in the network
- *   - IP address range
- *   - Broadcast address
- *   - Min and max host
- *   - All IP addresses
- *   - IPv4 ARPA Domain
- * Provides each data in dotted quads, hexadecimal, and binary formats, as well as array of quads.
+ * Given an IP address and CIDR prefix (e.g., 192.168.1.100/24), calculates network properties
+ * including subnet masks, network/host portions, IP ranges, broadcast addresses, and all IPs
+ * in the subnet. Provides data in multiple formats: dotted quads, hex, binary, integer, and array.
  *
- * Aggregated network calculation reports:
- *  - Associative array
- *  - JSON
- *  - String
- *  - Printed to STDOUT
+ * Key capabilities:
+ *  - Network calculations (subnet mask, wildcard, broadcast, usable ranges)
+ *  - IP address type detection (private, public, loopback, multicast, etc.)
+ *  - Network analysis (overlap detection, containment checking)
+ *  - Subnet operations (splitting, navigation, exclusion)
+ *  - Reports in multiple formats (array, JSON, string, STDOUT)
  *
- * Special handling for /31 and /32 networks:
- *  - /32: Single host network. Min and max host are the same as the IP address.
- *  - /31: Point-to-point link per RFC 3021. Both addresses are usable hosts (no reserved
- *         network or broadcast addresses). Min host is the lower IP, max host is the higher IP.
+ * Special handling per RFC 3021:
+ *  - /32: Single host network (min/max host same as IP address)
+ *  - /31: Point-to-point link (both addresses usable, no broadcast/network addresses)
  *
  * @link https://datatracker.ietf.org/doc/html/rfc3021 RFC 3021 - Using 31-Bit Prefixes on IPv4 Point-to-Point Links
  */

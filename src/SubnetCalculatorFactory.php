@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace IPv4;
 
 /**
- * Factory class for creating SubnetCalculator instances from various input formats.
+ * Factory for creating SubnetCalculator instances from various input formats.
  *
- * Provides flexible ways to instantiate SubnetCalculator objects, separating
- * construction concerns from the main class and improving developer experience.
+ * Provides convenient static methods to create subnet calculators from:
+ *  - CIDR notation (e.g., "192.168.1.0/24")
+ *  - IP address and subnet mask (e.g., "192.168.1.0", "255.255.255.0")
+ *  - IP address range (start and end addresses)
+ *  - Host count requirements (finds optimal subnet size)
  *
- * @link https://datatracker.ietf.org/doc/html/rfc3021 RFC 3021 - Using 31-Bit Prefixes on IPv4 Point-to-Point Links
- * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - Classless Inter-domain Routing (CIDR)
+ * Advanced factory methods:
+ *  - Aggregate multiple subnets into larger CIDR blocks
+ *  - Summarize networks into a single supernet
+ *  - Calculate optimal prefix length for host requirements
+ *
+ * All methods validate inputs and return configured SubnetCalculator instances.
  */
 class SubnetCalculatorFactory
 {

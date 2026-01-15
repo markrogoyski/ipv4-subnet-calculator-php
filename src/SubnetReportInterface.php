@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace IPv4;
 
 /**
- * Interface for aggregated network calculation reports
- *  - Associative array
- *  - JSON
- *  - String
- *  - Printed to STDOUT
+ * Contract for subnet report generation implementations.
+ *
+ * Defines the interface for creating formatted reports from SubnetCalculator instances.
+ * Implementations must support four output formats: array, JSON, printable string,
+ * and direct STDOUT output.
+ *
+ * Reports include comprehensive network data: IP addresses, subnet masks, wildcard masks,
+ * network/host portions, address ranges, and metadata in multiple numeric formats
+ * (dotted quads, hex, binary, integer).
+ *
+ * Implement this interface to create custom report formats or integrate with external
+ * reporting systems. Inject via SubnetCalculator constructor for customized output.
  */
 interface SubnetReportInterface
 {

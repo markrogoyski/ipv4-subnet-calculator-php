@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace IPv4;
 
 /**
- * SubnetReport implementation for aggregated network calculation reports
- *  - Associative array
- *  - JSON
- *  - String
- *  - Printed to STDOUT
+ * Default implementation for generating comprehensive subnet analysis reports.
+ *
+ * Creates formatted reports containing complete network information including IP addresses,
+ * subnet masks, wildcard masks, network/host portions, address ranges, and metadata.
+ * All numeric values provided in multiple formats: dotted quads, hex, binary, and integer.
+ *
+ * Output formats:
+ *  - Associative array (for programmatic access)
+ *  - JSON (for APIs and serialization)
+ *  - Formatted string (human-readable tabular layout)
+ *  - Direct STDOUT printing (for CLI tools)
+ *
+ * Used internally by SubnetCalculator report methods. Can be replaced with custom
+ * implementations via dependency injection for specialized reporting needs.
  */
 class SubnetReport implements SubnetReportInterface
 {
