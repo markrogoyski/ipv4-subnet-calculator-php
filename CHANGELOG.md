@@ -1,6 +1,6 @@
 # IPv4 SubnetCalculator Change log
 
-## v4.4.0 - TBD
+## v4.4.0 - 2026-01-14
 
 ### New Features
 - **CIDR aggregation and supernetting**: New factory methods for combining multiple subnets into larger summary routes:
