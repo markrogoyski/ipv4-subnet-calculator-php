@@ -1,6 +1,6 @@
-.PHONY : lint tests style phpstan phpmd report coverage
+.PHONY : lint tests style phpstan phpmd psalm composer-unused composer-require-checker composer-audit coverage
 
-all : lint tests style phpstan
+all : lint tests style phpstan psalm composer-unused composer-require-checker
 
 tests :
 	vendor/bin/phpunit tests/ --configuration=tests/phpunit.xml
@@ -9,16 +9,25 @@ lint :
 	vendor/bin/parallel-lint src tests
 
 style :
-	vendor/bin/phpcs --standard=tests/coding_standard.xml --ignore=vendor -s .
+	vendor/bin/phpcs --standard=tools/coding_standard.xml --ignore=vendor -s .
 
 phpstan :
-	vendor/bin/phpstan analyze --level max src/
+	vendor/bin/phpstan analyze -c tools/phpstan.neon
+
+psalm :
+	vendor/bin/psalm -c tools/psalm.xml
 
 phpmd :
-	vendor/bin/phpmd src/ ansi cleancode,codesize,design,unusedcode,naming
+	vendor/bin/phpmd src/ ansi tools/phpmd.xml
+
+composer-unused :
+	vendor/bin/composer-unused
+
+composer-require-checker :
+	vendor/bin/composer-require-checker check composer.json
+
+composer-audit :
+	./composer.phar audit
 
 coverage :
 	vendor/bin/phpunit tests/ --configuration=tests/phpunit.xml --coverage-text=php://stdout
-
-report :
-	vendor/bin/phploc src/

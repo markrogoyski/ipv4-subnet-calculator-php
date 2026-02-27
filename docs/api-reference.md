@@ -1,838 +1,1026 @@
-# API Reference
+# API Reference - Version 5.0
 
-Complete reference of all public methods available in the IPv4 Subnet Calculator library.
+Complete reference of all public methods and classes in the IPv4 Subnet Calculator library v5.0.
 
 ## Table of Contents
-- [Factory Methods](#factory-methods)
-- [Network Information](#network-information)
-- [IP Address Methods](#ip-address-methods)
-- [Subnet Mask Methods](#subnet-mask-methods)
-- [Wildcard Mask Methods](#wildcard-mask-methods)
-- [Network Portion Methods](#network-portion-methods)
-- [Host Portion Methods](#host-portion-methods)
-- [Min/Max Host Methods](#minmax-host-methods)
-- [IP Address Operations](#ip-address-operations)
-- [Network Operations](#network-operations)
-- [Type Detection Methods](#type-detection-methods)
-- [Network Class Methods](#network-class-methods)
-- [Utilization Methods](#utilization-methods)
-- [Navigation Methods](#navigation-methods)
-- [Report Generation](#report-generation)
+- [Main Classes](#main-classes)
+- [Subnet Class](#subnet-class)
+- [SubnetParser Class](#subnetparser-class)
+- [Subnets Class](#subnets-class)
+- [Value Object Classes](#value-object-classes)
+  - [IPAddress](#ipaddress-class)
+  - [SubnetMask](#subnetmask-class)
+  - [WildcardMask](#wildcardmask-class)
+  - [IPRange](#iprange-class)
+- [Enum Classes](#enum-classes)
 
 ---
 
-## Factory Methods
+## Main Classes
 
-Static methods on `SubnetCalculatorFactory` for creating SubnetCalculator instances.
+### Overview
 
-### fromCidr()
+v5.0 introduces a clean object-oriented architecture:
+
+- **`Subnet`** - Main class for subnet operations
+- **`SubnetParser`** - Factory for creating subnets from various input formats
+- **`Subnets`** - Collection operations on arrays of Subnet objects
+- **`IPAddress`** - Immutable IP address value object
+- **`SubnetMask`** - Immutable subnet mask value object
+- **`WildcardMask`** - Immutable wildcard mask value object
+- **`IPRange`** - Immutable IP range value object (iterable)
+
+All value objects implement the `Stringable` interface and provide format methods.
+
+---
+
+## Subnet Class
+
+`IPv4\Subnet` - Main entry point for subnet calculations. Immutable, provides access to all subnet information through value objects.
+
+### Construction
+
+#### __construct()
 ```php
-IPv4\SubnetCalculatorFactory::fromCidr(string $cidr): SubnetCalculator
+new Subnet(string $ipAddress, int $networkSize): Subnet
 ```
-Create from CIDR notation string (e.g., '192.168.1.0/24').
-
-**See:** [Getting Started - Creating Subnet Calculators](getting-started.md#from-cidr-notation-most-common)
-
-### fromMask()
-```php
-IPv4\SubnetCalculatorFactory::fromMask(string $ipAddress, string $subnetMask): SubnetCalculator
-```
-Create from IP address and subnet mask (e.g., '192.168.1.0', '255.255.255.0').
-
-**See:** [Getting Started - From IP Address and Subnet Mask](getting-started.md#from-ip-address-and-subnet-mask)
-
-### fromRange()
-```php
-IPv4\SubnetCalculatorFactory::fromRange(string $networkAddress, string $broadcastAddress): SubnetCalculator
-```
-Create from network and broadcast address range.
-
-**See:** [Getting Started - From IP Address Range](getting-started.md#from-ip-address-range)
-
-### fromHostCount()
-```php
-IPv4\SubnetCalculatorFactory::fromHostCount(string $ipAddress, int $requiredHosts): SubnetCalculator
-```
-Create the smallest subnet that can accommodate the required number of hosts.
-
-**See:** [Getting Started - From Required Host Count](getting-started.md#from-required-host-count)
-
-### optimalPrefixForHosts()
-```php
-IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(int $requiredHosts): int
-```
-Calculate the optimal CIDR prefix (network size) for a given number of hosts. Returns just the prefix number without creating a SubnetCalculator instance.
-
-**See:** [Getting Started - Calculate Optimal Prefix](getting-started.md#calculate-optimal-prefix-for-host-count)
-
-### aggregate()
-```php
-IPv4\SubnetCalculatorFactory::aggregate(array $subnets): SubnetCalculator[]
-```
-Combine contiguous subnets into the minimal set of larger CIDR blocks.
+Create a subnet from IP address and prefix length.
 
 **Parameters:**
-- `$subnets` - Array of SubnetCalculator instances
+- `$ipAddress` - IP address in dotted decimal format
+- `$networkSize` - CIDR prefix (0-32)
 
-**Returns:** Array of SubnetCalculator instances
-
-**See:** [Advanced Features - CIDR Aggregation](advanced-features.md#aggregate-multiple-subnets)
-
-### summarize()
+**Example:**
 ```php
-IPv4\SubnetCalculatorFactory::summarize(array $subnets): SubnetCalculator
+$subnet = new Subnet('192.168.1.100', 24);
 ```
-Find the smallest single CIDR block that contains all input subnets.
+
+#### fromCidr()
+```php
+Subnet::fromCidr(string $cidr): Subnet
+```
+Create a subnet from CIDR notation.
 
 **Parameters:**
-- `$subnets` - Array of SubnetCalculator instances
+- `$cidr` - CIDR notation (e.g., '192.168.1.0/24')
 
-**Returns:** Single SubnetCalculator instance
-
-**See:** [Advanced Features - Summarize to Single Supernet](advanced-features.md#summarize-to-single-supernet)
-
----
-
-## Network Information
-
-Core network properties and metadata.
-
-### getCidrNotation()
+**Example:**
 ```php
-getCidrNotation(): string
+$subnet = Subnet::fromCidr('192.168.1.0/24');
 ```
-Get CIDR notation (e.g., '192.168.112.203/23').
 
-### getNetworkSize()
+### Core Identity
+
+#### ipAddress()
 ```php
-getNetworkSize(): int
+ipAddress(): IPAddress
 ```
-Get the network prefix length (0-32).
+Returns the input IP address as an IPAddress value object.
 
-### getNumberIPAddresses()
+**Example:**
 ```php
-getNumberIPAddresses(): int
+$ip = $subnet->ipAddress();
+echo $ip;                  // "192.168.1.100"
+echo $ip->asHex();         // "C0A80164"
 ```
-Get total number of IP addresses in the subnet (including network and broadcast).
 
-### getNumberAddressableHosts()
+#### networkSize()
 ```php
-getNumberAddressableHosts(): int
+networkSize(): int
 ```
-Get number of usable host addresses (excludes network and broadcast, except for /31 and /32).
+Returns the CIDR prefix length (0-32).
 
-**See:** [Core Features - Network Component Access](core-features.md#network-component-access)
-
-### getIPAddressRange()
+**Example:**
 ```php
-getIPAddressRange(): array
+$size = $subnet->networkSize();  // 24
 ```
-Get network and broadcast addresses as array: `[networkAddress, broadcastAddress]`.
 
-### getAddressableHostRange()
+#### cidr()
 ```php
-getAddressableHostRange(): array
+cidr(): string
 ```
-Get first and last usable host addresses as array: `[minHost, maxHost]`.
+Returns CIDR notation string with the input IP address.
 
-### getBroadcastAddress()
+**Note:** Returns the input IP with prefix. For canonical form suitable for string comparisons, use `networkCidr()` instead.
+
+**Example:**
 ```php
-getBroadcastAddress(): string
+$subnet = Subnet::fromCidr('192.168.1.100/24');
+$cidr = $subnet->cidr();  // "192.168.1.100/24"
 ```
-Get broadcast address in dotted decimal format.
 
----
-
-## IP Address Methods
-
-Access the IP address used to create the subnet in multiple formats.
-
-### getIPAddress()
+#### networkCidr()
 ```php
-getIPAddress(): string
+networkCidr(): string
 ```
-Get IP address in dotted decimal format (e.g., '192.168.112.203').
+Returns canonical CIDR notation using the network address.
 
-### getIPAddressQuads()
+**Use this for:**
+- String comparisons between subnets
+- Serialization and storage
+- Scenarios where equal subnets must produce identical strings
+
+**Example:**
 ```php
-getIPAddressQuads(): array
-```
-Get IP address as array of octets (e.g., `[192, 168, 112, 203]`).
+$subnet1 = Subnet::fromCidr('192.168.1.100/24');
+$subnet2 = Subnet::fromCidr('192.168.1.200/24');
 
-### getIPAddressHex()
+$subnet1->cidr();        // "192.168.1.100/24"
+$subnet2->cidr();        // "192.168.1.200/24"
+
+$subnet1->networkCidr(); // "192.168.1.0/24"
+$subnet2->networkCidr(); // "192.168.1.0/24"
+```
+
+### Network Addresses
+
+#### networkAddress()
 ```php
-getIPAddressHex(): string
+networkAddress(): IPAddress
 ```
-Get IP address in hexadecimal format (e.g., 'C0A870CB').
+Returns the network address (first IP in subnet).
 
-### getIPAddressBinary()
+**Example:**
 ```php
-getIPAddressBinary(): string
+$network = $subnet->networkAddress();  // IPAddress: 192.168.1.0
+echo $network->asQuads();              // "192.168.1.0"
 ```
-Get IP address in binary format (e.g., '11000000101010000111000011001011').
 
-### getIPAddressInteger()
+#### broadcastAddress()
 ```php
-getIPAddressInteger(): int
+broadcastAddress(): IPAddress
 ```
-Get IP address as integer (e.g., 3232264395).
+Returns the broadcast address (last IP in subnet).
 
-**See:** [Core Features - IP Address](core-features.md#ip-address)
-
----
-
-## Subnet Mask Methods
-
-Access subnet mask in multiple formats.
-
-### getSubnetMask()
+**Example:**
 ```php
-getSubnetMask(): string
+$broadcast = $subnet->broadcastAddress();  // IPAddress: 192.168.1.255
 ```
-Get subnet mask in dotted decimal format (e.g., '255.255.254.0').
 
-### getSubnetMaskQuads()
+#### minHost()
 ```php
-getSubnetMaskQuads(): array
+minHost(): IPAddress
 ```
-Get subnet mask as array of octets (e.g., `[255, 255, 254, 0]`).
+Returns the first usable host address.
 
-### getSubnetMaskHex()
+**Example:**
 ```php
-getSubnetMaskHex(): string
+$min = $subnet->minHost();  // IPAddress: 192.168.1.1
 ```
-Get subnet mask in hexadecimal format (e.g., 'FFFFFE00').
 
-### getSubnetMaskBinary()
+#### maxHost()
 ```php
-getSubnetMaskBinary(): string
+maxHost(): IPAddress
 ```
-Get subnet mask in binary format (e.g., '11111111111111111111111000000000').
+Returns the last usable host address.
 
-### getSubnetMaskInteger()
+**Example:**
 ```php
-getSubnetMaskInteger(): int
+$max = $subnet->maxHost();  // IPAddress: 192.168.1.254
 ```
-Get subnet mask as integer (e.g., 4294966784).
 
-**See:** [Core Features - Subnet Mask](core-features.md#subnet-mask)
+### Masks
 
----
-
-## Wildcard Mask Methods
-
-Access wildcard mask (inverse of subnet mask) in multiple formats.
-
-### getWildcardMask()
+#### mask()
 ```php
-getWildcardMask(): string
+mask(): SubnetMask
 ```
-Get wildcard mask in dotted decimal format (e.g., '0.0.1.255').
+Returns the subnet mask as a SubnetMask value object.
 
-### getWildcardMaskQuads()
+**Example:**
 ```php
-getWildcardMaskQuads(): array
+$mask = $subnet->mask();
+echo $mask;                  // "255.255.255.0"
+echo $mask->asBinary();      // "11111111111111111111111100000000"
 ```
-Get wildcard mask as array of octets (e.g., `[0, 0, 1, 255]`).
 
-### getWildcardMaskHex()
+#### wildcardMask()
 ```php
-getWildcardMaskHex(): string
+wildcardMask(): WildcardMask
 ```
-Get wildcard mask in hexadecimal format (e.g., '000001FF').
+Returns the wildcard mask (inverse of subnet mask) for use in Cisco ACLs.
 
-### getWildcardMaskBinary()
+**Example:**
 ```php
-getWildcardMaskBinary(): string
+$wildcard = $subnet->wildcardMask();  // WildcardMask: 0.0.0.255
 ```
-Get wildcard mask in binary format (e.g., '00000000000000000000000111111111').
 
-### getWildcardMaskInteger()
+### Network Portions
+
+#### networkPortion()
 ```php
-getWildcardMaskInteger(): int
+networkPortion(): IPAddress
 ```
-Get wildcard mask as integer (e.g., 511).
+Returns the network portion of the input IP address.
 
-**See:** [Core Features - Wildcard Mask](core-features.md#wildcard-mask)
-
----
-
-## Network Portion Methods
-
-Access network portion (IP address with host bits zeroed) in multiple formats.
-
-### getNetworkPortion()
+**Example:**
 ```php
-getNetworkPortion(): string
+$network = $subnet->networkPortion();  // IPAddress: 192.168.1.0
 ```
-Get network portion in dotted decimal format (e.g., '192.168.112.0').
 
-### getNetworkPortionQuads()
+#### hostPortion()
 ```php
-getNetworkPortionQuads(): array
+hostPortion(): IPAddress
 ```
-Get network portion as array of octets (e.g., `[192, 168, 112, 0]`).
+Returns the host portion of the input IP address.
 
-### getNetworkPortionHex()
+**Example:**
 ```php
-getNetworkPortionHex(): string
+$host = $subnet->hostPortion();  // IPAddress: 0.0.0.100
 ```
-Get network portion in hexadecimal format (e.g., 'C0A87000').
 
-### getNetworkPortionBinary()
+### Ranges
+
+#### addressRange()
 ```php
-getNetworkPortionBinary(): string
+addressRange(): IPRange
 ```
-Get network portion in binary format (e.g., '11000000101010000111000000000000').
+Returns all IPs in the subnet (including network and broadcast) as an iterable IPRange.
 
-### getNetworkPortionInteger()
+**Example:**
 ```php
-getNetworkPortionInteger(): int
+$range = $subnet->addressRange();
+foreach ($range as $ip) {
+    echo $ip . "\n";  // Iterate through all 256 IPs
+}
 ```
-Get network portion as integer (e.g., 3232264192).
 
-**See:** [Core Features - Network Portion](core-features.md#network-portion)
-
----
-
-## Host Portion Methods
-
-Access host portion (IP address with network bits zeroed) in multiple formats.
-
-### getHostPortion()
+#### hostRange()
 ```php
-getHostPortion(): string
+hostRange(): IPRange
 ```
-Get host portion in dotted decimal format (e.g., '0.0.0.203').
+Returns usable host IPs (excludes network and broadcast) as an iterable IPRange.
 
-### getHostPortionQuads()
+**Note:** For /31 networks (RFC 3021 point-to-point) and /32 networks (single host), all addresses are returned since these special-purpose networks don't reserve network/broadcast addresses.
+
+**Example:**
 ```php
-getHostPortionQuads(): array
+$range = $subnet->hostRange();
+foreach ($range as $ip) {
+    echo $ip . "\n";  // Iterate through 254 usable hosts
+}
 ```
-Get host portion as array of octets (e.g., `[0, 0, 0, 203]`).
 
-### getHostPortionHex()
+### Counts
+
+#### addressCount()
 ```php
-getHostPortionHex(): string
+addressCount(): int
 ```
-Get host portion in hexadecimal format (e.g., '000000CB').
+Returns total number of IP addresses in the subnet.
 
-### getHostPortionBinary()
+**Example:**
 ```php
-getHostPortionBinary(): string
+$total = $subnet->addressCount();  // 256
 ```
-Get host portion in binary format (e.g., '00000000000000000000000011001011').
 
-### getHostPortionInteger()
+#### hostCount()
 ```php
-getHostPortionInteger(): int
+hostCount(): int
 ```
-Get host portion as integer (e.g., 203).
+Returns number of usable host addresses.
 
-**See:** [Core Features - Host Portion](core-features.md#host-portion)
-
----
-
-## Min/Max Host Methods
-
-Access first and last usable host addresses in multiple formats.
-
-### getMinHost()
+**Example:**
 ```php
-getMinHost(): string
+$hosts = $subnet->hostCount();  // 254
 ```
-Get first usable host address in dotted decimal format.
 
-### getMinHostQuads()
-```php
-getMinHostQuads(): array
-```
-Get first usable host address as array of octets.
+### Classification
 
-### getMinHostHex()
-```php
-getMinHostHex(): string
-```
-Get first usable host address in hexadecimal format.
+All classification methods delegate to the `ipAddress()` object.
 
-### getMinHostBinary()
-```php
-getMinHostBinary(): string
-```
-Get first usable host address in binary format.
-
-### getMinHostInteger()
-```php
-getMinHostInteger(): int
-```
-Get first usable host address as integer.
-
-### getMaxHost()
-```php
-getMaxHost(): string
-```
-Get last usable host address in dotted decimal format.
-
-### getMaxHostQuads()
-```php
-getMaxHostQuads(): array
-```
-Get last usable host address as array of octets.
-
-### getMaxHostHex()
-```php
-getMaxHostHex(): string
-```
-Get last usable host address in hexadecimal format.
-
-### getMaxHostBinary()
-```php
-getMaxHostBinary(): string
-```
-Get last usable host address in binary format.
-
-### getMaxHostInteger()
-```php
-getMaxHostInteger(): int
-```
-Get last usable host address as integer.
-
-**See:** [Core Features - Minimum and Maximum Host](core-features.md#minimum-and-maximum-host)
-
----
-
-## IP Address Operations
-
-Operations involving individual IP addresses.
-
-### getAllIPAddresses()
-```php
-getAllIPAddresses(): \Generator
-```
-Get generator that yields all IP addresses in subnet (including network and broadcast).
-
-**Returns:** Generator yielding string IP addresses
-
-### getAllHostIPAddresses()
-```php
-getAllHostIPAddresses(): \Generator
-```
-Get generator that yields all usable host IP addresses (excludes network and broadcast).
-
-**Returns:** Generator yielding string IP addresses
-
-**See:** [Core Features - Iterate All IP Addresses](core-features.md#iterate-all-ip-addresses)
-
-### isIPAddressInSubnet()
-```php
-isIPAddressInSubnet(string $ipAddress): bool
-```
-Check if an IP address is within this subnet.
-
-**Parameters:**
-- `$ipAddress` - IP address to check
-
-**Returns:** true if IP is in subnet, false otherwise
-
-**See:** [Core Features - Check if IP is in Subnet](core-features.md#check-if-ip-is-in-subnet)
-
----
-
-## Network Operations
-
-Operations involving other subnets.
-
-### overlaps()
-```php
-overlaps(SubnetCalculator $other): bool
-```
-Check if this subnet overlaps with another subnet.
-
-**Parameters:**
-- `$other` - Another SubnetCalculator instance
-
-**Returns:** true if subnets share any IP addresses
-
-**See:** [Core Features - Check if Two Subnets Overlap](core-features.md#check-if-two-subnets-overlap)
-
-### contains()
-```php
-contains(SubnetCalculator $other): bool
-```
-Check if this subnet completely contains another subnet.
-
-**Parameters:**
-- `$other` - Another SubnetCalculator instance
-
-**Returns:** true if this subnet contains all IPs of the other subnet
-
-**See:** [Core Features - Check if One Subnet Contains Another](core-features.md#check-if-one-subnet-contains-another)
-
-### isContainedIn()
-```php
-isContainedIn(SubnetCalculator $other): bool
-```
-Check if this subnet is completely contained within another subnet.
-
-**Parameters:**
-- `$other` - Another SubnetCalculator instance
-
-**Returns:** true if all IPs of this subnet are within the other subnet
-
-**See:** [Core Features - Check if Subnet is Contained Within Another](core-features.md#check-if-subnet-is-contained-within-another)
-
-### exclude()
-```php
-exclude(SubnetCalculator $excluded): SubnetCalculator[]
-```
-Exclude a subnet from this subnet, returning the remaining address space.
-
-**Parameters:**
-- `$excluded` - SubnetCalculator to exclude
-
-**Returns:** Array of SubnetCalculator instances representing remaining space
-
-**See:** [Advanced Features - Exclude a Single Subnet](advanced-features.md#exclude-a-single-subnet)
-
-### excludeAll()
-```php
-excludeAll(array $excluded): SubnetCalculator[]
-```
-Exclude multiple subnets from this subnet, returning the remaining address space.
-
-**Parameters:**
-- `$excluded` - Array of SubnetCalculator instances to exclude
-
-**Returns:** Array of SubnetCalculator instances representing remaining space
-
-**See:** [Advanced Features - Exclude Multiple Subnets](advanced-features.md#exclude-multiple-subnets)
-
-### split()
-```php
-split(int $newPrefix): SubnetCalculator[]
-```
-Split this subnet into smaller subnets with the specified prefix length.
-
-**Parameters:**
-- `$newPrefix` - New prefix length (must be larger/more specific than current)
-
-**Returns:** Array of SubnetCalculator instances
-
-**See:** [Core Features - Split Network into Smaller Subnets](core-features.md#split-network-into-smaller-subnets)
-
----
-
-## Type Detection Methods
-
-Determine the type of IP address according to IANA and RFC classifications.
-
-### isPrivate()
+#### isPrivate()
 ```php
 isPrivate(): bool
 ```
-Check if IP is in private address space (RFC 1918: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16).
+Check if the IP is in private address space (RFC 1918).
 
-### isPublic()
+#### isPublic()
 ```php
 isPublic(): bool
 ```
-Check if IP is publicly routable (not in any special-purpose range).
+Check if the IP is a public address.
 
-### isLoopback()
+#### isLoopback()
 ```php
 isLoopback(): bool
 ```
-Check if IP is loopback address (RFC 1122: 127.0.0.0/8).
+Check if the IP is in loopback range (127.0.0.0/8).
 
-### isLinkLocal()
+#### isLinkLocal()
 ```php
 isLinkLocal(): bool
 ```
-Check if IP is link-local/APIPA (RFC 3927: 169.254.0.0/16).
+Check if the IP is link-local (169.254.0.0/16).
 
-### isMulticast()
+#### isMulticast()
 ```php
 isMulticast(): bool
 ```
-Check if IP is multicast (RFC 5771: 224.0.0.0/4).
+Check if the IP is multicast (224.0.0.0/4).
 
-### isCarrierGradeNat()
+#### isCarrierGradeNat()
 ```php
 isCarrierGradeNat(): bool
 ```
-Check if IP is in Carrier-Grade NAT range (RFC 6598: 100.64.0.0/10).
+Check if the IP is in carrier-grade NAT space (100.64.0.0/10).
 
-### isDocumentation()
+#### isDocumentation()
 ```php
 isDocumentation(): bool
 ```
-Check if IP is documentation/TEST-NET range (RFC 5737: 192.0.2.0/24, 198.51.100.0/24, 203.0.113.0/24).
+Check if the IP is reserved for documentation (RFC 5737).
 
-### isBenchmarking()
+#### isBenchmarking()
 ```php
 isBenchmarking(): bool
 ```
-Check if IP is benchmarking range (RFC 2544: 198.18.0.0/15).
+Check if the IP is reserved for benchmarking (198.18.0.0/15).
 
-### isReserved()
+#### isIetfProtocol()
+```php
+isIetfProtocol(): bool
+```
+Check if the IP is reserved for IETF protocol assignments (192.0.0.0/24).
+
+Used for protocols like DS-Lite, NAT64, and other IETF-assigned uses.
+
+**Links:** RFC 5735, RFC 6890
+
+#### is6to4Relay()
+```php
+is6to4Relay(): bool
+```
+Check if the IP is in the deprecated 6to4 relay anycast range (192.88.99.0/24).
+
+This range is deprecated as of RFC 7526.
+
+**Links:** RFC 3068, RFC 7526
+
+#### isReserved()
 ```php
 isReserved(): bool
 ```
-Check if IP is reserved for future use (RFC 1112: 240.0.0.0/4).
+Check if the IP is in reserved address space (240.0.0.0/4).
 
-### isLimitedBroadcast()
+#### isLimitedBroadcast()
 ```php
 isLimitedBroadcast(): bool
 ```
-Check if IP is limited broadcast address (RFC 919: 255.255.255.255/32).
+Check if the IP is the limited broadcast address (255.255.255.255).
 
-### isThisNetwork()
+#### isThisNetwork()
 ```php
 isThisNetwork(): bool
 ```
-Check if IP is "this" network (RFC 1122: 0.0.0.0/8).
+Check if the IP is in "this network" range (0.0.0.0/8).
 
-### getAddressType()
+#### addressType()
 ```php
-getAddressType(): string
+addressType(): AddressType
 ```
-Get string representation of address type classification.
+Returns the address type as an AddressType enum.
 
-**Returns:** One of: 'private', 'public', 'loopback', 'link-local', 'multicast', 'carrier-grade-nat', 'documentation', 'benchmarking', 'reserved', 'limited-broadcast', 'this-network'
-
-**See:** [Core Features - IP Address Type Detection](core-features.md#ip-address-type-detection)
-
----
-
-## Network Class Methods
-
-Legacy classful networking information (Class A, B, C, D, E).
-
-### getNetworkClass()
+**Example:**
 ```php
-getNetworkClass(): string
+$type = $subnet->addressType();  // AddressType::Private
 ```
-Get legacy network class (A, B, C, D, or E).
 
-**Returns:** 'A', 'B', 'C', 'D', or 'E'
+### Network Class (Legacy)
 
-### getDefaultClassMask()
+#### networkClass()
 ```php
-getDefaultClassMask(): string
+networkClass(): NetworkClass
 ```
-Get default subnet mask for the network's class.
+Returns the classful network class (A, B, C, D, E).
 
-**Returns:** Default mask (e.g., '255.0.0.0' for Class A)
-
-### getDefaultClassPrefix()
+#### defaultClassMask()
 ```php
-getDefaultClassPrefix(): int
+defaultClassMask(): ?string
 ```
-Get default prefix length for the network's class.
+Returns the default subnet mask for the network class, or null for D/E.
 
-**Returns:** Default prefix (e.g., 8 for Class A)
+#### defaultClassPrefix()
+```php
+defaultClassPrefix(): ?int
+```
+Returns the default prefix for the network class, or null for D/E.
 
-### isClassful()
+#### isClassful()
 ```php
 isClassful(): bool
 ```
-Check if subnet uses its default classful mask.
+Check if the subnet uses its default classful mask.
 
-**Returns:** true if using natural class boundary, false if subnetted/supernetted
+### Utilization
 
-**See:** [Advanced Features - Network Class Information](advanced-features.md#network-class-information-legacy)
-
----
-
-## Utilization Methods
-
-Analyze subnet efficiency and capacity planning.
-
-### getUsableHostPercentage()
+#### usableHostPercentage()
 ```php
-getUsableHostPercentage(): float
+usableHostPercentage(): float
 ```
-Get percentage of total IP addresses that are usable as hosts.
+Returns percentage of usable addresses (host count / total count).
 
-**Returns:** Percentage (0-100)
-
-### getUnusableAddressCount()
+#### unusableAddressCount()
 ```php
-getUnusableAddressCount(): int
+unusableAddressCount(): int
 ```
-Get count of unusable addresses (network + broadcast).
+Returns number of unusable addresses (network + broadcast, except /31 and /32).
 
-**Returns:** Count of unusable addresses (0 for /31 and /32)
-
-### getUtilizationForHosts()
+#### utilizationFor()
 ```php
-getUtilizationForHosts(int $requiredHosts): float
+utilizationFor(int $requiredHosts): float
 ```
-Calculate utilization percentage for a specific host requirement.
+Calculate utilization percentage for a given host requirement.
 
-**Parameters:**
-- `$requiredHosts` - Number of hosts needed
-
-**Returns:** Utilization percentage (can exceed 100 if insufficient capacity)
-
-### getWastedAddresses()
+**Example:**
 ```php
-getWastedAddresses(int $requiredHosts): int
+$utilization = $subnet->utilizationFor(100);  // 39.37% for /24
 ```
-Calculate wasted addresses for a specific host requirement.
 
-**Parameters:**
-- `$requiredHosts` - Number of hosts needed
-
-**Returns:** Number of wasted addresses (negative if insufficient capacity)
-
-**See:** [Advanced Features - Utilization Statistics](advanced-features.md#utilization-statistics)
-
----
-
-## Navigation Methods
-
-Navigate to adjacent subnets of the same size.
-
-### getNextSubnet()
+#### wastedAddressesFor()
 ```php
-getNextSubnet(): SubnetCalculator
+wastedAddressesFor(int $requiredHosts): int
 ```
-Get the subnet immediately following this one (same prefix length).
+Calculate wasted addresses for a given host requirement.
 
-**Returns:** SubnetCalculator for next subnet
-
-### getPreviousSubnet()
+**Example:**
 ```php
-getPreviousSubnet(): SubnetCalculator
+$wasted = $subnet->wastedAddressesFor(100);  // 154 for /24
 ```
-Get the subnet immediately preceding this one (same prefix length).
 
-**Returns:** SubnetCalculator for previous subnet
+### Operations
 
-### getAdjacentSubnets()
+#### split()
 ```php
-getAdjacentSubnets(int $count): SubnetCalculator[]
+split(int $newPrefix): Subnet[]
 ```
-Get multiple adjacent subnets.
+Split subnet into smaller subnets with the specified prefix.
 
-**Parameters:**
-- `$count` - Number of subnets to get (positive for forward, negative for backward)
-
-**Returns:** Array of SubnetCalculator instances
-
-**See:** [Core Features - Adjacent Subnet Navigation](core-features.md#adjacent-subnet-navigation)
-
----
-
-## Report Generation
-
-Generate comprehensive network reports in multiple formats.
-
-### printSubnetReport()
+**Example:**
 ```php
-printSubnetReport(): void
+$smaller = $subnet->split(26);  // Split /24 into four /26 subnets
 ```
-Print formatted subnet report to STDOUT.
 
-### getSubnetArrayReport()
+#### contains()
 ```php
-getSubnetArrayReport(): array
+contains(Subnet $other): bool
 ```
-Get subnet information as associative array.
+Check if this subnet contains another subnet.
 
-**Returns:** Associative array with complete subnet information
-
-### getSubnetJsonReport()
+#### isContainedIn()
 ```php
-getSubnetJsonReport(): string
+isContainedIn(Subnet $other): bool
+```
+Check if this subnet is contained within another subnet.
+
+#### overlaps()
+```php
+overlaps(Subnet $other): bool
+```
+Check if this subnet overlaps with another subnet.
+
+#### exclude()
+```php
+exclude(Subnet $subnet): Subnet[]
+```
+Exclude a subnet, returning the remaining address space.
+
+**Example:**
+```php
+$remaining = $allocated->exclude($reserved);
+```
+
+#### excludeAll()
+```php
+excludeAll(array $subnets): Subnet[]
+```
+Exclude multiple subnets, returning the remaining address space.
+
+### Navigation
+
+#### next()
+```php
+next(): Subnet
+```
+Get the next adjacent subnet of the same size.
+
+**Example:**
+```php
+$next = $subnet->next();  // 192.168.2.0/24
+```
+
+#### previous()
+```php
+previous(): Subnet
+```
+Get the previous adjacent subnet of the same size.
+
+#### adjacent()
+```php
+adjacent(int $count): Subnet[]
+```
+Get adjacent subnets. Positive count for forward, negative for backward.
+
+**Example:**
+```php
+$forward = $subnet->adjacent(3);   // Next 3 subnets
+$backward = $subnet->adjacent(-3); // Previous 3 subnets
+```
+
+### Membership
+
+#### containsIP()
+```php
+containsIP(string|IPAddress $ip): bool
+```
+Check if an IP address is within this subnet.
+
+**Example:**
+```php
+$inSubnet = $subnet->containsIP('192.168.1.100');  // true
+```
+
+### Comparison
+
+#### equals()
+```php
+equals(Subnet $other): bool
+```
+Check if two subnets are equal (same network and prefix).
+
+### Output
+
+#### arpaDomain()
+```php
+arpaDomain(): string
+```
+Get the reverse DNS ARPA domain for the input IP address.
+
+**Example:**
+```php
+$arpa = $subnet->arpaDomain();  // "1.168.192.in-addr.arpa"
+```
+
+#### toArray()
+```php
+toArray(): array
+```
+Get subnet information as an associative array.
+
+#### toJson()
+```php
+toJson(): string
 ```
 Get subnet information as JSON string.
 
-**Returns:** JSON string
-
-### getPrintableReport()
+#### toPrintable()
 ```php
-getPrintableReport(): string
+toPrintable(): string
 ```
-Get formatted subnet report as string.
+Get subnet information as a formatted text report.
 
-**Returns:** Formatted string report
-
-### getIPv4ArpaDomain()
-```php
-getIPv4ArpaDomain(): string
-```
-Get reverse DNS lookup domain (in-addr.arpa format).
-
-**Returns:** ARPA domain string (e.g., '203.112.168.192.in-addr.arpa')
-
-**See:** [Reports](reports.md)
-
----
-
-## Standard PHP Interfaces
-
-### __toString()
+#### __toString()
 ```php
 __toString(): string
 ```
-Get string representation of subnet (formatted report).
+String representation in CIDR notation (e.g., "192.168.1.100/24"). Use `toPrintable()` for detailed formatted reports.
 
-**Returns:** Same as `getPrintableReport()`
+**Example:**
+```php
+echo $subnet;  // "192.168.1.100/24"
+echo $subnet->toPrintable();  // Full formatted report
+```
 
-### jsonSerialize()
+#### jsonSerialize()
 ```php
 jsonSerialize(): array
 ```
-Serialize to JSON (implements JsonSerializable).
-
-**Returns:** Same as `getSubnetArrayReport()`
-
-**See:** [Reports - Standard Interfaces](reports.md#standard-interfaces)
+Implement JsonSerializable interface.
 
 ---
 
-## Quick Reference by Use Case
+## SubnetParser Class
 
-### Creating Subnets
-- `fromCidr()` - From CIDR notation
-- `fromMask()` - From subnet mask
-- `fromRange()` - From IP range
-- `fromHostCount()` - From host requirements
+`IPv4\SubnetParser` - Static factory methods for creating Subnet objects from various input formats.
 
-### Basic Information
-- `getCidrNotation()` - Get CIDR string
-- `getNumberAddressableHosts()` - Host capacity
-- `getBroadcastAddress()` - Broadcast address
-- `getIPAddressRange()` - Network range
+### Creation Methods
 
-### Network Planning
-- `split()` - Divide into smaller subnets
-- `aggregate()` - Combine into larger subnets
-- `exclude()` / `excludeAll()` - Remove subnets from allocation
+#### fromMask()
+```php
+SubnetParser::fromMask(string $ipAddress, string $subnetMask): Subnet
+```
+Create subnet from IP address and subnet mask string.
 
-### Capacity Analysis
-- `getUtilizationForHosts()` - Efficiency for host count
-- `getWastedAddresses()` - Waste calculation
-- `optimalPrefixForHosts()` - Find best size
+**Example:**
+```php
+$subnet = SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
+```
 
-### Conflict Detection
-- `overlaps()` - Check for overlaps
-- `contains()` - Check containment
-- `isIPAddressInSubnet()` - Check IP membership
+#### fromRange()
+```php
+SubnetParser::fromRange(string $startIp, string $endIp): Subnet
+```
+Create subnet from IP range (must be valid CIDR block).
 
-### Documentation
-- `printSubnetReport()` - Print to console
-- `getSubnetJsonReport()` - Export to JSON
-- `getSubnetArrayReport()` - Get as array
+**Example:**
+```php
+$subnet = SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
+```
+
+#### fromHostCount()
+```php
+SubnetParser::fromHostCount(string $ipAddress, int $hostCount): Subnet
+```
+Create smallest subnet that accommodates the required host count.
+
+**Example:**
+```php
+$subnet = SubnetParser::fromHostCount('192.168.1.0', 100);  // Creates /25
+```
+
+### Utility
+
+#### optimalPrefixForHosts()
+```php
+SubnetParser::optimalPrefixForHosts(int $hostCount): int
+```
+Calculate optimal CIDR prefix for a given host count.
+
+**Example:**
+```php
+$prefix = SubnetParser::optimalPrefixForHosts(100);  // Returns 25
+```
 
 ---
 
-## Related Documentation
+## Subnets Class
 
-- **[Getting Started](getting-started.md)** - Installation and basic usage
-- **[Core Features](core-features.md)** - Detailed feature documentation
-- **[Advanced Features](advanced-features.md)** - Advanced operations
-- **[Reports](reports.md)** - Report generation
-- **[Real-World Examples](examples.md)** - Practical use cases
+`IPv4\Subnets` - Static methods for collection operations on arrays of Subnet objects.
+
+### Collection Operations
+
+#### aggregate()
+```php
+Subnets::aggregate(array $subnets): Subnet[]
+```
+Combine contiguous subnets into minimal set of larger blocks.
+
+**Parameters:**
+- `$subnets` - Array of Subnet objects
+
+**Returns:** Array of Subnet objects
+
+**Example:**
+```php
+$aggregated = Subnets::aggregate([
+    Subnet::fromCidr('192.168.0.0/24'),
+    Subnet::fromCidr('192.168.1.0/24'),
+]);
+// Returns: [Subnet: 192.168.0.0/23]
+```
+
+#### summarize()
+```php
+Subnets::summarize(array $subnets): Subnet
+```
+Find smallest single CIDR block containing all input subnets.
+
+**Parameters:**
+- `$subnets` - Array of Subnet objects
+
+**Returns:** Single Subnet object
+
+**Example:**
+```php
+$summary = Subnets::summarize([
+    Subnet::fromCidr('192.168.0.0/24'),
+    Subnet::fromCidr('192.168.1.0/24'),
+]);
+// Returns: Subnet: 192.168.0.0/23
+```
+
+---
+
+## Value Object Classes
+
+All value objects are immutable (readonly) and implement `Stringable`.
+
+### IPAddress Class
+
+`IPv4\IPAddress` - Immutable IPv4 address value object.
+
+#### Construction
+
+```php
+new IPAddress(string $ipAddress): IPAddress
+```
+
+**Example:**
+```php
+$ip = new IPAddress('192.168.1.100');
+```
+
+#### Format Methods
+
+All format methods are provided via the `Formattable` trait:
+
+##### asQuads()
+```php
+asQuads(): string
+```
+Returns IP in dotted decimal format.
+
+**Example:** `"192.168.1.100"`
+
+##### asArray()
+```php
+asArray(): string[]
+```
+Returns array of octet strings.
+
+**Example:** `['192', '168', '1', '100']`
+
+##### asHex()
+```php
+asHex(): string
+```
+Returns IP in hexadecimal format.
+
+**Example:** `"C0A80164"`
+
+##### asBinary()
+```php
+asBinary(): string
+```
+Returns IP in binary format.
+
+**Example:** `"11000000101010000000000101100100"`
+
+##### asInteger()
+```php
+asInteger(): int
+```
+Returns IP as 32-bit integer.
+
+**Example:** `3232235876`
+
+##### __toString()
+```php
+__toString(): string
+```
+Returns IP in dotted decimal format (same as asQuads()).
+
+#### Classification Methods
+
+See [Subnet Classification](#classification) - same methods available on IPAddress.
+
+#### Utility Methods
+
+##### arpaDomain()
+```php
+arpaDomain(): string
+```
+Get reverse DNS ARPA domain.
+
+**Example:**
+```php
+$arpa = $ip->arpaDomain();  // "100.1.168.192.in-addr.arpa"
+```
+
+##### networkClass()
+```php
+networkClass(): NetworkClass
+```
+Get the classful network class.
+
+##### equals()
+```php
+equals(IPAddress $other): bool
+```
+Compare with another IPAddress.
+
+---
+
+### SubnetMask Class
+
+`IPv4\SubnetMask` - Immutable subnet mask value object.
+
+#### Construction
+
+```php
+new SubnetMask(int $prefix): SubnetMask
+```
+
+**Example:**
+```php
+$mask = new SubnetMask(24);  // Creates 255.255.255.0
+```
+
+#### Methods
+
+##### prefix()
+```php
+prefix(): int
+```
+Returns the CIDR prefix length.
+
+##### wildcardMask()
+```php
+wildcardMask(): WildcardMask
+```
+Returns the corresponding wildcard mask.
+
+##### equals()
+```php
+equals(SubnetMask $other): bool
+```
+Compare with another SubnetMask.
+
+#### Format Methods
+
+Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`
+
+---
+
+### WildcardMask Class
+
+`IPv4\WildcardMask` - Immutable wildcard mask value object (inverse of subnet mask).
+
+#### Construction
+
+```php
+new WildcardMask(int $prefix): WildcardMask
+```
+
+**Example:**
+```php
+$wildcard = new WildcardMask(24);  // Creates 0.0.0.255
+```
+
+#### Methods
+
+##### prefix()
+```php
+prefix(): int
+```
+Returns the CIDR prefix length.
+
+##### subnetMask()
+```php
+subnetMask(): SubnetMask
+```
+Returns the corresponding subnet mask.
+
+##### equals()
+```php
+equals(WildcardMask $other): bool
+```
+Compare with another WildcardMask.
+
+#### Format Methods
+
+Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`
+
+---
+
+### IPRange Class
+
+`IPv4\IPRange` - Immutable IP range value object. Implements `IteratorAggregate`, `Countable`, and `Stringable`.
+
+**Interface Support:**
+- **`IteratorAggregate`** - Use `foreach` to iterate over all IP addresses in the range
+- **`Countable`** - Use PHP's `count()` function to get the number of IPs
+- **`Stringable`** - Automatically converts to "start - end" format
+
+#### Construction
+
+```php
+new IPRange(IPAddress $start, IPAddress $end): IPRange
+```
+
+**Example:**
+```php
+$range = new IPRange(
+    new IPAddress('192.168.1.0'),
+    new IPAddress('192.168.1.255')
+);
+```
+
+#### Methods
+
+##### start()
+```php
+start(): IPAddress
+```
+Returns the starting IP address.
+
+##### end()
+```php
+end(): IPAddress
+```
+Returns the ending IP address.
+
+##### count()
+```php
+count(): int
+```
+Returns the number of IPs in the range. Because IPRange implements `Countable`, you can use either the `count()` method or PHP's built-in `count()` function.
+
+**Examples:**
+```php
+// Using the method
+$count = $range->count();  // 256
+
+// Using PHP's count() function (recommended)
+$count = count($range);  // 256
+```
+
+##### contains()
+```php
+contains(string|IPAddress $ip): bool
+```
+Check if an IP is within the range.
+
+##### equals()
+```php
+equals(IPRange $other): bool
+```
+Compare with another IPRange.
+
+##### getIterator()
+```php
+getIterator(): \Generator<IPAddress>
+```
+Get iterator for foreach loops. Because IPRange implements `IteratorAggregate`, you can iterate directly without calling this method explicitly.
+
+**Examples:**
+```php
+// Using foreach (recommended)
+foreach ($range as $ip) {
+    echo $ip . "\n";
+}
+
+// Or access the iterator directly
+$iterator = $range->getIterator();
+```
+
+##### toArray()
+```php
+toArray(): IPAddress[]
+```
+Convert to array of IPAddress objects. **Caution:** Memory-intensive for large ranges.
+
+##### __toString()
+```php
+__toString(): string
+```
+Returns range as "start - end" format.
+
+**Example:** `"192.168.1.0 - 192.168.1.255"`
+
+---
+
+## Enum Classes
+
+### AddressType
+
+`IPv4\AddressType` - Enum for IP address types.
+
+**Values:**
+- `AddressType::Private` - RFC 1918 private addresses
+- `AddressType::Public` - Publicly routable addresses
+- `AddressType::Loopback` - 127.0.0.0/8 loopback addresses
+- `AddressType::LinkLocal` - 169.254.0.0/16 link-local/APIPA addresses
+- `AddressType::Multicast` - 224.0.0.0/4 multicast addresses
+- `AddressType::CarrierGradeNat` - 100.64.0.0/10 CGN shared address space
+- `AddressType::Documentation` - RFC 5737 TEST-NET ranges
+- `AddressType::Benchmarking` - RFC 2544 benchmarking addresses
+- `AddressType::IetfProtocol` - RFC 5735/6890 IETF protocol assignments (192.0.0.0/24)
+- `AddressType::Deprecated6to4` - RFC 3068/7526 deprecated 6to4 relay (192.88.99.0/24)
+- `AddressType::Reserved` - 240.0.0.0/4 reserved for future use
+- `AddressType::LimitedBroadcast` - 255.255.255.255 limited broadcast
+- `AddressType::ThisNetwork` - 0.0.0.0/8 "this" network
+
+### NetworkClass
+
+`IPv4\NetworkClass` - Enum for classful network classes.
+
+**Values:**
+- `NetworkClass::A`
+- `NetworkClass::B`
+- `NetworkClass::C`
+- `NetworkClass::D`
+- `NetworkClass::E`
+
+---
+
+## Migration from v4.x
+
+See [Migration Guide](migration-v4-to-v5.md) for detailed information on migrating from version 4.x to 5.0.
+
+## Additional Resources
+
+- [Getting Started](getting-started.md) - Basic usage and examples
+- [Core Features](core-features.md) - Common operations
+- [Advanced Features](advanced-features.md) - Complex operations
+- [Examples](examples.md) - Real-world use cases

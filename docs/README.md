@@ -7,6 +7,7 @@ Welcome to the comprehensive documentation for the IPv4 Subnet Calculator PHP li
 ### For New Users
 - **[Getting Started](getting-started.md)** - Installation, setup, and your first subnet calculations
 - **[Quick Reference](#quick-reference)** - Common operations at a glance
+- **[Migration Guide (v4 → v5)](migration-v4-to-v5.md)** - Upgrading from version 4.x to 5.0
 
 ### Feature Documentation
 - **[Core Features](core-features.md)** - Essential network calculations and operations
@@ -49,35 +50,35 @@ Ready for complex operations? Master these:
 
 ```php
 // From CIDR notation (most common)
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 // From IP and subnet mask
-$subnet = IPv4\SubnetCalculatorFactory::fromMask('192.168.1.0', '255.255.255.0');
+$subnet = IPv4\SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
 
 // From IP range
-$subnet = IPv4\SubnetCalculatorFactory::fromRange('192.168.1.0', '192.168.1.255');
+$subnet = IPv4\SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
 
 // From host count requirement
-$subnet = IPv4\SubnetCalculatorFactory::fromHostCount('192.168.1.0', 100);
+$subnet = IPv4\SubnetParser::fromHostCount('192.168.1.0', 100);
 ```
 
 ### Getting Network Information
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
-$subnet->getNetworkPortion();           // '192.168.1.0'
-$subnet->getBroadcastAddress();         // '192.168.1.255'
-$subnet->getSubnetMask();               // '255.255.255.0'
-$subnet->getNumberAddressableHosts();   // 254
-$subnet->getIPAddressRange();           // ['192.168.1.0', '192.168.1.255']
+$subnet->networkAddress();           // IPAddress: 192.168.1.0
+$subnet->broadcastAddress();         // IPAddress: 192.168.1.255
+$subnet->mask();                     // SubnetMask: 255.255.255.0
+$subnet->hostCount();                // 254
+$subnet->addressRange();             // IPRange: 192.168.1.0 - 192.168.1.255
 ```
 
 ### Common Operations
 
 ```php
 // Check if IP is in subnet
-$subnet->isIPAddressInSubnet('192.168.1.100');  // true
+$subnet->containsIP('192.168.1.100');  // true
 
 // Check for overlaps
 $subnet1->overlaps($subnet2);
@@ -86,8 +87,8 @@ $subnet1->overlaps($subnet2);
 $smaller = $subnet->split(26);  // Split /24 into /26 subnets
 
 // Get adjacent subnets
-$next = $subnet->getNextSubnet();
-$prev = $subnet->getPreviousSubnet();
+$next = $subnet->next();
+$prev = $subnet->previous();
 
 // Check IP type
 $subnet->isPrivate();   // true for RFC 1918 addresses
@@ -101,24 +102,24 @@ $subnet->isPublic();    // true for publicly routable addresses
 $remaining = $allocated->exclude($reserved);
 
 // Aggregate routes (BGP)
-$summary = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$summary = IPv4\Subnets::aggregate($subnets);
 
 // Utilization analysis
-$utilization = $subnet->getUtilizationForHosts(100);
-$wasted = $subnet->getWastedAddresses(100);
+$utilization = $subnet->utilizationFor(100);
+$wasted = $subnet->wastedAddressesFor(100);
 ```
 
 ### Generate Reports
 
 ```php
 // Print to console
-$subnet->printSubnetReport();
+echo $subnet;
 
 // Get as JSON
-$json = $subnet->getSubnetJsonReport();
+$json = $subnet->toJson();
 
 // Get as array
-$array = $subnet->getSubnetArrayReport();
+$array = $subnet->toArray();
 ```
 
 ## Documentation by Use Case
@@ -237,8 +238,9 @@ See [Core Features - IP Address Type Detection](core-features.md#ip-address-type
 
 ## Version Support
 
-- **Current Version:** Requires PHP 7.2+
-- **Legacy Support:** PHP 5.5-7.1 users should use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0)
+- **Current Version (v5.x):** Requires PHP 8.1+
+- **Previous Version (v4.x):** PHP 7.2-8.0 users should use [v4.4.0](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0)
+- **Legacy Support (v3.x):** PHP 5.5-7.1 users should use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0)
 
 ## Contributing to Documentation
 

@@ -1,4 +1,18 @@
-# IPv4 SubnetCalculator Change log
+# IPv4 SubnetCalculator Change Log
+
+## v5.0.0 - (Unreleased)
+
+### Breaking Changes
+- **PHP 8.1+ required**: Minimum PHP version increased from 7.2 to 8.1
+- **64-bit PHP required**: The library now requires 64-bit PHP architecture. A runtime check throws `\RuntimeException` on 32-bit PHP.
+- Interface updated and improved. See migration guide for details.
+
+### Documentation
+- **API Reference**: Comprehensive enum documentation with usage patterns
+- **Core Features**: Examples showing enum value access and type-safe comparisons
+- **Advanced Features**: Updated network class examples with enum usage
+- **Migration Guide**: Clear instructions for upgrading from v4.x (PHP 7.2-8.0) to v5.x (PHP 8.1+)
+- **Version Support**: Updated with three-tier support (v5.x for PHP 8.1+, v4.x for PHP 7.2-8.0, v3.x for PHP 5.5-7.1)
 
 ## v4.4.0 - 2026-01-14
 

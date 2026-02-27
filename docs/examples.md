@@ -23,7 +23,7 @@ Allocate subnets to different office locations from a corporate address block.
 require_once(__DIR__ . '/vendor/autoload.php');
 
 // Corporate allocation: 10.0.0.0/16
-$corporateBlock = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/16');
+$corporateBlock = IPv4\Subnet::fromCidr('10.0.0.0/16');
 
 // Office requirements
 $offices = [
@@ -36,28 +36,28 @@ $offices = [
 
 echo "Corporate IP Allocation Plan\n";
 echo str_repeat('=', 80) . "\n\n";
-echo "Available: {$corporateBlock->getCidrNotation()}\n";
-echo "Total IPs: {$corporateBlock->getNumberIPAddresses()}\n\n";
+echo "Available: {$corporateBlock->cidr()}\n";
+echo "Total IPs: {$corporateBlock->addressCount()}\n\n";
 
 $currentNetwork = '10.0.0.0';
 $allocations = [];
 
 foreach ($offices as $office => $requiredHosts) {
     // Find optimal subnet size
-    $optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts($requiredHosts);
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr("{$currentNetwork}/{$optimalPrefix}");
+    $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
+    $subnet = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
 
     $allocations[$office] = $subnet;
 
     echo "{$office}:\n";
     echo "  Required hosts: {$requiredHosts}\n";
-    echo "  Allocated: {$subnet->getCidrNotation()}\n";
-    echo "  Usable hosts: {$subnet->getNumberAddressableHosts()}\n";
-    echo "  Range: {$subnet->getMinHost()} - {$subnet->getMaxHost()}\n";
-    echo "  Utilization: {$subnet->getUtilizationForHosts($requiredHosts)}%\n\n";
+    echo "  Allocated: {$subnet->cidr()}\n";
+    echo "  Usable hosts: {$subnet->hostCount()}\n";
+    echo "  Range: {$subnet->minHost()} - {$subnet->maxHost()}\n";
+    echo "  Utilization: {$subnet->utilizationFor($requiredHosts)}%\n\n";
 
     // Move to next available network
-    $currentNetwork = $subnet->getNextSubnet()->getNetworkPortion();
+    $currentNetwork = $subnet->next()->networkAddress()->asQuads();
 }
 
 // Calculate remaining space
@@ -67,8 +67,8 @@ $remaining = $corporateBlock->excludeAll($allocated);
 echo "Remaining unallocated space:\n";
 $totalRemaining = 0;
 foreach ($remaining as $block) {
-    echo "  {$block->getCidrNotation()} ({$block->getNumberIPAddresses()} IPs)\n";
-    $totalRemaining += $block->getNumberIPAddresses();
+    echo "  {$block->cidr()} ({$block->addressCount()} IPs)\n";
+    $totalRemaining += $block->addressCount();
 }
 echo "\nTotal remaining: {$totalRemaining} IP addresses\n";
 ```
@@ -88,13 +88,13 @@ class SimpleIPAM {
     public function __construct($name, $initialBlock) {
         $this->name = $name;
         $this->availableBlocks = [
-            IPv4\SubnetCalculatorFactory::fromCidr($initialBlock)
+            IPv4\Subnet::fromCidr($initialBlock)
         ];
         $this->allocations = [];
     }
 
     public function allocate($name, $cidr) {
-        $allocation = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+        $allocation = IPv4\Subnet::fromCidr($cidr);
 
         // Check if requested subnet is available
         $found = false;
@@ -127,17 +127,17 @@ class SimpleIPAM {
     }
 
     public function findAvailableSubnet($requiredHosts) {
-        $optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts($requiredHosts);
+        $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
 
         foreach ($this->availableBlocks as $block) {
-            if ($block->getNetworkSize() <= $optimalPrefix) {
+            if ($block->networkSize() <= $optimalPrefix) {
                 // This block is large enough
-                $subnet = IPv4\SubnetCalculatorFactory::fromCidr(
-                    $block->getNetworkPortion() . '/' . $optimalPrefix
+                $subnet = IPv4\Subnet::fromCidr(
+                    $block->networkAddress()->asQuads() . '/' . $optimalPrefix
                 );
 
                 if ($block->contains($subnet)) {
-                    return $subnet->getCidrNotation();
+                    return $subnet->cidr();
                 }
             }
         }
@@ -154,8 +154,8 @@ class SimpleIPAM {
         foreach ($this->allocations as $name => $subnet) {
             $report .= sprintf("  %-30s %s (%d IPs)\n",
                 $name,
-                $subnet->getCidrNotation(),
-                $subnet->getNumberIPAddresses()
+                $subnet->cidr(),
+                $subnet->addressCount()
             );
         }
 
@@ -164,10 +164,10 @@ class SimpleIPAM {
         $totalAvailable = 0;
         foreach ($this->availableBlocks as $block) {
             $report .= sprintf("  %s (%d IPs)\n",
-                $block->getCidrNotation(),
-                $block->getNumberIPAddresses()
+                $block->cidr(),
+                $block->addressCount()
             );
-            $totalAvailable += $block->getNumberIPAddresses();
+            $totalAvailable += $block->addressCount();
         }
         $report .= "\nTotal available: {$totalAvailable} IP addresses\n";
 
@@ -206,7 +206,7 @@ class FirewallRuleValidator {
     private $rules = [];
 
     public function addRule($name, $cidr, $action = 'allow') {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+        $subnet = IPv4\Subnet::fromCidr($cidr);
         $this->rules[] = [
             'name' => $name,
             'subnet' => $subnet,
@@ -296,7 +296,7 @@ Implement access control based on IP address classification.
 
 class AccessController {
     public function checkAccess($ipAddress, $resource) {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($ipAddress . '/32');
+        $subnet = IPv4\Subnet::fromCidr($ipAddress . '/32');
 
         // Define access policies
         $policy = $this->getAccessPolicy($resource);
@@ -330,11 +330,11 @@ class AccessController {
     }
 
     public function generateAccessReport($ipAddress) {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($ipAddress . '/32');
+        $subnet = IPv4\Subnet::fromCidr($ipAddress . '/32');
 
         echo "Access Report for {$ipAddress}\n";
         echo str_repeat('=', 80) . "\n";
-        echo "IP Type: {$subnet->getAddressType()}\n";
+        echo "IP Type: {$subnet->addressType()->value}\n";  // Use ->value for string
         echo "Private: " . ($subnet->isPrivate() ? 'Yes' : 'No') . "\n";
         echo "Public: " . ($subnet->isPublic() ? 'Yes' : 'No') . "\n";
         echo "Loopback: " . ($subnet->isLoopback() ? 'Yes' : 'No') . "\n\n";
@@ -380,7 +380,7 @@ class BGPRouteOptimizer {
 
     public function addRegionalRoutes($region, array $cidrs) {
         $subnets = array_map(function($cidr) {
-            return IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+            return IPv4\Subnet::fromCidr($cidr);
         }, $cidrs);
 
         $this->regions[$region] = $subnets;
@@ -390,7 +390,7 @@ class BGPRouteOptimizer {
         $optimized = [];
 
         foreach ($this->regions as $region => $subnets) {
-            $aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+            $aggregated = IPv4\Subnets::aggregate($subnets);
             $optimized[$region] = $aggregated;
         }
 
@@ -410,13 +410,13 @@ class BGPRouteOptimizer {
 
             echo "Original routes (" . \count($subnets) . "):\n";
             foreach ($subnets as $subnet) {
-                echo "  {$subnet->getCidrNotation()}\n";
+                echo "  {$subnet->cidr()}\n";
             }
 
-            $aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+            $aggregated = IPv4\Subnets::aggregate($subnets);
             echo "\nOptimized routes (" . count($aggregated) . "):\n";
             foreach ($aggregated as $subnet) {
-                echo "  {$subnet->getCidrNotation()}\n";
+                echo "  {$subnet->cidr()}\n";
             }
 
             $reduction = count($subnets) - count($aggregated);
@@ -478,20 +478,20 @@ Calculate optimal DHCP scopes for different departments.
 
 class DHCPScopePlanner {
     public function planScopes($baseNetwork, array $departments) {
-        $baseSubnet = IPv4\SubnetCalculatorFactory::fromCidr($baseNetwork);
+        $baseSubnet = IPv4\Subnet::fromCidr($baseNetwork);
         $scopes = [];
 
         echo "DHCP Scope Planning Report\n";
         echo str_repeat('=', 80) . "\n";
         echo "Base Network: {$baseNetwork}\n";
-        echo "Available IPs: {$baseSubnet->getNumberIPAddresses()}\n\n";
+        echo "Available IPs: {$baseSubnet->addressCount()}\n\n";
 
-        $currentNetwork = $baseSubnet->getNetworkPortion();
+        $currentNetwork = $baseSubnet->networkAddress()->asQuads();
 
         foreach ($departments as $dept => $requirements) {
             $requiredHosts = $requirements['hosts'];
-            $optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts($requiredHosts);
-            $scope = IPv4\SubnetCalculatorFactory::fromCidr("{$currentNetwork}/{$optimalPrefix}");
+            $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
+            $scope = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
 
             // Verify scope fits within base network
             if (!$baseSubnet->contains($scope)) {
@@ -499,32 +499,32 @@ class DHCPScopePlanner {
                 break;
             }
 
-            $usableHosts = $scope->getNumberAddressableHosts();
-            $utilization = $scope->getUtilizationForHosts($requiredHosts);
+            $usableHosts = $scope->hostCount();
+            $utilization = $scope->utilizationFor($requiredHosts);
 
             // Calculate DHCP pool (reserve first 10 IPs for static, last IP for gateway)
-            $poolStart = $scope->getMinHostInteger() + 10;
-            $poolEnd = $scope->getMaxHostInteger() - 1;
+            $poolStart = $scope->minHost()->asInteger() + 10;
+            $poolEnd = $scope->maxHost()->asInteger() - 1;
 
             $scopes[$dept] = [
                 'subnet' => $scope,
                 'scope_start' => long2ip($poolStart),
                 'scope_end' => long2ip($poolEnd),
-                'gateway' => $scope->getMaxHost(),
-                'dns' => $requirements['dns'] ?? $scope->getMinHost(),
+                'gateway' => $scope->maxHost(),
+                'dns' => $requirements['dns'] ?? $scope->minHost(),
             ];
 
             echo "{$dept}:\n";
             echo "  Required hosts: {$requiredHosts}\n";
-            echo "  Subnet: {$scope->getCidrNotation()}\n";
-            echo "  Subnet mask: {$scope->getSubnetMask()}\n";
+            echo "  Subnet: {$scope->cidr()}\n";
+            echo "  Subnet mask: {$scope->mask()}\n";
             echo "  Usable hosts: {$usableHosts}\n";
             echo "  Utilization: {$utilization}%\n";
             echo "  DHCP Pool: {$scopes[$dept]['scope_start']} - {$scopes[$dept]['scope_end']}\n";
             echo "  Gateway: {$scopes[$dept]['gateway']}\n";
             echo "  DNS: {$scopes[$dept]['dns']}\n\n";
 
-            $currentNetwork = $scope->getNextSubnet()->getNetworkPortion();
+            $currentNetwork = $scope->next()->networkAddress()->asQuads();
         }
 
         return $scopes;
@@ -544,11 +544,11 @@ class DHCPScopePlanner {
         foreach ($scopes as $name => $scope) {
             $subnet = $scope['subnet'];
             $config .= "# {$name}\n";
-            $config .= "subnet {$subnet->getNetworkPortion()} netmask {$subnet->getSubnetMask()} {\n";
+            $config .= "subnet {$subnet->networkAddress()->asQuads()} netmask {$subnet->mask()} {\n";
             $config .= "    range {$scope['scope_start']} {$scope['scope_end']};\n";
             $config .= "    option routers {$scope['gateway']};\n";
             $config .= "    option domain-name-servers {$scope['dns']};\n";
-            $config .= "    option subnet-mask {$subnet->getSubnetMask()};\n";
+            $config .= "    option subnet-mask {$subnet->mask()};\n";
             $config .= "}\n\n";
         }
 
@@ -586,13 +586,13 @@ Generate reverse DNS zone configurations.
 
 class ReverseDNSZoneGenerator {
     public function generateZone($cidr, $nameservers, $hostnames = []) {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+        $subnet = IPv4\Subnet::fromCidr($cidr);
 
         echo "Reverse DNS Zone Configuration\n";
         echo str_repeat('=', 80) . "\n";
         echo "Subnet: {$cidr}\n";
-        echo "Network: {$subnet->getNetworkPortion()}\n";
-        echo "Broadcast: {$subnet->getBroadcastAddress()}\n\n";
+        echo "Network: {$subnet->networkAddress()->asQuads()}\n";
+        echo "Broadcast: {$subnet->broadcastAddress()->asQuads()}\n\n";
 
         // Generate zone file
         $zone = $this->generateZoneFile($subnet, $nameservers, $hostnames);
@@ -602,7 +602,7 @@ class ReverseDNSZoneGenerator {
 
     private function generateZoneFile($subnet, $nameservers, $hostnames) {
         $zone = "; Reverse DNS Zone\n";
-        $zone .= "; Network: {$subnet->getCidrNotation()}\n";
+        $zone .= "; Network: {$subnet->cidr()}\n";
         $zone .= "; Generated: " . date('Y-m-d H:i:s') . "\n\n";
 
         $zone .= "\$TTL 86400\n";
@@ -621,9 +621,9 @@ class ReverseDNSZoneGenerator {
 
         // PTR records
         foreach ($hostnames as $ip => $hostname) {
-            $ipSubnet = IPv4\SubnetCalculatorFactory::fromCidr($ip . '/32');
-            if ($subnet->isIPAddressInSubnet($ip)) {
-                $octets = $ipSubnet->getIPAddressQuads();
+            $ipSubnet = IPv4\Subnet::fromCidr($ip . '/32');
+            if ($subnet->containsIP($ip)) {
+                $octets = $ipSubnet->ipAddress()->asArray();
                 $ptrRecord = $octets[3];
                 $zone .= "{$ptrRecord}    IN    PTR    {$hostname}.\n";
             }
@@ -676,13 +676,13 @@ class NetworkConfigValidator {
         $subnets = [];
         foreach ($config['subnets'] as $name => $cidr) {
             try {
-                $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+                $subnet = IPv4\Subnet::fromCidr($cidr);
                 $subnets[$name] = $subnet;
 
                 // Check if subnet is properly sized
                 if (isset($config['requirements'][$name])) {
                     $required = $config['requirements'][$name];
-                    $available = $subnet->getNumberAddressableHosts();
+                    $available = $subnet->hostCount();
 
                     if ($available < $required) {
                         $this->errors[] = "{$name}: Insufficient capacity. Required: {$required}, Available: {$available}";
@@ -784,8 +784,8 @@ Analyze the impact of network changes before implementation.
 <?php
 
 function analyzeNetworkChange($currentCidr, $proposedCidr) {
-    $current = IPv4\SubnetCalculatorFactory::fromCidr($currentCidr);
-    $proposed = IPv4\SubnetCalculatorFactory::fromCidr($proposedCidr);
+    $current = IPv4\Subnet::fromCidr($currentCidr);
+    $proposed = IPv4\Subnet::fromCidr($proposedCidr);
 
     echo "Network Change Impact Analysis\n";
     echo str_repeat('=', 80) . "\n\n";
@@ -794,18 +794,18 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
     echo "Proposed Network: {$proposedCidr}\n\n";
 
     echo "Current State:\n";
-    echo "  Usable hosts: {$current->getNumberAddressableHosts()}\n";
-    echo "  Range: {$current->getMinHost()} - {$current->getMaxHost()}\n\n";
+    echo "  Usable hosts: {$current->hostCount()}\n";
+    echo "  Range: {$current->minHost()} - {$current->maxHost()}\n\n";
 
     echo "Proposed State:\n";
-    echo "  Usable hosts: {$proposed->getNumberAddressableHosts()}\n";
-    echo "  Range: {$proposed->getMinHost()} - {$proposed->getMaxHost()}\n\n";
+    echo "  Usable hosts: {$proposed->hostCount()}\n";
+    echo "  Range: {$proposed->minHost()} - {$proposed->maxHost()}\n\n";
 
     echo "Impact Analysis:\n";
     echo str_repeat('-', 80) . "\n";
 
     // Capacity change
-    $capacityChange = $proposed->getNumberAddressableHosts() - $current->getNumberAddressableHosts();
+    $capacityChange = $proposed->hostCount() - $current->hostCount();
     if ($capacityChange > 0) {
         echo "  ✓ Capacity increase: +{$capacityChange} hosts\n";
     } elseif ($capacityChange < 0) {

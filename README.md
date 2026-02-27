@@ -18,15 +18,15 @@ Quick Start
 require_once(__DIR__ . '/vendor/autoload.php');
 
 // Create from CIDR notation
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 // Get network information
-echo $subnet->getNetworkPortion();           // 192.168.1.0
-echo $subnet->getBroadcastAddress();         // 192.168.1.255
-echo $subnet->getNumberAddressableHosts();   // 254
+echo $subnet->networkAddress();        // 192.168.1.0
+echo $subnet->broadcastAddress();      // 192.168.1.255
+echo $subnet->hostCount();             // 254
 
 // Check if an IP is in the subnet
-$subnet->isIPAddressInSubnet('192.168.1.100');  // true
+$subnet->containsIP('192.168.1.100');  // true
 ```
 
 **[View Complete Documentation →](docs/)**
@@ -63,7 +63,7 @@ Installation
 ### Using Composer (Command Line)
 
 ```bash
-composer require markrogoyski/ipv4-subnet-calculator:4.*
+composer require markrogoyski/ipv4-subnet-calculator:5.*
 ```
 
 ### Or Add to composer.json
@@ -71,7 +71,7 @@ composer require markrogoyski/ipv4-subnet-calculator:4.*
 ```json
 {
   "require": {
-    "markrogoyski/ipv4-subnet-calculator": "4.*"
+    "markrogoyski/ipv4-subnet-calculator": "5.*"
   }
 }
 ```
@@ -82,27 +82,33 @@ composer install
 ```
 
 ### Requirements
- * **PHP 7.2+** (For PHP 5.5-7.1, use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0))
+* **PHP 8.1+**
+    * (For PHP 7.2–8.0, use [v4.4](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0))
+    * (For PHP 5.5–7.1, use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0))
+* **64-bit architecture**
+    * (For 32-bit architecture, use [v4.4](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0))
+* **Upgrading from v4?** See the **[Migration Guide](docs/migration-v4-to-v5.md)**
 
 **[Detailed Installation Guide →](docs/getting-started.md)**
 
 Usage
 -----
 
-### Creating Subnet Calculators
+### Creating Subnets
 
 ```php
-// From CIDR notation
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+// From CIDR notation (simple)
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$subnet = new IPv4\Subnet('192.168.1.0', 24);
 
 // From subnet mask
-$subnet = IPv4\SubnetCalculatorFactory::fromMask('192.168.1.0', '255.255.255.0');
+$subnet = IPv4\SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
 
 // From IP range
-$subnet = IPv4\SubnetCalculatorFactory::fromRange('192.168.1.0', '192.168.1.255');
+$subnet = IPv4\SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
 
 // From host count requirement
-$subnet = IPv4\SubnetCalculatorFactory::fromHostCount('192.168.1.0', 100);
+$subnet = IPv4\SubnetParser::fromHostCount('192.168.1.0', 100);
 ```
 
 **[All Creation Methods →](docs/getting-started.md#creating-subnet-calculators)**
@@ -110,21 +116,21 @@ $subnet = IPv4\SubnetCalculatorFactory::fromHostCount('192.168.1.0', 100);
 ### Basic Network Information
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
 // Network properties
-$subnet->getNetworkPortion();           // 192.168.112.0
-$subnet->getBroadcastAddress();         // 192.168.113.255
-$subnet->getNumberAddressableHosts();   // 510
+$subnet->networkAddress();         // 192.168.112.0 (returns IPAddress object)
+$subnet->broadcastAddress();       // 192.168.113.255 (returns IPAddress object)
+$subnet->hostCount();              // 510
 
-// Subnet mask and wildcard
-$subnet->getSubnetMask();               // 255.255.254.0
-$subnet->getWildcardMask();             // 0.0.1.255 (for Cisco ACLs)
+// Subnet mask and wildcard (return value objects)
+$subnet->mask();                   // 255.255.254.0 (SubnetMask object)
+$subnet->wildcardMask();           // 0.0.1.255 (WildcardMask object)
 
-// Address ranges
-$subnet->getIPAddressRange();           // [192.168.112.0, 192.168.113.255]
-$subnet->getMinHost();                  // 192.168.112.1
-$subnet->getMaxHost();                  // 192.168.113.254
+// Address ranges (return IPRange objects)
+$subnet->addressRange();           // 192.168.112.0 - 192.168.113.255 (IPRange)
+$subnet->minHost();                // 192.168.112.1 (IPAddress)
+$subnet->maxHost();                // 192.168.113.254 (IPAddress)
 ```
 
 **[Network Component Access →](docs/core-features.md#network-component-access)**
@@ -132,8 +138,8 @@ $subnet->getMaxHost();                  // 192.168.113.254
 ### Network Overlap & Conflict Detection
 
 ```php
-$subnet1 = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
-$subnet2 = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.128/25');
+$subnet1 = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$subnet2 = IPv4\Subnet::fromCidr('192.168.1.128/25');
 
 // Check for overlaps
 $subnet1->overlaps($subnet2);           // true
@@ -143,7 +149,7 @@ $subnet1->contains($subnet2);           // true
 $subnet2->isContainedIn($subnet1);      // true
 
 // Check if IP is in subnet
-$subnet1->isIPAddressInSubnet('192.168.1.100');  // true
+$subnet1->containsIP('192.168.1.100');  // true
 ```
 
 **[Overlap Detection Guide →](docs/core-features.md#network-overlap-and-containment)**
@@ -151,12 +157,17 @@ $subnet1->isIPAddressInSubnet('192.168.1.100');  // true
 ### IP Address Type Classification
 
 ```php
-$private = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.1/32');
-$private->isPrivate();    // true (RFC 1918)
-$private->isPublic();     // false
+$subnet = IPv4\Subnet::fromCidr('192.168.1.1/32');
+$subnet->isPrivate();    // true (RFC 1918)
+$subnet->isPublic();     // false
 
-$loopback = IPv4\SubnetCalculatorFactory::fromCidr('127.0.0.1/32');
-$loopback->isLoopback();  // true
+// Or check the IP address directly
+$ip = $subnet->ipAddress();
+$ip->isPrivate();        // true
+$ip->addressType();      // AddressType::Private
+
+$loopback = IPv4\Subnet::fromCidr('127.0.0.1/32');
+$loopback->isLoopback(); // true
 ```
 
 Supported types: private, public, loopback, link-local, multicast, carrier-grade-nat, documentation, benchmarking, reserved, and more.
@@ -168,15 +179,15 @@ Supported types: private, public, loopback, link-local, multicast, carrier-grade
 ```php
 // Aggregate multiple subnets into larger blocks
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.1.0/24'),
 ];
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
-// Returns: [192.168.0.0/23]
+$aggregated = IPv4\Subnets::aggregate($subnets);
+// Returns: [192.168.0.0/23] (array of Subnet objects)
 
 // Summarize to single supernet
-$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
-// Returns: 192.168.0.0/23
+$summary = IPv4\Subnets::summarize($subnets);
+// Returns: 192.168.0.0/23 (Subnet object)
 ```
 
 **[CIDR Aggregation Guide →](docs/advanced-features.md#cidr-aggregation-and-supernetting)**
@@ -185,11 +196,11 @@ $summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
 
 ```php
 // Allocate a /24 but reserve the first /26 for infrastructure
-$allocated = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
-$reserved  = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/26');
+$allocated = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$reserved  = IPv4\Subnet::fromCidr('192.168.1.0/26');
 
 $available = $allocated->exclude($reserved);
-// Returns: [192.168.1.64/26, 192.168.1.128/25]
+// Returns: [192.168.1.64/26, 192.168.1.128/25] (array of Subnet objects)
 
 // Exclude multiple subnets
 $available = $allocated->excludeAll([$reserved1, $reserved2, $reserved3]);
@@ -200,14 +211,14 @@ $available = $allocated->excludeAll([$reserved1, $reserved2, $reserved3]);
 ### Utilization & Capacity Planning
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 // Analyze utilization for host requirements
-$utilization = $subnet->getUtilizationForHosts(100);  // 39.37%
-$wasted = $subnet->getWastedAddresses(100);           // 154
+$utilization = $subnet->utilizationFor(100);      // 39.37%
+$wasted = $subnet->wastedAddressesFor(100);       // 154
 
 // Find optimal subnet size
-$optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(100);
+$optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts(100);
 // Returns: 25 (a /25 provides 126 usable hosts)
 ```
 
@@ -216,14 +227,14 @@ $optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts(100);
 ### Subnet Operations
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.0/23');
+$subnet = IPv4\Subnet::fromCidr('192.168.112.0/23');
 
 // Split into smaller subnets
-$smaller = $subnet->split(25);  // Split /23 into /25 subnets
+$smaller = $subnet->split(25);  // Split /23 into /25 subnets (array of Subnet objects)
 
 // Navigate to adjacent subnets
-$next = $subnet->getNextSubnet();       // 192.168.114.0/23
-$prev = $subnet->getPreviousSubnet();   // 192.168.110.0/23
+$next = $subnet->next();        // 192.168.114.0/23 (Subnet object)
+$prev = $subnet->previous();    // 192.168.110.0/23 (Subnet object)
 ```
 
 **[Subnet Operations Guide →](docs/core-features.md#subnet-operations)**
@@ -231,19 +242,19 @@ $prev = $subnet->getPreviousSubnet();   // 192.168.110.0/23
 ### Generate Reports
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-
-// Print formatted report
-$subnet->printSubnetReport();
-
-// Get as JSON
-$json = $subnet->getSubnetJsonReport();
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
 // Get as array
-$array = $subnet->getSubnetArrayReport();
+$array = $subnet->toArray();
 
-// Get as string
-$report = $subnet->getPrintableReport();
+// Get as JSON
+$json = $subnet->toJson();
+
+// Get as formatted string report
+$report = $subnet->toPrintable();
+
+// String representation (CIDR notation)
+echo $subnet;  // "192.168.112.203/23"
 ```
 
 **Example Report Output:**
@@ -254,7 +265,7 @@ IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 323
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 
-IP Address Type:             private
+Address Type:                private
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
@@ -287,6 +298,9 @@ Documentation
 - **[API Reference](docs/api-reference.md)** - Complete method documentation
 - **[Reports](docs/reports.md)** - All output formats and examples
 - **[Real-World Examples](docs/examples.md)** - IPAM, firewall rules, BGP, DHCP, DNS, automation
+
+### Upgrading
+- **[Migration Guide: v4 to v5](docs/migration-v4-to-v5.md)** - Upgrade from v4.x with step-by-step instructions
 
 ### Quick Links
 - **[Documentation Index](docs/)** - Complete navigation and learning paths

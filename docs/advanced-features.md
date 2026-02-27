@@ -20,17 +20,17 @@ Remove one subnet from another and get the remaining address space:
 
 ```php
 // Allocate a /24 network but reserve the first /26 for infrastructure
-$allocated = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
-$reserved  = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/26');
+$allocated = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$reserved  = IPv4\Subnet::fromCidr('192.168.1.0/26');
 
 $available = $allocated->exclude($reserved);
-// Returns array of SubnetCalculator instances:
+// Returns array of Subnet instances:
 // [0] => 192.168.1.64/26
 // [1] => 192.168.1.128/25
 // Available address space: 192.168.1.64-192.168.1.255 (192 addresses)
 
 foreach ($available as $subnet) {
-    echo $subnet->getCidrNotation() . "\n";
+    echo $subnet->cidr() . "\n";
 }
 ```
 
@@ -40,21 +40,21 @@ Remove multiple subnets from a base subnet:
 
 ```php
 // Allocate a /24 but reserve multiple ranges
-$allocated = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+$allocated = IPv4\Subnet::fromCidr('10.0.0.0/24');
 
 $reserved = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/26'),   // First quarter for infrastructure
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.128/26'), // Third quarter for management
+    IPv4\Subnet::fromCidr('10.0.0.0/26'),   // First quarter for infrastructure
+    IPv4\Subnet::fromCidr('10.0.0.128/26'), // Third quarter for management
 ];
 
 $available = $allocated->excludeAll($reserved);
-// Returns array of SubnetCalculator instances:
+// Returns array of Subnet instances:
 // [0] => 10.0.0.64/26
 // [1] => 10.0.0.192/26
 // Available: 10.0.0.64-127 and 10.0.0.192-255 (128 addresses)
 
 foreach ($available as $subnet) {
-    echo "{$subnet->getCidrNotation()}: {$subnet->getNumberIPAddresses()} addresses\n";
+    echo "{$subnet->cidr()}: {$subnet->addressCount()} addresses\n";
 }
 ```
 
@@ -64,11 +64,11 @@ foreach ($available as $subnet) {
 
 ```php
 // Remove network and broadcast addresses from a subnet
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 $exclusions = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/32'),   // Network address
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.255/32'), // Broadcast address
+    IPv4\Subnet::fromCidr('192.168.1.0/32'),   // Network address
+    IPv4\Subnet::fromCidr('192.168.1.255/32'), // Broadcast address
 ];
 
 $usableSpace = $subnet->excludeAll($exclusions);
@@ -76,7 +76,7 @@ $usableSpace = $subnet->excludeAll($exclusions);
 
 echo "Usable address space after excluding network and broadcast:\n";
 foreach ($usableSpace as $block) {
-    echo "  {$block->getCidrNotation()}\n";
+    echo "  {$block->cidr()}\n";
 }
 ```
 
@@ -84,15 +84,15 @@ foreach ($usableSpace as $block) {
 
 ```php
 // ISP allocates a /16 but needs to exclude documentation ranges
-$allocation = IPv4\SubnetCalculatorFactory::fromCidr('192.0.0.0/16');
-$testNet1   = IPv4\SubnetCalculatorFactory::fromCidr('192.0.2.0/24'); // TEST-NET-1
+$allocation = IPv4\Subnet::fromCidr('192.0.0.0/16');
+$testNet1   = IPv4\Subnet::fromCidr('192.0.2.0/24'); // TEST-NET-1
 
 $usableSpace = $allocation->exclude($testNet1);
 // Returns optimal CIDR blocks for all addresses except 192.0.2.0/24
 
 echo "Usable space: " . count($usableSpace) . " CIDR blocks\n";
 foreach ($usableSpace as $block) {
-    echo "  {$block->getCidrNotation()}\n";
+    echo "  {$block->cidr()}\n";
 }
 ```
 
@@ -100,23 +100,23 @@ foreach ($usableSpace as $block) {
 
 ```php
 // Start with a large block and carve out assignments
-$pool = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/16');
+$pool = IPv4\Subnet::fromCidr('10.0.0.0/16');
 
 // Assign subnets to different departments
-$engineering = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/20');
-$sales       = IPv4\SubnetCalculatorFactory::fromCidr('10.0.16.0/20');
-$hr          = IPv4\SubnetCalculatorFactory::fromCidr('10.0.32.0/20');
+$engineering = IPv4\Subnet::fromCidr('10.0.0.0/20');
+$sales       = IPv4\Subnet::fromCidr('10.0.16.0/20');
+$hr          = IPv4\Subnet::fromCidr('10.0.32.0/20');
 
 $remainingPool = $pool->excludeAll([$engineering, $sales, $hr]);
 // Returns remaining unallocated address space
 
 echo "Allocated:\n";
-echo "  Engineering: {$engineering->getCidrNotation()} ({$engineering->getNumberIPAddresses()} IPs)\n";
-echo "  Sales: {$sales->getCidrNotation()} ({$sales->getNumberIPAddresses()} IPs)\n";
-echo "  HR: {$hr->getCidrNotation()} ({$hr->getNumberIPAddresses()} IPs)\n";
+echo "  Engineering: {$engineering->cidr()} ({$engineering->addressCount()} IPs)\n";
+echo "  Sales: {$sales->cidr()} ({$sales->addressCount()} IPs)\n";
+echo "  HR: {$hr->cidr()} ({$hr->addressCount()} IPs)\n";
 echo "\nRemaining pool:\n";
 foreach ($remainingPool as $block) {
-    echo "  {$block->getCidrNotation()} ({$block->getNumberIPAddresses()} IPs)\n";
+    echo "  {$block->cidr()} ({$block->addressCount()} IPs)\n";
 }
 ```
 
@@ -129,12 +129,12 @@ class IPAMPool {
 
     public function __construct($initialBlock) {
         $this->availableBlocks = [
-            IPv4\SubnetCalculatorFactory::fromCidr($initialBlock)
+            IPv4\Subnet::fromCidr($initialBlock)
         ];
     }
 
     public function allocate($cidr) {
-        $allocation = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+        $allocation = IPv4\Subnet::fromCidr($cidr);
         $newAvailable = [];
 
         foreach ($this->availableBlocks as $block) {
@@ -166,7 +166,7 @@ $ipam->allocate('10.0.16.0/20');  // Larger allocation
 
 echo "Remaining available blocks:\n";
 foreach ($ipam->getAvailableBlocks() as $block) {
-    echo "  {$block->getCidrNotation()} ({$block->getNumberIPAddresses()} IPs)\n";
+    echo "  {$block->cidr()} ({$block->addressCount()} IPs)\n";
 }
 ```
 
@@ -177,8 +177,8 @@ foreach ($ipam->getAvailableBlocks() as $block) {
 If the excluded subnet doesn't overlap with the base subnet, returns the original subnet unchanged:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
-$other  = IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$other  = IPv4\Subnet::fromCidr('192.168.2.0/24');
 
 $result = $subnet->exclude($other);
 // Returns: [192.168.1.0/24] (unchanged - no overlap)
@@ -189,8 +189,8 @@ $result = $subnet->exclude($other);
 If the excluded subnet fully contains the base subnet, returns an empty array:
 
 ```php
-$small = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/25');
-$large = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+$small = IPv4\Subnet::fromCidr('10.0.0.0/25');
+$large = IPv4\Subnet::fromCidr('10.0.0.0/24');
 
 $result = $small->exclude($large);
 // Returns: [] (nothing remains - fully excluded)
@@ -201,8 +201,8 @@ $result = $small->exclude($large);
 Results are always properly aligned CIDR blocks (not arbitrary ranges):
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
-$middle = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.100/32');
+$subnet = IPv4\Subnet::fromCidr('10.0.0.0/24');
+$middle = IPv4\Subnet::fromCidr('10.0.0.100/32');
 
 $result = $subnet->exclude($middle);
 // Returns 8 optimally-sized CIDR blocks representing addresses 10.0.0.0-99 and 10.0.0.101-255
@@ -222,15 +222,15 @@ The `aggregate()` method combines contiguous subnets into the minimal set of lar
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.1.0/24'),
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [192.168.0.0/23]
 
 foreach ($aggregated as $summary) {
-    echo $summary->getCidrNotation() . "\n";
+    echo $summary->cidr() . "\n";
 }
 ```
 
@@ -238,32 +238,32 @@ foreach ($aggregated as $summary) {
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.2.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.3.0/24'),
+    IPv4\Subnet::fromCidr('10.0.0.0/24'),
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.2.0/24'),
+    IPv4\Subnet::fromCidr('10.0.3.0/24'),
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [10.0.0.0/22]
 
-echo "Aggregated " . count($subnets) . " /24s into: {$aggregated[0]->getCidrNotation()}\n";
+echo "Aggregated " . count($subnets) . " /24s into: {$aggregated[0]->cidr()}\n";
 ```
 
 #### Example 3: Non-contiguous Subnets Remain Separate
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24'),  // Gap at .1.0/24
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.2.0/24'),  // Gap at .1.0/24
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [192.168.0.0/24, 192.168.2.0/24] - cannot combine due to gap
 
 echo "Cannot aggregate - gap exists. Result:\n";
 foreach ($aggregated as $subnet) {
-    echo "  {$subnet->getCidrNotation()}\n";
+    echo "  {$subnet->cidr()}\n";
 }
 ```
 
@@ -275,29 +275,29 @@ The `summarize()` method finds the smallest single CIDR block that contains all 
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.1.0/24'),
 ];
 
-$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+$summary = IPv4\Subnets::summarize($subnets);
 // Returns: 192.168.0.0/23 (perfect fit, no waste)
 
-echo "Summary: {$summary->getCidrNotation()}\n";
+echo "Summary: {$summary->cidr()}\n";
 ```
 
 #### Example 2: Has Gap - Includes Extra Addresses to Cover Range
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.2.0/24'),  // Missing .1.0/24
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.2.0/24'),  // Missing .1.0/24
 ];
 
-$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+$summary = IPv4\Subnets::summarize($subnets);
 // Returns: 192.168.0.0/22
 // Includes .0.x, .1.x (not in input!), .2.x, and .3.x (not in input!)
 
-echo "Summary: {$summary->getCidrNotation()}\n";
+echo "Summary: {$summary->cidr()}\n";
 echo "Note: Includes 192.168.1.0/24 and 192.168.3.0/24 (not in original input)\n";
 ```
 
@@ -305,15 +305,15 @@ echo "Note: Includes 192.168.1.0/24 and 192.168.3.0/24 (not in original input)\n
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/32'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.255/32'),
+    IPv4\Subnet::fromCidr('10.0.0.0/32'),
+    IPv4\Subnet::fromCidr('10.0.0.255/32'),
 ];
 
-$summary = IPv4\SubnetCalculatorFactory::summarize($subnets);
+$summary = IPv4\Subnets::summarize($subnets);
 // Returns: 10.0.0.0/24 (includes all 254 addresses between them)
 
-echo "Summary: {$summary->getCidrNotation()}\n";
-echo "Covers: {$summary->getNumberIPAddresses()} addresses (includes many not in input)\n";
+echo "Summary: {$summary->cidr()}\n";
+echo "Covers: {$summary->addressCount()} addresses (includes many not in input)\n";
 ```
 
 ### Practical Use Cases
@@ -323,17 +323,17 @@ echo "Covers: {$summary->getNumberIPAddresses()} addresses (includes many not in
 ```php
 // Your organization has these 4 regional office subnets
 $offices = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.1.0.0/24'),  // Office A
-    IPv4\SubnetCalculatorFactory::fromCidr('10.1.1.0/24'),  // Office B
-    IPv4\SubnetCalculatorFactory::fromCidr('10.1.2.0/24'),  // Office C
-    IPv4\SubnetCalculatorFactory::fromCidr('10.1.3.0/24'),  // Office D
+    IPv4\Subnet::fromCidr('10.1.0.0/24'),  // Office A
+    IPv4\Subnet::fromCidr('10.1.1.0/24'),  // Office B
+    IPv4\Subnet::fromCidr('10.1.2.0/24'),  // Office C
+    IPv4\Subnet::fromCidr('10.1.3.0/24'),  // Office D
 ];
 
-$summary = IPv4\SubnetCalculatorFactory::aggregate($offices);
+$summary = IPv4\Subnets::aggregate($offices);
 // Returns: [10.1.0.0/22]
 // Advertise this single route instead of 4 individual routes
 
-echo "BGP Advertisement: {$summary[0]->getCidrNotation()}\n";
+echo "BGP Advertisement: {$summary[0]->cidr()}\n";
 echo "Reduces routing table by " . (count($offices) - count($summary)) . " entries\n";
 ```
 
@@ -342,19 +342,19 @@ echo "Reduces routing table by " . (count($offices) - count($summary)) . " entri
 ```php
 // Aggregate separate data center allocations
 $datacenters = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.0.0/24'),
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),
+    IPv4\Subnet::fromCidr('192.168.1.0/24'),
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($datacenters);
+$aggregated = IPv4\Subnets::aggregate($datacenters);
 // Returns: [10.0.0.0/23, 192.168.0.0/23]
 // Two summary routes for two non-contiguous regions
 
 echo "Data center routes:\n";
 foreach ($aggregated as $route) {
-    echo "  {$route->getCidrNotation()}\n";
+    echo "  {$route->cidr()}\n";
 }
 ```
 
@@ -363,17 +363,17 @@ foreach ($aggregated as $route) {
 ```php
 // Allow access to multiple department subnets with one firewall rule
 $departments = [
-    IPv4\SubnetCalculatorFactory::fromCidr('172.16.1.0/24'),  // Engineering
-    IPv4\SubnetCalculatorFactory::fromCidr('172.16.2.0/24'),  // Sales
-    IPv4\SubnetCalculatorFactory::fromCidr('172.16.3.0/24'),  // Marketing
+    IPv4\Subnet::fromCidr('172.16.1.0/24'),  // Engineering
+    IPv4\Subnet::fromCidr('172.16.2.0/24'),  // Sales
+    IPv4\Subnet::fromCidr('172.16.3.0/24'),  // Marketing
 ];
 
-$allowRule = IPv4\SubnetCalculatorFactory::summarize($departments);
+$allowRule = IPv4\Subnets::summarize($departments);
 // Returns: 172.16.0.0/22
 // One ACL entry instead of three (includes .0.0/24 which may be acceptable)
 
-echo "Single ACL rule: permit {$allowRule->getCidrNotation()}\n";
-echo "Covers {$allowRule->getNumberIPAddresses()} addresses\n";
+echo "Single ACL rule: permit {$allowRule->cidr()}\n";
+echo "Covers {$allowRule->addressCount()} addresses\n";
 ```
 
 #### Routing Table Optimization
@@ -381,15 +381,15 @@ echo "Covers {$allowRule->getNumberIPAddresses()} addresses\n";
 ```php
 // Analyze routing table for aggregation opportunities
 $routes = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.2.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.3.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/24'),
-    IPv4\SubnetCalculatorFactory::fromCidr('172.16.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.0.0/24'),
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.2.0/24'),
+    IPv4\Subnet::fromCidr('10.0.3.0/24'),
+    IPv4\Subnet::fromCidr('172.16.0.0/24'),
+    IPv4\Subnet::fromCidr('172.16.1.0/24'),
 ];
 
-$optimized = IPv4\SubnetCalculatorFactory::aggregate($routes);
+$optimized = IPv4\Subnets::aggregate($routes);
 
 echo "Original routes: " . count($routes) . "\n";
 echo "Optimized routes: " . count($optimized) . "\n";
@@ -397,7 +397,7 @@ echo "Reduction: " . (count($routes) - count($optimized)) . " routes\n\n";
 
 echo "Optimized routing table:\n";
 foreach ($optimized as $route) {
-    echo "  {$route->getCidrNotation()}\n";
+    echo "  {$route->cidr()}\n";
 }
 ```
 
@@ -409,12 +409,12 @@ Both methods automatically handle duplicates and overlapping subnets:
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/23'),  // Larger subnet
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),  // Contained within /23
-    IPv4\SubnetCalculatorFactory::fromCidr('192.168.0.0/24'),  // Duplicate
+    IPv4\Subnet::fromCidr('192.168.0.0/23'),  // Larger subnet
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),  // Contained within /23
+    IPv4\Subnet::fromCidr('192.168.0.0/24'),  // Duplicate
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [192.168.0.0/23] - duplicates removed, smaller subnet absorbed
 ```
 
@@ -424,11 +424,11 @@ Subnets must be properly aligned to merge. Misaligned adjacent blocks cannot com
 
 ```php
 $subnets = [
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.1.0/24'),  // Starts at odd boundary
-    IPv4\SubnetCalculatorFactory::fromCidr('10.0.2.0/24'),
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),  // Starts at odd boundary
+    IPv4\Subnet::fromCidr('10.0.2.0/24'),
 ];
 
-$aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
+$aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [10.0.1.0/24, 10.0.2.0/24]
 // Cannot merge - 10.0.1.0 is not aligned for /23 (would need to start at 10.0.0.0)
 ```
@@ -436,8 +436,8 @@ $aggregated = IPv4\SubnetCalculatorFactory::aggregate($subnets);
 #### Empty Input
 
 ```php
-$result1 = IPv4\SubnetCalculatorFactory::aggregate([]);   // Returns: []
-// $result2 = IPv4\SubnetCalculatorFactory::summarize([]);   // Throws: InvalidArgumentException
+$result1 = IPv4\Subnets::aggregate([]);   // Returns: []
+// $result2 = IPv4\Subnets::summarize([]);   // Throws: InvalidArgumentException
 ```
 
 ## Utilization Statistics
@@ -449,17 +449,17 @@ Analyze subnet efficiency and perform capacity planning. These methods help choo
 Calculate what percentage of the subnet's total IP addresses are usable as hosts (accounting for network and broadcast address overhead):
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
-$percentage = $subnet->getUsableHostPercentage();  // 99.22% (254 usable of 256 total)
+$percentage = $subnet->usableHostPercentage();  // 99.22% (254 usable of 256 total)
 
 echo "Usable hosts: {$percentage}%\n";
 
 // Different subnet sizes have different efficiency
 $sizes = [24, 25, 26, 27, 28, 29, 30];
 foreach ($sizes as $size) {
-    $s = IPv4\SubnetCalculatorFactory::fromCidr("192.168.1.0/{$size}");
-    echo "/{$size}: {$s->getUsableHostPercentage()}% usable\n";
+    $s = IPv4\Subnet::fromCidr("192.168.1.0/{$size}");
+    echo "/{$size}: {$s->usableHostPercentage()}% usable\n";
 }
 ```
 
@@ -467,12 +467,12 @@ foreach ($sizes as $size) {
 
 ```php
 // Point-to-point link (/31)
-$p2p = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/31');
-$p2p->getUsableHostPercentage();  // 100.0% (2 usable of 2 total)
+$p2p = IPv4\Subnet::fromCidr('10.0.0.0/31');
+$p2p->usableHostPercentage();  // 100.0% (2 usable of 2 total)
 
 // Single host (/32)
-$single = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.1/32');
-$single->getUsableHostPercentage();  // 100.0% (1 usable of 1 total)
+$single = IPv4\Subnet::fromCidr('10.0.0.1/32');
+$single->usableHostPercentage();  // 100.0% (1 usable of 1 total)
 ```
 
 ### Count Unusable Addresses
@@ -480,18 +480,18 @@ $single->getUsableHostPercentage();  // 100.0% (1 usable of 1 total)
 Get the count of addresses that cannot be used as hosts (network address + broadcast address):
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
-$unusable = $subnet->getUnusableAddressCount();  // 2 (network + broadcast)
+$unusable = $subnet->unusableAddressCount();  // 2 (network + broadcast)
 
 echo "Unusable addresses: {$unusable}\n";
 
 // RFC 3021 special cases - no unusable addresses
-$p2p = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/31');
-echo "P2P unusable: {$p2p->getUnusableAddressCount()}\n";  // 0 (both addresses usable)
+$p2p = IPv4\Subnet::fromCidr('10.0.0.0/31');
+echo "P2P unusable: {$p2p->unusableAddressCount()}\n";  // 0 (both addresses usable)
 
-$single = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.1/32');
-echo "Single host unusable: {$single->getUnusableAddressCount()}\n";  // 0
+$single = IPv4\Subnet::fromCidr('10.0.0.1/32');
+echo "Single host unusable: {$single->unusableAddressCount()}\n";  // 0
 ```
 
 ### Calculate Utilization for Host Requirements
@@ -499,22 +499,22 @@ echo "Single host unusable: {$single->getUnusableAddressCount()}\n";  // 0
 Determine how efficiently a subnet would be utilized for a specific number of required hosts:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');  // 254 usable hosts
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');  // 254 usable hosts
 
 // Good fit - 78.74% utilization
-$utilization = $subnet->getUtilizationForHosts(200);
+$utilization = $subnet->utilizationFor(200);
 echo "200 hosts in /24: {$utilization}% utilization\n";  // 78.74%
 
 // Perfect fit - 100% utilization
-$utilization = $subnet->getUtilizationForHosts(254);
+$utilization = $subnet->utilizationFor(254);
 echo "254 hosts in /24: {$utilization}% utilization\n";  // 100.0%
 
 // Oversized subnet - wasting addresses
-$utilization = $subnet->getUtilizationForHosts(50);
+$utilization = $subnet->utilizationFor(50);
 echo "50 hosts in /24: {$utilization}% utilization\n";   // 19.69% (inefficient)
 
 // Insufficient capacity - more than 100%
-$utilization = $subnet->getUtilizationForHosts(300);
+$utilization = $subnet->utilizationFor(300);
 echo "300 hosts in /24: {$utilization}% utilization\n";  // 118.11% (too small!)
 ```
 
@@ -523,22 +523,22 @@ echo "300 hosts in /24: {$utilization}% utilization\n";  // 118.11% (too small!)
 Determine how many usable addresses would be wasted (or how many more are needed) for a specific host requirement:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');  // 254 usable hosts
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');  // 254 usable hosts
 
 // 54 addresses wasted
-$wasted = $subnet->getWastedAddresses(200);
+$wasted = $subnet->wastedAddressesFor(200);
 echo "200 hosts in /24: {$wasted} addresses wasted\n";  // 54 (254 - 200)
 
 // Perfect fit - no waste
-$wasted = $subnet->getWastedAddresses(254);
+$wasted = $subnet->wastedAddressesFor(254);
 echo "254 hosts in /24: {$wasted} addresses wasted\n";  // 0
 
 // Lots of wasted addresses
-$wasted = $subnet->getWastedAddresses(50);
+$wasted = $subnet->wastedAddressesFor(50);
 echo "50 hosts in /24: {$wasted} addresses wasted\n";   // 204 (254 - 50)
 
 // Insufficient capacity - negative value
-$wasted = $subnet->getWastedAddresses(300);
+$wasted = $subnet->wastedAddressesFor(300);
 echo "300 hosts in /24: {$wasted} addresses wasted\n";  // -46 (need 46 more addresses!)
 ```
 
@@ -557,8 +557,8 @@ $bestSubnet = null;
 $bestUtilization = 0;
 
 foreach ($sizes as $size) {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr("192.168.1.0/{$size}");
-    $usableHosts = $subnet->getNumberAddressableHosts();
+    $subnet = IPv4\Subnet::fromCidr("192.168.1.0/{$size}");
+    $usableHosts = $subnet->hostCount();
 
     // Skip if subnet is too small
     if ($usableHosts < $requiredHosts) {
@@ -566,9 +566,9 @@ foreach ($sizes as $size) {
         continue;
     }
 
-    $utilization = $subnet->getUtilizationForHosts($requiredHosts);
-    $wasted = $subnet->getWastedAddresses($requiredHosts);
-    $usablePercent = $subnet->getUsableHostPercentage();
+    $utilization = $subnet->utilizationFor($requiredHosts);
+    $wasted = $subnet->wastedAddressesFor($requiredHosts);
+    $usablePercent = $subnet->usableHostPercentage();
 
     echo "/{$size}: {$usableHosts} usable, {$utilization}% utilized, {$wasted} wasted, {$usablePercent}% efficiency\n";
 
@@ -610,12 +610,12 @@ echo "Department Subnet Planning:\n\n";
 
 foreach ($departments as $dept => $requiredHosts) {
     // Find optimal prefix
-    $optimalPrefix = IPv4\SubnetCalculatorFactory::optimalPrefixForHosts($requiredHosts);
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr("10.0.0.0/{$optimalPrefix}");
+    $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
+    $subnet = IPv4\Subnet::fromCidr("10.0.0.0/{$optimalPrefix}");
 
-    $utilization = $subnet->getUtilizationForHosts($requiredHosts);
-    $wasted = $subnet->getWastedAddresses($requiredHosts);
-    $usable = $subnet->getNumberAddressableHosts();
+    $utilization = $subnet->utilizationFor($requiredHosts);
+    $wasted = $subnet->wastedAddressesFor($requiredHosts);
+    $usable = $subnet->hostCount();
 
     echo "{$dept}:\n";
     echo "  Required: {$requiredHosts} hosts\n";
@@ -634,17 +634,42 @@ While classful networking is obsolete (RFC 4632 established CIDR), legacy networ
 Determine the legacy classful network class:
 
 ```php
-$classA = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
-$classB = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
-$classC = IPv4\SubnetCalculatorFactory::fromCidr('192.168.1.0/24');
-$classD = IPv4\SubnetCalculatorFactory::fromCidr('224.0.0.1/32');
-$classE = IPv4\SubnetCalculatorFactory::fromCidr('240.0.0.0/32');
+$classA = IPv4\Subnet::fromCidr('10.0.0.0/8');
+$classB = IPv4\Subnet::fromCidr('172.16.0.0/16');
+$classC = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$classD = IPv4\Subnet::fromCidr('224.0.0.1/32');
+$classE = IPv4\Subnet::fromCidr('240.0.0.0/32');
 
-echo "Class A: " . $classA->getNetworkClass() . "\n";  // 'A'
-echo "Class B: " . $classB->getNetworkClass() . "\n";  // 'B'
-echo "Class C: " . $classC->getNetworkClass() . "\n";  // 'C'
-echo "Class D: " . $classD->getNetworkClass() . "\n";  // 'D' (Multicast)
-echo "Class E: " . $classE->getNetworkClass() . "\n";  // 'E' (Reserved)
+// networkClass() now returns IPv4\NetworkClass enum
+echo "Class A: " . $classA->networkClass()->value . "\n";  // 'A'
+echo "Class B: " . $classB->networkClass()->value . "\n";  // 'B'
+echo "Class C: " . $classC->networkClass()->value . "\n";  // 'C'
+echo "Class D: " . $classD->networkClass()->value . "\n";  // 'D' (Multicast)
+echo "Class E: " . $classE->networkClass()->value . "\n";  // 'E' (Reserved)
+```
+
+**Working with the NetworkClass Enum:**
+
+```php
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
+$class = $subnet->networkClass();  // Returns IPv4\NetworkClass::C
+
+// Get string value
+echo $class->value;  // 'C'
+
+// Type-safe comparison
+if ($class === IPv4\NetworkClass::C) {
+    echo "This is a Class C network\n";
+}
+
+// Use in match expressions
+$range = match ($class) {
+    IPv4\NetworkClass::A => '0.0.0.0 - 127.255.255.255',
+    IPv4\NetworkClass::B => '128.0.0.0 - 191.255.255.255',
+    IPv4\NetworkClass::C => '192.0.0.0 - 223.255.255.255',
+    IPv4\NetworkClass::D => '224.0.0.0 - 239.255.255.255',
+    IPv4\NetworkClass::E => '240.0.0.0 - 255.255.255.255',
+};
 ```
 
 ### Get Default Classful Mask
@@ -652,13 +677,13 @@ echo "Class E: " . $classE->getNetworkClass() . "\n";  // 'E' (Reserved)
 Get the default subnet mask and prefix for the network's class:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
+$subnet = IPv4\Subnet::fromCidr('10.0.0.0/24');
 
-$defaultMask   = $subnet->getDefaultClassMask();    // '255.0.0.0' (Class A default)
-$defaultPrefix = $subnet->getDefaultClassPrefix();  // 8 (Class A default /8)
+$defaultMask   = $subnet->defaultClassMask();    // '255.0.0.0' (Class A default)
+$defaultPrefix = $subnet->defaultClassPrefix();  // 8 (Class A default /8)
 
-echo "Network: {$subnet->getCidrNotation()}\n";
-echo "Class: {$subnet->getNetworkClass()}\n";
+echo "Network: {$subnet->cidr()}\n";
+echo "Class: {$subnet->networkClass()->value}\n";  // Use ->value for string
 echo "Default mask: {$defaultMask}\n";
 echo "Default prefix: /{$defaultPrefix}\n";
 ```
@@ -668,10 +693,10 @@ echo "Default prefix: /{$defaultPrefix}\n";
 Determine if a subnet is using its default classful boundary or if it's been subnetted/supernetted:
 
 ```php
-$classfulA   = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
-$subnettedA  = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/24');
-$classfulB   = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/16');
-$supernettedB = IPv4\SubnetCalculatorFactory::fromCidr('172.16.0.0/12');
+$classfulA   = IPv4\Subnet::fromCidr('10.0.0.0/8');
+$subnettedA  = IPv4\Subnet::fromCidr('10.0.0.0/24');
+$classfulB   = IPv4\Subnet::fromCidr('172.16.0.0/16');
+$supernettedB = IPv4\Subnet::fromCidr('172.16.0.0/12');
 
 echo "10.0.0.0/8 is classful: "  . ($classfulA->isClassful() ? 'Yes' : 'No') . "\n";     // Yes
 echo "10.0.0.0/24 is classful: " . ($subnettedA->isClassful() ? 'Yes' : 'No') . "\n";    // No (subnetted)
@@ -694,18 +719,18 @@ echo "172.16.0.0/12 is classful: " . ($supernettedB->isClassful() ? 'Yes' : 'No'
 ```php
 // Subnet analysis tool for learning classful networking
 function analyzeSubnet($cidr) {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+    $subnet = IPv4\Subnet::fromCidr($cidr);
 
-    echo "Subnet: {$subnet->getCidrNotation()}\n";
-    echo "Class: {$subnet->getNetworkClass()}\n";
-    echo "Default classful mask: {$subnet->getDefaultClassMask()} (/{$subnet->getDefaultClassPrefix()})\n";
-    echo "Actual mask: {$subnet->getSubnetMask()} (/{$subnet->getNetworkSize()})\n";
+    echo "Subnet: {$subnet->cidr()}\n";
+    echo "Class: {$subnet->networkClass()->value}\n";  // Use ->value for string
+    echo "Default classful mask: {$subnet->defaultClassMask()} (/{$subnet->defaultClassPrefix()})\n";
+    echo "Actual mask: {$subnet->mask()} (/{$subnet->networkSize()})\n";
 
     if ($subnet->isClassful()) {
         echo "This subnet uses its natural classful boundary.\n";
     } else {
-        $actualPrefix = $subnet->getNetworkSize();
-        $classfulPrefix = $subnet->getDefaultClassPrefix();
+        $actualPrefix = $subnet->networkSize();
+        $classfulPrefix = $subnet->defaultClassPrefix();
 
         if ($actualPrefix > $classfulPrefix) {
             $bits = $actualPrefix - $classfulPrefix;

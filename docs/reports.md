@@ -1,4 +1,4 @@
-# Reports
+# Reports - Version 5.0
 
 Generate comprehensive network information reports in multiple formats: printed output, associative arrays, JSON, and string representations.
 
@@ -13,22 +13,21 @@ Generate comprehensive network information reports in multiple formats: printed 
 
 ## Report Formats
 
-The IPv4 Subnet Calculator provides four ways to generate comprehensive subnet reports:
+The IPv4 Subnet Calculator v5.0 provides three ways to generate comprehensive subnet reports:
 
-1. **Printed Report** - Directly output formatted text to STDOUT
-2. **Array Report** - Get structured data as a PHP associative array
-3. **JSON Report** - Get structured data as a JSON string
-4. **String Report** - Get formatted text as a string variable
+1. **Array Report** - Get structured data as a PHP associative array
+2. **JSON Report** - Get structured data as a JSON string
+3. **String Report** - Get formatted text as a string or print it directly
 
 All formats include complete network information: IP address, masks, network/host portions, address ranges, and metadata.
 
 ## Printed Report
 
-Directly print a formatted report to STDOUT:
+Get a detailed formatted report as a string variable using `toPrintable()`:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-$subnet->printSubnetReport();
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
+echo $subnet->toPrintable();
 ```
 
 **Output:**
@@ -41,7 +40,7 @@ Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111    
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
-IP Address Type:             private
+Address Type:                private
 Network Class:               C
 Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
@@ -50,7 +49,7 @@ IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
-IPv4 ARPA Domain:            203.112.168.192.in-addr.arpa
+ARPA Domain:                 203.112.168.192.in-addr.arpa
 ```
 
 **Use Cases:**
@@ -64,13 +63,13 @@ IPv4 ARPA Domain:            203.112.168.192.in-addr.arpa
 Get subnet information as a structured PHP associative array:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-$report = $subnet->getSubnetArrayReport();
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
+$report = $subnet->toArray();
 
 // Access specific values
 echo $report['ip_address']['quads'];              // '192.168.112.203'
 echo $report['subnet_mask']['binary'];            // '11111111111111111111111000000000'
-echo $report['number_of_addressable_hosts'];      // 510
+echo $report['host_count'];                       // 510
 echo $report['network_class']['class'];           // 'C'
 echo $report['network_class']['is_classful'];     // false
 ```
@@ -79,7 +78,7 @@ echo $report['network_class']['is_classful'];     // false
 ```php
 Array
 (
-    [ip_address_with_network_size] => 192.168.112.203/23
+    [cidr] => 192.168.112.203/23
     [ip_address] => Array
         (
             [quads] => 192.168.112.203
@@ -88,7 +87,7 @@ Array
             [integer] => 3232264395
         )
 
-    [ip_address_type] => private
+    [address_type] => private
     [network_class] => Array
         (
             [class] => C
@@ -130,18 +129,13 @@ Array
         )
 
     [network_size] => 23
-    [number_of_ip_addresses] => 512
-    [number_of_addressable_hosts] => 510
-    [ip_address_range] => Array
-        (
-            [0] => 192.168.112.0
-            [1] => 192.168.113.255
-        )
-
+    [address_count] => 512
+    [host_count] => 510
+    [network_address] => 192.168.112.0
     [broadcast_address] => 192.168.113.255
     [min_host] => 192.168.112.1
     [max_host] => 192.168.113.254
-    [ipv4_arpa_domain] => 203.112.168.192.in-addr.arpa
+    [arpa_domain] => 203.112.168.192.in-addr.arpa
 )
 ```
 
@@ -154,15 +148,15 @@ Array
 
 **Example - Extract Specific Information:**
 ```php
-$report = $subnet->getSubnetArrayReport();
+$report = $subnet->toArray();
 
 // Build custom output
 $summary = [
     'network' => $report['network_portion']['quads'],
     'mask' => $report['subnet_mask']['quads'],
-    'hosts' => $report['number_of_addressable_hosts'],
-    'range' => implode(' - ', $report['ip_address_range']),
-    'type' => $report['ip_address_type'],
+    'hosts' => $report['host_count'],
+    'range' => $report['network_address'] . ' - ' . $report['broadcast_address'],
+    'type' => $report['address_type'],
 ];
 
 print_r($summary);
@@ -173,25 +167,25 @@ print_r($summary);
 Get subnet information as a JSON string:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-$json = $subnet->getSubnetJsonReport();
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
+$json = $subnet->toJson();
 
 // Parse JSON
 $data = json_decode($json, true);
-echo $data['number_of_addressable_hosts'];  // 510
+echo $data['host_count'];  // 510
 ```
 
 **Complete JSON Output:**
 ```json
 {
-    "ip_address_with_network_size": "192.168.112.203/23",
+    "cidr": "192.168.112.203/23",
     "ip_address": {
         "quads": "192.168.112.203",
         "hex": "C0A870CB",
         "binary": "11000000101010000111000011001011",
         "integer": 3232264395
     },
-    "ip_address_type": "private",
+    "address_type": "private",
     "network_class": {
         "class": "C",
         "default_mask": "255.255.255.0",
@@ -223,16 +217,13 @@ echo $data['number_of_addressable_hosts'];  // 510
         "integer": 203
     },
     "network_size": 23,
-    "number_of_ip_addresses": 512,
-    "number_of_addressable_hosts": 510,
-    "ip_address_range": [
-        "192.168.112.0",
-        "192.168.113.255"
-    ],
+    "address_count": 512,
+    "host_count": 510,
+    "network_address": "192.168.112.0",
     "broadcast_address": "192.168.113.255",
     "min_host": "192.168.112.1",
     "max_host": "192.168.113.254",
-    "ipv4_arpa_domain": "203.112.168.192.in-addr.arpa"
+    "arpa_domain": "203.112.168.192.in-addr.arpa"
 }
 ```
 
@@ -249,10 +240,10 @@ echo $data['number_of_addressable_hosts'];  // 510
 // API endpoint that returns subnet information
 function getSubnetInfo($cidr) {
     try {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+        $subnet = IPv4\Subnet::fromCidr($cidr);
 
         header('Content-Type: application/json');
-        echo $subnet->getSubnetJsonReport();
+        echo $subnet->toJson();
     } catch (\Exception $e) {
         http_response_code(400);
         echo json_encode(['error' => $e->getMessage()]);
@@ -268,8 +259,8 @@ getSubnetInfo($_GET['cidr']);
 Get a formatted report as a string variable (same format as printed report):
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
-$stringReport = $subnet->getPrintableReport();
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
+$stringReport = $subnet->toPrintable();
 
 // Store in variable, log to file, etc.
 file_put_contents('subnet-report.txt', $stringReport);
@@ -286,7 +277,7 @@ Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111    
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
 Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
-IP Address Type:             private
+Address Type:                private
 Network Class:               C
 Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
@@ -295,7 +286,7 @@ IP Address Range:            192.168.112.0 - 192.168.113.255
 Broadcast Address:           192.168.113.255
 Min Host:                    192.168.112.1
 Max Host:                    192.168.113.254
-IPv4 ARPA Domain:            203.112.168.192.in-addr.arpa
+ARPA Domain:                 203.112.168.192.in-addr.arpa
 ```
 
 **Use Cases:**
@@ -308,8 +299,8 @@ IPv4 ARPA Domain:            203.112.168.192.in-addr.arpa
 
 **Example - Log to File:**
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('10.0.0.0/8');
-$report = $subnet->getPrintableReport();
+$subnet = IPv4\Subnet::fromCidr('10.0.0.0/8');
+$report = $subnet->toPrintable();
 
 $logEntry = date('Y-m-d H:i:s') . " - Subnet Analysis\n";
 $logEntry .= str_repeat('=', 80) . "\n";
@@ -322,29 +313,29 @@ file_put_contents('/var/log/subnet-analysis.log', $logEntry, FILE_APPEND);
 
 ### String Representation (__toString)
 
-The SubnetCalculator class implements `__toString()`, allowing you to print the object directly:
+The Subnet class implements `__toString()`, which returns CIDR notation:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
-// These are equivalent:
-print($subnet);
-echo $subnet;
-echo $subnet->getPrintableReport();
+// String representation (CIDR notation)
+echo $subnet;              // "192.168.112.203/23"
+print($subnet);            // "192.168.112.203/23"
 
-// All output the formatted report
+// For a detailed formatted report, use toPrintable()
+echo $subnet->toPrintable();  // Full multi-line report
 ```
 
 ### JsonSerializable
 
-The SubnetCalculator class implements `JsonSerializable`, enabling direct JSON encoding:
+The Subnet class implements `JsonSerializable`, enabling direct JSON encoding:
 
 ```php
-$subnet = IPv4\SubnetCalculatorFactory::fromCidr('192.168.112.203/23');
+$subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
 // These are equivalent:
 $json = json_encode($subnet);
-$json = $subnet->getSubnetJsonReport();
+$json = $subnet->toJson();
 
 // Pretty print JSON
 $prettyJson = json_encode($subnet, JSON_PRETTY_PRINT);
@@ -367,8 +358,8 @@ if ($argc < 2) {
 }
 
 try {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($argv[1]);
-    $subnet->printSubnetReport();
+    $subnet = IPv4\Subnet::fromCidr($argv[1]);
+    echo $subnet->toPrintable();  // Print detailed formatted report
 } catch (\Exception $e) {
     echo "Error: {$e->getMessage()}\n";
     exit(1);
@@ -383,9 +374,9 @@ header('Content-Type: application/json');
 
 try {
     $cidr = $_GET['cidr'] ?? '';
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
+    $subnet = IPv4\Subnet::fromCidr($cidr);
 
-    echo $subnet->getSubnetJsonReport();
+    echo $subnet->toJson();
 } catch (\Exception $e) {
     http_response_code(400);
     echo json_encode([
@@ -407,8 +398,8 @@ $subnets = [
 $reports = [];
 
 foreach ($subnets as $cidr) {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
-    $reports[] = $subnet->getSubnetArrayReport();
+    $subnet = IPv4\Subnet::fromCidr($cidr);
+    $reports[] = $subnet->toArray();
 }
 
 // Export to JSON file
@@ -427,16 +418,16 @@ function generateNetworkDocumentation(array $subnets, $outputFile) {
     $doc .= str_repeat('=', 80) . "\n\n";
 
     foreach ($subnets as $name => $cidr) {
-        $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
-        $report = $subnet->getSubnetArrayReport();
+        $subnet = IPv4\Subnet::fromCidr($cidr);
+        $report = $subnet->toArray();
 
         $doc .= "## {$name}\n\n";
         $doc .= "```\n";
-        $doc .= $subnet->getPrintableReport();
+        $doc .= $subnet->toPrintable();
         $doc .= "```\n\n";
-        $doc .= "**Type:** {$report['ip_address_type']}\n";
-        $doc .= "**Usable Hosts:** {$report['number_of_addressable_hosts']}\n";
-        $doc .= "**Range:** {$report['ip_address_range'][0]} - {$report['ip_address_range'][1]}\n\n";
+        $doc .= "**Type:** {$report['address_type']}\n";
+        $doc .= "**Usable Hosts:** {$report['host_count']}\n";
+        $doc .= "**Range:** {$report['network_address']} - {$report['broadcast_address']}\n\n";
         $doc .= str_repeat('-', 80) . "\n\n";
     }
 
@@ -459,8 +450,8 @@ generateNetworkDocumentation($networkPlan, 'network-plan.md');
 ```php
 // Store subnet analysis in database
 function storeSubnetAnalysis($pdo, $cidr, $description) {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
-    $report = $subnet->getSubnetArrayReport();
+    $subnet = IPv4\Subnet::fromCidr($cidr);
+    $report = $subnet->toArray();
 
     $stmt = $pdo->prepare("
         INSERT INTO subnet_analysis
@@ -473,7 +464,7 @@ function storeSubnetAnalysis($pdo, $cidr, $description) {
         $description,
         $report['network_portion']['quads'],
         $report['broadcast_address'],
-        $report['number_of_addressable_hosts'],
+        $report['host_count'],
         json_encode($report)
     ]);
 }
@@ -487,8 +478,8 @@ storeSubnetAnalysis($pdo, '192.168.1.0/24', 'Office LAN');
 
 ```php
 function emailSubnetReport($email, $cidr) {
-    $subnet = IPv4\SubnetCalculatorFactory::fromCidr($cidr);
-    $report = $subnet->getPrintableReport();
+    $subnet = IPv4\Subnet::fromCidr($cidr);
+    $report = $subnet->toPrintable();
 
     $subject = "Subnet Analysis Report: {$cidr}";
     $message = "Subnet analysis for {$cidr}\n\n";
@@ -509,20 +500,20 @@ emailSubnetReport('admin@example.com', '10.0.0.0/8');
 
 ```php
 function compareSubnets($cidr1, $cidr2) {
-    $subnet1 = IPv4\SubnetCalculatorFactory::fromCidr($cidr1);
-    $subnet2 = IPv4\SubnetCalculatorFactory::fromCidr($cidr2);
+    $subnet1 = IPv4\Subnet::fromCidr($cidr1);
+    $subnet2 = IPv4\Subnet::fromCidr($cidr2);
 
     echo "Comparison Report\n";
     echo str_repeat('=', 80) . "\n\n";
 
     echo "Subnet 1: {$cidr1}\n";
     echo str_repeat('-', 80) . "\n";
-    echo $subnet1->getPrintableReport();
+    echo $subnet1->toPrintable();
     echo "\n\n";
 
     echo "Subnet 2: {$cidr2}\n";
     echo str_repeat('-', 80) . "\n";
-    echo $subnet2->getPrintableReport();
+    echo $subnet2->toPrintable();
     echo "\n\n";
 
     echo "Relationship:\n";
