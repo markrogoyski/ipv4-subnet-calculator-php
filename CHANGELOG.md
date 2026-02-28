@@ -1,6 +1,6 @@
 # IPv4 SubnetCalculator Change Log
 
-## v5.0.0 - (Unreleased)
+## v5.0.0 - 2026-02-28
 
 ### Breaking Changes
 - **PHP 8.1+ required**: Minimum PHP version increased from 7.2 to 8.1
