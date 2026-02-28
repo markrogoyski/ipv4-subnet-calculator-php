@@ -24,6 +24,7 @@ final class Platform
             return;
         }
 
+        // @codeCoverageIgnoreStart
         if (\PHP_INT_SIZE < 8) {
             throw new \RuntimeException(
                 'IPv4 Subnet Calculator requires 64-bit PHP. ' .
@@ -31,6 +32,7 @@ final class Platform
                 'Please use a 64-bit PHP build.'
             );
         }
+        // @codeCoverageIgnoreEnd
 
         self::$platformChecked = true;
     }

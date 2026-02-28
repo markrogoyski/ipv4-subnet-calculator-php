@@ -939,9 +939,11 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     private function excludeRecursive(self $exclude): array
     {
+        // @codeCoverageIgnoreStart
         if ($this->networkSize >= 32) {
             return [];
         }
+        // @codeCoverageIgnoreEnd
 
         $newPrefix = $this->networkSize + 1;
         $networkInt = $this->networkAddressInt();

@@ -147,24 +147,25 @@ final class Subnets
      * @param int $max Maximum address in the span
      *
      * @return int The CIDR prefix (0-32)
-     *
-     * @throws \InvalidArgumentException If no valid prefix can cover the span
      */
     private static function findSmallestCoveringPrefix(int $min, int $max): int
     {
-        for ($prefix = 32; $prefix >= 0; $prefix--) {
-            $blockSize = $prefix === 0 ? IPv4::ADDRESS_SPACE : (1 << (32 - $prefix));
+        $prefix = 32;
+
+        while ($prefix > 0) {
+            $blockSize = 1 << (32 - $prefix);
             $networkStart = ((int) ($min / $blockSize)) * $blockSize;
             $networkEnd = $networkStart + $blockSize - 1;
 
             if ($networkStart <= $min && $networkEnd >= $max) {
                 return $prefix;
             }
+
+            $prefix--;
         }
 
-        throw new \InvalidArgumentException(
-            'Cannot summarize: no valid supernet found'
-        );
+        // /0 covers the entire IPv4 address space
+        return 0;
     }
 
     /**

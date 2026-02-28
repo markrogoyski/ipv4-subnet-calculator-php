@@ -33,6 +33,7 @@ final class IPv4
     /**
      * Prevent instantiation.
      * @psalm-suppress UnusedConstructor
+     * @codeCoverageIgnore
      */
     private function __construct()
     {

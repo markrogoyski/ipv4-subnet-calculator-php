@@ -282,4 +282,64 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
             [89394839],
         ];
     }
+
+    /* ************************** *
+     * fromCidr() validation tests
+     * ************************** */
+
+    #[Test]
+    public function testFromCidrThrowsExceptionWhenSlashIsMissing(): void
+    {
+        // Given - A CIDR string with no slash
+        $cidr = '192.168.1.0';
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("missing '/'");
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    #[Test]
+    public function testFromCidrThrowsExceptionWhenMultipleSlashesPresent(): void
+    {
+        // Given - A CIDR string with multiple slashes
+        $cidr = '192.168.1.0/24/extra';
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("multiple '/'");
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    #[Test]
+    public function testFromCidrThrowsExceptionWhenPrefixIsNotAnInteger(): void
+    {
+        // Given - A CIDR string with non-integer prefix
+        $cidr = '192.168.1.0/abc';
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('prefix must be an integer');
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    #[Test]
+    public function testFromCidrThrowsExceptionWhenPrefixIsEmpty(): void
+    {
+        // Given - A CIDR string with empty prefix
+        $cidr = '192.168.1.0/';
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('prefix must be an integer');
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
 }

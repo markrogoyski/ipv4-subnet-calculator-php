@@ -13,8 +13,7 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for CIDR Aggregation / Supernetting feature.
  *
- * @covers \IPv4\Subnets::aggregate
- * @covers \IPv4\Subnets::summarize
+ * @covers \IPv4\Subnets
  *
  * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - Classless Inter-domain Routing (CIDR)
  */
@@ -215,6 +214,10 @@ class SubnetsTest extends TestCase
                 'inputCidrs' => ['192.167.255.0/24', '192.168.0.0/24'],
                 'expectedCidr' => '192.160.0.0/12',
             ],
+            'reverse order updates min address' => [
+                'inputCidrs' => ['10.0.1.0/24', '10.0.0.0/24'],
+                'expectedCidr' => '10.0.0.0/23',
+            ],
         ];
     }
 
@@ -375,5 +378,33 @@ class SubnetsTest extends TestCase
         $this->assertCount(1, $result);
         $this->assertSame('172.16.5.0', $result[0]->networkPortion()->asQuads());
         $this->assertSame(24, $result[0]->networkSize());
+    }
+
+    #[Test]
+    public function unsignedToIpThrowsExceptionForNegativeInteger(): void
+    {
+        // Given - A negative IP integer
+        $method = new \ReflectionMethod(Subnets::class, 'unsignedToIp');
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('IP integer out of range');
+
+        // When
+        $method->invoke(null, -1);
+    }
+
+    #[Test]
+    public function unsignedToIpThrowsExceptionForOverflowInteger(): void
+    {
+        // Given - An IP integer exceeding max address
+        $method = new \ReflectionMethod(Subnets::class, 'unsignedToIp');
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('IP integer out of range');
+
+        // When
+        $method->invoke(null, 4_294_967_296);
     }
 }

@@ -209,14 +209,7 @@ final class SubnetParser
             );
         }
 
-        $long = \ip2long($ipAddress);
-        if ($long === false) {
-            throw new \InvalidArgumentException(
-                "Invalid IP address: '{$ipAddress}'"
-            );
-        }
-
-        return $long;
+        return (int) \ip2long($ipAddress);
     }
 
     /**
@@ -253,12 +246,7 @@ final class SubnetParser
 
         $totalAddressesNeeded = $hostCount + 2;
         $bitsNeeded = (int) \ceil(\log($totalAddressesNeeded, 2));
-        $networkSize = 32 - $bitsNeeded;
 
-        if ($networkSize < 0) {
-            $networkSize = 0;
-        }
-
-        return $networkSize;
+        return 32 - $bitsNeeded;
     }
 }
