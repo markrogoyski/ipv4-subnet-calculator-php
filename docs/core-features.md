@@ -450,6 +450,7 @@ $docs          = IPv4\Subnet::fromCidr('192.0.2.1/32');
 $benchmark     = IPv4\Subnet::fromCidr('198.18.0.1/32');
 $ietfProtocol  = IPv4\Subnet::fromCidr('192.0.0.1/32');
 $deprecated6to4 = IPv4\Subnet::fromCidr('192.88.99.1/32');
+$ianaReserved  = IPv4\Subnet::fromCidr('192.31.196.1/32');
 $reserved      = IPv4\Subnet::fromCidr('240.0.0.1/32');
 $broadcast     = IPv4\Subnet::fromCidr('255.255.255.255/32');
 $thisNetwork   = IPv4\Subnet::fromCidr('0.0.0.1/32');
@@ -462,6 +463,7 @@ $docs->isDocumentation();             // true - TEST-NET ranges
 $benchmark->isBenchmarking();         // true - 198.18.0.0/15
 $ietfProtocol->isIetfProtocol();      // true - 192.0.0.0/24 (DS-Lite, NAT64, etc.)
 $deprecated6to4->is6to4Relay();       // true - 192.88.99.0/24 (deprecated)
+$ianaReserved->isIanaReserved();      // true - IANA special-purpose assignments
 $reserved->isReserved();              // true - 240.0.0.0/4
 $broadcast->isLimitedBroadcast();     // true - 255.255.255.255 only
 $thisNetwork->isThisNetwork();        // true - 0.0.0.0/8
@@ -483,6 +485,7 @@ $classifications = [
     '198.18.0.1'      => 'benchmarking',
     '192.0.0.1'       => 'ietf-protocol',
     '192.88.99.1'     => 'deprecated-6to4',
+    '192.31.196.1'    => 'iana-reserved',
     '240.0.0.1'       => 'reserved',
     '255.255.255.255' => 'limited-broadcast',
     '0.0.0.1'         => 'this-network',
@@ -533,6 +536,7 @@ $description = match ($type) {
 | `is6to4Relay()` | 192.88.99.0/24 | RFC 3068, RFC 7526 | 6to4 relay anycast (deprecated) |
 | `isReserved()` | 240.0.0.0/4 | RFC 1112 | Reserved for future use |
 | `isLimitedBroadcast()` | 255.255.255.255/32 | RFC 919 | Limited broadcast address |
+| `isIanaReserved()` | 192.31.196.0/24<br>192.52.193.0/24<br>192.175.48.0/24 | RFC 7535, RFC 7450, RFC 7534 | IANA Special-Purpose assignments |
 | `isThisNetwork()` | 0.0.0.0/8 | RFC 1122 | "This" network addresses |
 | `isPublic()` | All others | - | Publicly routable addresses |
 

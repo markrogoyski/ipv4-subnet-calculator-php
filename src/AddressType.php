@@ -97,4 +97,12 @@ enum AddressType: string
      * Range: 192.88.99.0/24
      */
     case Deprecated6to4 = 'deprecated-6to4';
+
+    /**
+     * IANA Special-Purpose Address Registry assignments.
+     * Ranges: 192.31.196.0/24 (AS112-v4, RFC 7535),
+     *         192.52.193.0/24 (AMT, RFC 7450),
+     *         192.175.48.0/24 (Direct Delegation AS112, RFC 7534)
+     */
+    case IanaReserved = 'iana-reserved';
 }

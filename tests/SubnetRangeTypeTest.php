@@ -135,6 +135,9 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['0.0.0.1/32', false],         // "This" network
             ['192.0.0.1/32', false],       // IETF protocol
             ['192.88.99.1/32', false],     // 6to4 relay
+            ['192.31.196.1/32', false],    // IANA reserved AS112-v4
+            ['192.52.193.1/32', false],    // IANA reserved AMT
+            ['192.175.48.1/32', false],    // IANA reserved Direct Delegation AS112
         ];
     }
 
@@ -658,6 +661,64 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
+    /* ************************* *
+     * isIanaReserved() TESTS
+     * ************************* */
+
+    /**
+     * isIanaReserved returns true for IANA Special-Purpose addresses
+     * @param string $cidr     Subnet in CIDR notation
+     * @param bool   $expected Whether the address is IANA reserved
+     */
+    #[Test]
+    #[DataProvider('dataProviderForIsIanaReserved')]
+    public function testIsIanaReserved(string $cidr, bool $expected): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $result = $subnet->isIanaReserved();
+
+        // Then
+        $this->assertSame($expected, $result, "Expected isIanaReserved() for {$cidr} to be " . ($expected ? 'true' : 'false'));
+    }
+
+    /**
+     * @return array[] [cidr, isIanaReserved]
+     */
+    public static function dataProviderForIsIanaReserved(): array
+    {
+        return [
+            // AS112-v4: 192.31.196.0/24 (RFC 7535)
+            ['192.31.196.0/24', true],
+            ['192.31.196.1/32', true],
+            ['192.31.196.255/32', true],
+
+            // AMT: 192.52.193.0/24 (RFC 7450)
+            ['192.52.193.0/24', true],
+            ['192.52.193.1/32', true],
+            ['192.52.193.255/32', true],
+
+            // Direct Delegation AS112: 192.175.48.0/24 (RFC 7534)
+            ['192.175.48.0/24', true],
+            ['192.175.48.1/32', true],
+            ['192.175.48.255/32', true],
+
+            // Boundaries
+            ['192.31.195.255/32', false],  // Just before AS112-v4
+            ['192.31.197.0/32', false],    // Just after AS112-v4
+            ['192.52.192.255/32', false],  // Just before AMT
+            ['192.52.194.0/32', false],    // Just after AMT
+            ['192.175.47.255/32', false],  // Just before Direct Delegation
+            ['192.175.49.0/32', false],    // Just after Direct Delegation
+
+            // Other addresses
+            ['192.168.1.1/32', false],
+            ['10.0.0.1/32', false],
+        ];
+    }
+
     /* ************************ *
      * getAddressType() TESTS
      * ************************ */
@@ -732,6 +793,11 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['240.0.0.1/32', AddressType::Reserved],
             ['255.255.255.254/32', AddressType::Reserved],
 
+            // IANA reserved
+            ['192.31.196.1/32', AddressType::IanaReserved],
+            ['192.52.193.1/32', AddressType::IanaReserved],
+            ['192.175.48.1/32', AddressType::IanaReserved],
+
             // "This" network
             ['0.0.0.0/32', AddressType::ThisNetwork],
             ['0.0.0.1/32', AddressType::ThisNetwork],
@@ -800,6 +866,9 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['0.0.0.1/32', 'This network'],
             ['192.0.0.1/32', 'IETF protocol'],
             ['192.88.99.1/32', '6to4 relay'],
+            ['192.31.196.1/32', 'IANA reserved AS112-v4'],
+            ['192.52.193.1/32', 'IANA reserved AMT'],
+            ['192.175.48.1/32', 'IANA reserved Direct Delegation AS112'],
         ];
     }
 

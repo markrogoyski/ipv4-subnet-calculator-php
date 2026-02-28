@@ -466,6 +466,16 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Check if the IP address is in an IANA Special-Purpose Address Registry range.
+     *
+     * @return bool
+     */
+    public function isIanaReserved(): bool
+    {
+        return $this->ip->isIanaReserved();
+    }
+
+    /**
      * Get the address type classification.
      *
      * @return AddressType

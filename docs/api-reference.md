@@ -357,6 +357,16 @@ This range is deprecated as of RFC 7526.
 
 **Links:** RFC 3068, RFC 7526
 
+#### isIanaReserved()
+```php
+isIanaReserved(): bool
+```
+Check if the IP is in an IANA Special-Purpose Address Registry range.
+
+Covers three /24 blocks: 192.31.196.0/24 (AS112-v4), 192.52.193.0/24 (AMT), 192.175.48.0/24 (Direct Delegation AS112).
+
+**Links:** RFC 7535, RFC 7450, RFC 7534
+
 #### isReserved()
 ```php
 isReserved(): bool
@@ -999,6 +1009,7 @@ Returns range as "start - end" format.
 - `AddressType::Deprecated6to4` - RFC 3068/7526 deprecated 6to4 relay (192.88.99.0/24)
 - `AddressType::Reserved` - 240.0.0.0/4 reserved for future use
 - `AddressType::LimitedBroadcast` - 255.255.255.255 limited broadcast
+- `AddressType::IanaReserved` - IANA Special-Purpose assignments (192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24)
 - `AddressType::ThisNetwork` - 0.0.0.0/8 "this" network
 
 ### NetworkClass

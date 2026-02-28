@@ -320,6 +320,9 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'this network' => ['0.0.0.1', false],
             'IETF protocol' => ['192.0.0.1', false],
             '6to4 relay' => ['192.88.99.1', false],
+            'IANA reserved AS112-v4' => ['192.31.196.1', false],
+            'IANA reserved AMT' => ['192.52.193.1', false],
+            'IANA reserved Direct Delegation AS112' => ['192.175.48.1', false],
         ];
     }
 
@@ -662,6 +665,49 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForIsIanaReserved')]
+    public function testIsIanaReservedIdentifiesIanaReservedAddresses(string $ipAddress, bool $expectedResult): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $result = $ip->isIanaReserved();
+
+        // Then
+        $this->assertSame($expectedResult, $result);
+    }
+
+    /**
+     * @return array<string, array{string, bool}>
+     */
+    public static function dataProviderForIsIanaReserved(): array
+    {
+        return [
+            // AS112-v4: 192.31.196.0/24 (RFC 7535)
+            '192.31.196.0 start AS112-v4' => ['192.31.196.0', true],
+            '192.31.196.1' => ['192.31.196.1', true],
+            '192.31.196.255 end AS112-v4' => ['192.31.196.255', true],
+            // AMT: 192.52.193.0/24 (RFC 7450)
+            '192.52.193.0 start AMT' => ['192.52.193.0', true],
+            '192.52.193.100' => ['192.52.193.100', true],
+            '192.52.193.255 end AMT' => ['192.52.193.255', true],
+            // Direct Delegation AS112: 192.175.48.0/24 (RFC 7534)
+            '192.175.48.0 start Direct Delegation' => ['192.175.48.0', true],
+            '192.175.48.50' => ['192.175.48.50', true],
+            '192.175.48.255 end Direct Delegation' => ['192.175.48.255', true],
+            // Outside ranges
+            '192.31.195.255' => ['192.31.195.255', false],
+            '192.31.197.0' => ['192.31.197.0', false],
+            '192.52.192.255' => ['192.52.192.255', false],
+            '192.52.194.0' => ['192.52.194.0', false],
+            '192.175.47.255' => ['192.175.47.255', false],
+            '192.175.49.0' => ['192.175.49.0', false],
+            'public IP' => ['8.8.8.8', false],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('dataProviderForAddressType')]
     public function testAddressTypeReturnsCorrectClassification(string $ipAddress, AddressType $expectedType): void
     {
@@ -695,6 +741,9 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'IETF protocol' => ['192.0.0.1', AddressType::IetfProtocol],
             'deprecated 6to4' => ['192.88.99.1', AddressType::Deprecated6to4],
             'reserved' => ['240.0.0.1', AddressType::Reserved],
+            'IANA reserved AS112-v4' => ['192.31.196.1', AddressType::IanaReserved],
+            'IANA reserved AMT' => ['192.52.193.1', AddressType::IanaReserved],
+            'IANA reserved Direct Delegation' => ['192.175.48.1', AddressType::IanaReserved],
             'public' => ['8.8.8.8', AddressType::Public],
         ];
     }

@@ -114,7 +114,8 @@ final class IPAddress implements \Stringable
             && !$this->isReserved()
             && !$this->isThisNetwork()
             && !$this->isIetfProtocol()
-            && !$this->is6to4Relay();
+            && !$this->is6to4Relay()
+            && !$this->isIanaReserved();
     }
 
     /**
@@ -280,6 +281,40 @@ final class IPAddress implements \Stringable
     }
 
     /**
+     * Check if the IP address is in an IANA Special-Purpose Address Registry range.
+     *
+     * IANA reserved ranges:
+     *   - 192.31.196.0/24  (AS112-v4, RFC 7535)
+     *   - 192.52.193.0/24  (AMT, RFC 7450)
+     *   - 192.175.48.0/24  (Direct Delegation AS112, RFC 7534)
+     *
+     * @link https://datatracker.ietf.org/doc/html/rfc7535
+     * @link https://datatracker.ietf.org/doc/html/rfc7450
+     * @link https://datatracker.ietf.org/doc/html/rfc7534
+     *
+     * @return bool
+     */
+    public function isIanaReserved(): bool
+    {
+        // AS112-v4: 192.31.196.0/24
+        if ($this->isInRange(0xC0_1F_C4_00, 0xC0_1F_C4_FF)) {
+            return true;
+        }
+
+        // AMT: 192.52.193.0/24
+        if ($this->isInRange(0xC0_34_C1_00, 0xC0_34_C1_FF)) {
+            return true;
+        }
+
+        // Direct Delegation AS112: 192.175.48.0/24
+        if ($this->isInRange(0xC0_AF_30_00, 0xC0_AF_30_FF)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Get the address type classification.
      *
      * @return AddressType
@@ -321,6 +356,9 @@ final class IPAddress implements \Stringable
         }
         if ($this->isReserved()) {
             return AddressType::Reserved;
+        }
+        if ($this->isIanaReserved()) {
+            return AddressType::IanaReserved;
         }
 
         return AddressType::Public;
