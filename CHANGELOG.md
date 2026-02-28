@@ -5,7 +5,7 @@
 ### Breaking Changes
 - **PHP 8.1+ required**: Minimum PHP version increased from 7.2 to 8.1
 - **64-bit PHP required**: The library now requires 64-bit PHP architecture. A runtime check throws `\RuntimeException` on 32-bit PHP.
-- Interface updated and improved. See migration guide for details.
+- Interface updated and improved. See [migration guide](docs/migration-v4-to-v5.md) for details.
 
 ### New Features
 - **Additional IP address classification methods**: New methods for identifying special-purpose IPv4 ranges per IANA registry:
