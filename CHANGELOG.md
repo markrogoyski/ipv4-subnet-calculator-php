@@ -7,6 +7,20 @@
 - **64-bit PHP required**: The library now requires 64-bit PHP architecture. A runtime check throws `\RuntimeException` on 32-bit PHP.
 - Interface updated and improved. See migration guide for details.
 
+### New Features
+- **Additional IP address classification methods**: New methods for identifying special-purpose IPv4 ranges per IANA registry:
+  - `isIetfProtocol()`: Check if IP is reserved for IETF protocol assignments (`192.0.0.0/24`, RFC 6890)
+  - `is6to4Relay()`: Check if IP is in the deprecated 6to4 anycast relay range (`192.88.99.0/24`, RFC 7526)
+  - `isIanaReserved()`: Check if IP is in IANA reserved ranges not covered by other classification methods
+  - Useful for strict IANA compliance, security validation, and accurate routing decisions
+
+- **More accurate `isPublic()` classification**: The definition of "publicly routable" is now stricter, additionally excluding `isIetfProtocol()`, `is6to4Relay()`, and `isIanaReserved()` ranges that were previously misclassified as public
+
+- **`networkCidr()` method**: Returns the canonical network CIDR notation based on the network address (e.g., `192.168.1.0/24` when input is `192.168.1.100/24`), distinct from `cidr()` which preserves the input IP
+- **`addressRange()` and `hostRange()` methods**: Return `IPRange` objects for the full address range and usable host range respectively, enabling iteration and containment checks on the ranges directly
+- **`addressType()` returns enum**: `addressType()` now returns a type-safe `AddressType` enum instead of a string, enabling exhaustive matching and IDE autocompletion
+- **`equals()` method on `Subnet`**: Compare two subnets for network equivalence (same network address and prefix length)
+
 ### Documentation
 - **API Reference**: Comprehensive enum documentation with usage patterns
 - **Core Features**: Examples showing enum value access and type-safe comparisons
