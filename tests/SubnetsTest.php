@@ -381,6 +381,34 @@ class SubnetsTest extends TestCase
     }
 
     #[Test]
+    public function aggregateThrowsExceptionForNonSubnetElement(): void
+    {
+        // Given
+        $subnets = ['not a subnet'];
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Expected Subnet at index 0');
+
+        // When
+        Subnets::aggregate($subnets);
+    }
+
+    #[Test]
+    public function summarizeThrowsExceptionForNonSubnetElement(): void
+    {
+        // Given
+        $subnets = ['not a subnet'];
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Expected Subnet at index 0');
+
+        // When
+        Subnets::summarize($subnets);
+    }
+
+    #[Test]
     public function unsignedToIpThrowsExceptionForNegativeInteger(): void
     {
         // Given - A negative IP integer

@@ -861,7 +861,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function arpaDomain(): string
     {
-        return $this->ip->arpaDomain();
+        return $this->networkAddress()->arpaDomain();
     }
 
     /**

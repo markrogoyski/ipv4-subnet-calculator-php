@@ -240,14 +240,14 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     public static function dataProviderForIpv4ArpaDomain(): array
     {
         return [
-            ['8.8.4.4', '4.4.8.8.in-addr.arpa'],
-            ['74.6.231.21', '21.231.6.74.in-addr.arpa'],
-            ['192.168.21.165', '165.21.168.192.in-addr.arpa'],
-            ['202.12.28.131', '131.28.12.202.in-addr.arpa'],
-            ['1.2.3.4', '4.3.2.1.in-addr.arpa'],
-            ['101.102.103.104', '104.103.102.101.in-addr.arpa'],
+            ['8.8.4.4', '0.4.8.8.in-addr.arpa'],
+            ['74.6.231.21', '0.231.6.74.in-addr.arpa'],
+            ['192.168.21.165', '0.21.168.192.in-addr.arpa'],
+            ['202.12.28.131', '0.28.12.202.in-addr.arpa'],
+            ['1.2.3.4', '0.3.2.1.in-addr.arpa'],
+            ['101.102.103.104', '0.103.102.101.in-addr.arpa'],
             ['192.0.2.0', '0.2.0.192.in-addr.arpa'],
-            ['206.6.177.200', '200.177.6.206.in-addr.arpa'],
+            ['206.6.177.200', '0.177.6.206.in-addr.arpa'],
         ];
     }
 

@@ -36,6 +36,8 @@ final class Subnets
             return [];
         }
 
+        self::assertAllSubnets($subnets);
+
         $blocks = self::collectBlocks($subnets);
         $blocks = self::removeContainedBlocks($blocks);
         $blocks = self::mergeAdjacentBlocks($blocks);
@@ -60,6 +62,7 @@ final class Subnets
     public static function summarize(array $subnets): Subnet
     {
         self::assertNonEmpty($subnets);
+        self::assertAllSubnets($subnets);
 
         if ($single = self::summarizeSingle($subnets)) {
             return $single;
@@ -70,6 +73,24 @@ final class Subnets
         $start = self::alignToPrefix($span['min'], $prefix);
 
         return self::subnetFromStartAndPrefix($start, $prefix);
+    }
+
+    /**
+     * Assert that all elements are Subnet instances.
+     *
+     * @param array<mixed> $subnets
+     *
+     * @throws \InvalidArgumentException If any element is not a Subnet
+     */
+    private static function assertAllSubnets(array $subnets): void
+    {
+        foreach ($subnets as $i => $subnet) {
+            if (!$subnet instanceof Subnet) {
+                throw new \InvalidArgumentException(
+                    \sprintf('Expected Subnet at index %s, got %s', $i, \get_debug_type($subnet))
+                );
+            }
+        }
     }
 
     /**

@@ -26,7 +26,7 @@ final class SubnetReport
     public static function createArray(Subnet $subnet): array
     {
         return [
-            'cidr' => $subnet->cidr(),
+            'cidr' => $subnet->networkCidr(),
             'ip_address' => [
                 'quads'   => $subnet->ipAddress()->asQuads(),
                 'hex'     => $subnet->ipAddress()->asHex(),
@@ -109,7 +109,7 @@ final class SubnetReport
 
         $output = \sprintf(
             "%-18s %15s %8s %32s %10s\n",
-            $subnet->cidr(),
+            $subnet->networkCidr(),
             'Quads',
             'Hex',
             'Binary',
