@@ -742,13 +742,21 @@ class NetworkConfigValidator {
             }
         }
 
-        // Validate address types
+        // Validate address types against the whole block. isPrivate() and isPublic() classify
+        // only the input IP, so they would miss a block that straddles an RFC 1918 boundary.
+        $rfc1918 = array_map(
+            fn($cidr) => IPv4\Subnet::fromCidr($cidr),
+            ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
+        );
         foreach ($subnets as $name => $subnet) {
-            if (strpos($name, 'public') !== false && $subnet->isPrivate()) {
-                $this->warnings[] = "{$name}: Named 'public' but uses private address space";
+            $touchesPrivate = array_filter($rfc1918, fn($block) => $subnet->overlaps($block)) !== [];
+            $entirelyPrivate = array_filter($rfc1918, fn($block) => $subnet->isContainedIn($block)) !== [];
+
+            if (strpos($name, 'public') !== false && $touchesPrivate) {
+                $this->warnings[] = "{$name}: Named 'public' but includes private address space";
             }
-            if (strpos($name, 'private') !== false && $subnet->isPublic()) {
-                $this->warnings[] = "{$name}: Named 'private' but uses public address space";
+            if (strpos($name, 'private') !== false && !$entirelyPrivate) {
+                $this->warnings[] = "{$name}: Named 'private' but is not entirely within private address space";
             }
         }
 

@@ -254,8 +254,8 @@ $json = $subnet->toJson();
 // Get as formatted string report
 $report = $subnet->toPrintable();
 
-// String representation (CIDR notation)
-echo $subnet;  // "192.168.112.203/23"
+// String representation (canonical CIDR notation)
+echo $subnet;  // "192.168.112.0/23"
 ```
 
 **Example Report Output:**

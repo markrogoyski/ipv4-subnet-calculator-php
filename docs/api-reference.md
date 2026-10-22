@@ -288,7 +288,9 @@ $hosts = $subnet->hostCount();  // 254
 
 ### Classification
 
-All classification methods delegate to the `ipAddress()` object.
+All classification methods delegate to the `ipAddress()` object, so they classify the input IP only, not the whole block.
+A block that straddles a range boundary is classified by whichever side its input IP is on: `10.0.0.0/7` is private, but it also
+spans the public `11.0.0.0/8`. To check a whole block, test it against the range with `isContainedIn()` or `overlaps()`.
 
 #### isPrivate()
 ```php
@@ -605,11 +607,11 @@ Get subnet information as a formatted text report.
 ```php
 __toString(): string
 ```
-String representation in CIDR notation (e.g., "192.168.1.100/24"). Use `toPrintable()` for detailed formatted reports.
+String representation in canonical CIDR notation using the network address, same as `networkCidr()` (e.g., "192.168.1.0/24"). Equal subnets have identical string forms. Use `cidr()` for the input IP with prefix, and `toPrintable()` for detailed formatted reports.
 
 **Example:**
 ```php
-echo $subnet;  // "192.168.1.100/24"
+echo $subnet;  // "192.168.1.0/24"
 echo $subnet->toPrintable();  // Full formatted report
 ```
 

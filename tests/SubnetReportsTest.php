@@ -202,19 +202,69 @@ class SubnetReportsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * __toString returns CIDR notation
+     * __toString returns canonical CIDR notation using the network address
      */
     #[Test]
-    public function testToStringReturnsCidr(): void
+    #[DataProvider('dataProviderForToString')]
+    public function toStringReturnsNetworkCidr(string $ip, int $prefix, string $expected): void
     {
         // Given
-        $subnet = new Subnet('192.168.112.203', 23);
+        $subnet = new Subnet($ip, $prefix);
 
         // When
         $result = (string) $subnet;
 
         // Then
-        $this->assertSame('192.168.112.203/23', $result);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * @return array<string, array{string, int, string}>
+     */
+    public static function dataProviderForToString(): array
+    {
+        return [
+            'host IP normalized to network' => ['192.168.112.203', 23, '192.168.112.0/23'],
+            'network IP unchanged'          => ['192.168.112.0', 23, '192.168.112.0/23'],
+            '/0'                            => ['10.1.2.3', 0, '0.0.0.0/0'],
+            '/31 upper address'             => ['10.0.0.1', 31, '10.0.0.0/31'],
+            '/32'                           => ['10.0.0.1', 32, '10.0.0.1/32'],
+        ];
+    }
+
+    /**
+     * Equal subnets given by different host IPs have the same string form
+     */
+    #[Test]
+    public function equalSubnetsHaveIdenticalStringForms(): void
+    {
+        // Given
+        $a = Subnet::fromCidr('192.168.1.10/24');
+        $b = Subnet::fromCidr('192.168.1.200/24');
+
+        // When
+        $keyed = [(string) $a => $a, (string) $b => $b];
+
+        // Then
+        $this->assertTrue($a->equals($b));
+        $this->assertSame(['192.168.1.0/24'], \array_keys($keyed));
+    }
+
+    /**
+     * __toString agrees with the toArray() cidr field
+     */
+    #[Test]
+    public function toStringMatchesArrayReportCidr(): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr('172.16.5.99/20');
+
+        // When
+        $string = (string) $subnet;
+        $report = $subnet->toArray();
+
+        // Then
+        $this->assertSame($report['cidr'], $string);
     }
 
     /**

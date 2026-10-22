@@ -121,7 +121,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      * Get the CIDR notation.
      *
      * Note: Returns the input IP with prefix. For canonical form suitable for
-     * string comparisons, use networkCidr() instead.
+     * string comparisons, use networkCidr() or a string cast instead.
      *
      * @return string e.g., "192.168.1.100/24"
      */
@@ -334,10 +334,17 @@ final class Subnet implements \JsonSerializable, \Stringable
 
     /* ==================== *
      * CLASSIFICATION
+     *
+     * These classify the input IP address only, not the whole block. A block that
+     * straddles a range boundary is classified by whichever side the input IP is on:
+     * 10.0.0.0/7 is private, but it also spans the public 11.0.0.0/8. To check a
+     * whole block, test it against the range with isContainedIn() or overlaps().
      * ==================== */
 
     /**
      * Check if the IP address is in a private range.
+     *
+     * Classifies the input IP only; see the note above on blocks that straddle ranges.
      *
      * @return bool
      */
@@ -348,6 +355,8 @@ final class Subnet implements \JsonSerializable, \Stringable
 
     /**
      * Check if the IP address is public: not in any of the special-purpose ranges recognized by this library.
+     *
+     * Classifies the input IP only; see the note above on blocks that straddle ranges.
      *
      * @return bool
      */
@@ -929,13 +938,16 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
-     * String representation (CIDR notation).
+     * String representation (canonical CIDR notation using the network address).
      *
-     * @return string e.g., "192.168.1.100/24"
+     * Equal subnets have identical string forms, matching equals() and the reports.
+     * Use cidr() for the input IP with prefix.
+     *
+     * @return string e.g., "192.168.1.0/24"
      */
     public function __toString(): string
     {
-        return $this->cidr();
+        return $this->networkCidr();
     }
 
     /**

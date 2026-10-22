@@ -324,16 +324,17 @@ file_put_contents('/var/log/subnet-analysis.log', $logEntry, FILE_APPEND);
 
 ### String Representation (__toString)
 
-The Subnet class implements `__toString()`, which returns CIDR notation using the input IP address (`cidr()`).
-Unlike the reports, it does not normalize to the network address; use `networkCidr()` for that:
+The Subnet class implements `__toString()`, which returns canonical CIDR notation using the network address (`networkCidr()`),
+matching the `cidr` field of the reports. Equal subnets have identical string forms, so the string cast is safe to use as an
+array key. Use `cidr()` for the input IP with prefix:
 
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
-// String representation (CIDR notation)
-echo $subnet;              // "192.168.112.203/23"
-print($subnet);            // "192.168.112.203/23"
-echo $subnet->networkCidr(); // "192.168.112.0/23"
+// String representation (canonical CIDR notation)
+echo $subnet;          // "192.168.112.0/23"
+print($subnet);        // "192.168.112.0/23"
+echo $subnet->cidr();  // "192.168.112.203/23"
 
 // For a detailed formatted report, use toPrintable()
 echo $subnet->toPrintable();  // Full multi-line report

@@ -432,6 +432,17 @@ $private->isPublic();   // false - private addresses are not public
 $public->isPublic();    // true - not in any special-purpose range
 ```
 
+> **Note:** These methods classify the subnet's input IP address, not the whole block. A block that straddles a range
+> boundary is classified by whichever side its input IP is on: `10.0.0.0/7` is private, but it also spans the public
+> `11.0.0.0/8`. To check a whole block, test it against the range directly:
+>
+> ```php
+> $block = IPv4\Subnet::fromCidr('10.0.0.0/7');
+>
+> $block->isPrivate();                                         // true - the input IP 10.0.0.0 is private
+> $block->isContainedIn(IPv4\Subnet::fromCidr('10.0.0.0/8'));  // false - the block extends past 10.0.0.0/8
+> ```
+
 **Private Address Ranges (RFC 1918):**
 - 10.0.0.0/8
 - 172.16.0.0/12

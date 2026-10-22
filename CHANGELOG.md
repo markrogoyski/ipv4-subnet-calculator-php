@@ -4,6 +4,7 @@
 
 ### Breaking Changes
 - **`Mask` interface**: Now extends `JsonSerializable`; custom implementations must provide `jsonSerialize()`
+- **`Subnet::__toString()`**: Returns the canonical network CIDR (`networkCidr()`) instead of the input-IP CIDR (`cidr()`), so equal subnets have identical string forms and match the reports' `cidr` field
 
 ### New Features
 - **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
