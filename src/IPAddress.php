@@ -110,18 +110,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isPublic(): bool
     {
-        return !$this->isPrivate()
-            && !$this->isLoopback()
-            && !$this->isLinkLocal()
-            && !$this->isMulticast()
-            && !$this->isCarrierGradeNat()
-            && !$this->isDocumentation()
-            && !$this->isBenchmarking()
-            && !$this->isReserved()
-            && !$this->isThisNetwork()
-            && !$this->isIetfProtocol()
-            && !$this->is6to4Relay()
-            && !$this->isIanaReserved();
+        return $this->addressType() === AddressType::Public;
     }
 
     /**

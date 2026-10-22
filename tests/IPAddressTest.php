@@ -775,6 +775,98 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForIsPublicAgreesWithAddressType')]
+    public function testIsPublicAgreesWithAddressType(string $ipAddress): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $isPublic = $ip->isPublic();
+        $addressType = $ip->addressType();
+
+        // Then
+        $this->assertSame($addressType === AddressType::Public, $isPublic);
+    }
+
+    /**
+     * Range boundaries and their just-outside neighbors for every special-purpose range.
+     *
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForIsPublicAgreesWithAddressType(): array
+    {
+        return [
+            'this network first'            => ['0.0.0.0'],
+            'this network last'             => ['0.255.255.255'],
+            'after this network'            => ['1.0.0.0'],
+            'before 10/8'                   => ['9.255.255.255'],
+            'private 10/8 first'            => ['10.0.0.0'],
+            'private 10/8 last'             => ['10.255.255.255'],
+            'after 10/8'                    => ['11.0.0.0'],
+            'before CGNAT'                  => ['100.63.255.255'],
+            'CGNAT first'                   => ['100.64.0.0'],
+            'CGNAT last'                    => ['100.127.255.255'],
+            'after CGNAT'                   => ['100.128.0.0'],
+            'before loopback'               => ['126.255.255.255'],
+            'loopback first'                => ['127.0.0.0'],
+            'loopback last'                 => ['127.255.255.255'],
+            'after loopback'                => ['128.0.0.0'],
+            'before link-local'             => ['169.253.255.255'],
+            'link-local first'              => ['169.254.0.0'],
+            'link-local last'               => ['169.254.255.255'],
+            'after link-local'              => ['169.255.0.0'],
+            'before 172.16/12'              => ['172.15.255.255'],
+            'private 172.16/12 first'       => ['172.16.0.0'],
+            'private 172.16/12 last'        => ['172.31.255.255'],
+            'after 172.16/12'               => ['172.32.0.0'],
+            'before IETF protocol'          => ['191.255.255.255'],
+            'IETF protocol first'           => ['192.0.0.0'],
+            'IETF protocol 192.0.0.9'       => ['192.0.0.9'],
+            'IETF protocol last'            => ['192.0.0.255'],
+            'TEST-NET-1 first'              => ['192.0.2.0'],
+            'TEST-NET-1 last'               => ['192.0.2.255'],
+            'after TEST-NET-1'              => ['192.0.3.0'],
+            'before AS112-v4'               => ['192.31.195.255'],
+            'AS112-v4 first'                => ['192.31.196.0'],
+            'AS112-v4 last'                 => ['192.31.196.255'],
+            'after AS112-v4'                => ['192.31.197.0'],
+            'AMT first'                     => ['192.52.193.0'],
+            'AMT last'                      => ['192.52.193.255'],
+            'after AMT'                     => ['192.52.194.0'],
+            'before 6to4 relay'             => ['192.88.98.255'],
+            '6to4 relay first'              => ['192.88.99.0'],
+            '6to4 relay last'               => ['192.88.99.255'],
+            'after 6to4 relay'              => ['192.88.100.0'],
+            'before 192.168/16'             => ['192.167.255.255'],
+            'private 192.168/16 first'      => ['192.168.0.0'],
+            'private 192.168/16 last'       => ['192.168.255.255'],
+            'after 192.168/16'              => ['192.169.0.0'],
+            'Direct Delegation AS112 first' => ['192.175.48.0'],
+            'Direct Delegation AS112 last'  => ['192.175.48.255'],
+            'after Direct Delegation AS112' => ['192.175.49.0'],
+            'before benchmarking'           => ['198.17.255.255'],
+            'benchmarking first'            => ['198.18.0.0'],
+            'benchmarking last'             => ['198.19.255.255'],
+            'after benchmarking'            => ['198.20.0.0'],
+            'TEST-NET-2 first'              => ['198.51.100.0'],
+            'TEST-NET-2 last'               => ['198.51.100.255'],
+            'after TEST-NET-2'              => ['198.51.101.0'],
+            'TEST-NET-3 first'              => ['203.0.113.0'],
+            'TEST-NET-3 last'               => ['203.0.113.255'],
+            'after TEST-NET-3'              => ['203.0.114.0'],
+            'before multicast'              => ['223.255.255.255'],
+            'multicast first'               => ['224.0.0.0'],
+            'multicast last'                => ['239.255.255.255'],
+            'reserved first'                => ['240.0.0.0'],
+            'reserved second to last'       => ['255.255.255.254'],
+            'limited broadcast'             => ['255.255.255.255'],
+            'public 8.8.8.8'                => ['8.8.8.8'],
+            'public 1.1.1.1'                => ['1.1.1.1'],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('dataProviderForNetworkClass')]
     public function testNetworkClassReturnsCorrectClass(string $ipAddress, NetworkClass $expectedClass): void
     {
