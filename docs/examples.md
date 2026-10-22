@@ -477,6 +477,10 @@ Calculate optimal DHCP scopes for different departments.
 <?php
 
 class DHCPScopePlanner {
+    // First 10 hosts reserved for static assignments, last host for the gateway
+    private const STATIC_RESERVED = 10;
+    private const GATEWAY_RESERVED = 1;
+
     public function planScopes($baseNetwork, array $departments) {
         $baseSubnet = IPv4\Subnet::fromCidr($baseNetwork);
         $scopes = [];
@@ -486,11 +490,20 @@ class DHCPScopePlanner {
         echo "Base Network: {$baseNetwork}\n";
         echo "Available IPs: {$baseSubnet->addressCount()}\n\n";
 
+        // Allocate largest scopes first (VLSM) so each scope starts on a boundary
+        // aligned to its size. Allocating a larger scope after a smaller one
+        // would round its network address backward into space already in use.
+        uasort($departments, fn($a, $b) => $b['hosts'] <=> $a['hosts']);
+
         $currentNetwork = $baseSubnet->networkAddress()->asQuads();
 
         foreach ($departments as $dept => $requirements) {
             $requiredHosts = $requirements['hosts'];
-            $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
+
+            // Size the scope so the DHCP pool still holds every required host
+            // after the static and gateway reservations are taken out
+            $reserved = self::STATIC_RESERVED + self::GATEWAY_RESERVED;
+            $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts + $reserved);
             $scope = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
 
             // Verify scope fits within base network
@@ -503,8 +516,13 @@ class DHCPScopePlanner {
             $utilization = $scope->utilizationFor($requiredHosts);
 
             // Calculate DHCP pool (reserve first 10 IPs for static, last IP for gateway)
-            $poolStart = $scope->minHost()->asInteger() + 10;
-            $poolEnd = $scope->maxHost()->asInteger() - 1;
+            $poolStart = $scope->minHost()->asInteger() + self::STATIC_RESERVED;
+            $poolEnd = $scope->maxHost()->asInteger() - self::GATEWAY_RESERVED;
+
+            if ($poolEnd - $poolStart + 1 < $requiredHosts) {
+                echo "ERROR: DHCP pool for {$dept} cannot hold {$requiredHosts} hosts\n";
+                break;
+            }
 
             $scopes[$dept] = [
                 'subnet' => $scope,
@@ -516,7 +534,7 @@ class DHCPScopePlanner {
 
             echo "{$dept}:\n";
             echo "  Required hosts: {$requiredHosts}\n";
-            echo "  Subnet: {$scope->cidr()}\n";
+            echo "  Subnet: {$scope->networkCidr()}\n";
             echo "  Subnet mask: {$scope->mask()}\n";
             echo "  Usable hosts: {$usableHosts}\n";
             echo "  Utilization: {$utilization}%\n";

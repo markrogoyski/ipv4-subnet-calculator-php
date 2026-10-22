@@ -136,16 +136,24 @@ class IPAMPool {
     public function allocate($cidr) {
         $allocation = IPv4\Subnet::fromCidr($cidr);
         $newAvailable = [];
+        $found = false;
 
         foreach ($this->availableBlocks as $block) {
             if ($block->contains($allocation)) {
                 // Exclude allocation from this block
                 $remaining = $block->exclude($allocation);
                 $newAvailable = array_merge($newAvailable, $remaining);
+                $found = true;
             } else {
                 // Keep block unchanged
                 $newAvailable[] = $block;
             }
+        }
+
+        // Reject requests that are already allocated, outside the pool,
+        // or larger than any single free block
+        if (!$found) {
+            throw new \RuntimeException("{$allocation->networkCidr()} is not available");
         }
 
         $this->availableBlocks = $newAvailable;
@@ -163,6 +171,12 @@ $ipam = new IPAMPool('10.0.0.0/16');
 $ipam->allocate('10.0.0.0/24');   // First allocation
 $ipam->allocate('10.0.1.0/24');   // Second allocation
 $ipam->allocate('10.0.16.0/20');  // Larger allocation
+
+try {
+    $ipam->allocate('10.0.1.0/24');  // Already allocated
+} catch (\RuntimeException $e) {
+    echo "Allocation failed: {$e->getMessage()}\n";
+}
 
 echo "Remaining available blocks:\n";
 foreach ($ipam->getAvailableBlocks() as $block) {
