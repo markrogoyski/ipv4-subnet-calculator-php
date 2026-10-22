@@ -2,15 +2,29 @@
 
 ## Unreleased
 
-### New Features
-- **`Subnet::splitIterator()`**: Lazy version of `split()` that yields subnets one at a time, so large splits (e.g., /8 into /32) don't build a huge array. Invalid prefixes throw on call, not on first iteration.
+### Breaking Changes
+- **`Mask` interface**: Now extends `JsonSerializable`; custom implementations must provide `jsonSerialize()`
 
-### Bug Fixes
-- **`Subnet::toJson()` leaves slashes unescaped**: CIDR values now encode as `"192.168.112.0/23"` instead of `"192.168.112.0\/23"`, matching the documented output. Decoded values are unchanged; only code comparing the raw JSON string is affected.
-- **Leading zeros rejected in prefixes and masks**: `Subnet::fromCidr()` now rejects zero-padded prefixes (e.g., `192.168.1.0/024`), and `SubnetParser::fromMask()` rejects zero-padded mask octets (e.g., `255.255.255.00`). This matches `IPAddress`, which already rejected leading zeros as octal-ambiguous.
-- **Value objects encode to JSON**: `IPAddress`, `SubnetMask` and `WildcardMask` now implement `JsonSerializable` and encode as dotted quads (e.g., `"192.168.1.0"`), and `IPRange` encodes as `{"start": ..., "end": ...}`. Previously their private properties made `json_encode()` silently produce `{}`.
-- **`IPAddress::fromInteger()` rejects out-of-range integers**: Integers outside `0` to `4294967295` now throw `\InvalidArgumentException` instead of silently wrapping modulo 2^32 (e.g., `-1` previously became `255.255.255.255`). Arithmetic that overflows the IPv4 space now fails loudly instead of yielding a plausible wrong address.
-- **`Subnet::excludeAll()` validates its input**: A non-`Subnet` element now throws `\InvalidArgumentException` naming the offending index, consistent with `Subnets::aggregate()` and `summarize()`. Previously it surfaced as a `TypeError`, or was silently ignored if earlier exclusions had already consumed the whole subnet.
+### New Features
+- **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
+
+### Fixed
+- **`Subnet::arpaDomain()`**: Returns the input IP's reverse DNS domain instead of the network address's
+- **`Subnets::summarize()`**: Handles single-element arrays with any key
+- **`Subnet::adjacent()`**: Rejects counts exceeding IPv4 bounds before allocating subnets
+- **`IPAddress::fromInteger()`**: Throws `\InvalidArgumentException` for integers outside `0` to `4294967295` instead of wrapping
+- **`Subnet::excludeAll()`**: Validates all elements up front, throwing `\InvalidArgumentException` with the offending index for non-`Subnet` values
+- **Prefix and mask validation**: Rejects leading zeros in `Subnet::fromCidr()` prefixes and `SubnetParser::fromMask()` octets
+- **JSON serialization**: `IPAddress`, `SubnetMask` and `WildcardMask` encode as dotted-quad strings, and `IPRange` as `start` and `end` addresses, instead of `{}`
+- **`Subnet::toJson()`**: Leaves CIDR slashes unescaped; decoded values are unchanged
+
+### Improvements
+- **Aggregation performance**: Faster containment removal and adjacent-block merging in `Subnets::aggregate()`
+- **64-bit requirement**: Composer now enforces the existing 64-bit PHP requirement
+- **PHP 8.5**: Added CI coverage
+
+### Documentation
+- **Examples and reference**: Corrected allocation examples, report output, migration guidance and API contracts; clarified `isPublic()` semantics
 
 ## v5.0.0 - 2026-02-28
 
