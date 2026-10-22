@@ -54,7 +54,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         }
 
         $this->ip = new IPAddress($ipAddress);
-        $this->subnetMaskBits = $networkSize === 0 ? 0 : (0xFFFFFFFF << (32 - $networkSize));
+        $this->subnetMaskBits = $networkSize === 0 ? 0 : (0xFFFFFFFF << (32 - $networkSize)) & 0xFFFFFFFF;
     }
 
     /**
@@ -87,6 +87,13 @@ final class Subnet implements \JsonSerializable, \Stringable
         if (!Assert::isDecimal($prefix)) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be an integer in '{$cidr}'"
+            );
+        }
+
+        // Range-check here so an oversized prefix, which (int) clamps to PHP_INT_MAX, is reported as typed
+        if ((int) $prefix > 32) {
+            throw new \InvalidArgumentException(
+                "Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'"
             );
         }
 

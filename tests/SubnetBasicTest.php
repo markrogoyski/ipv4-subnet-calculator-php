@@ -347,6 +347,35 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
 
     /**
      * @param string $cidr
+     */
+    #[Test]
+    #[DataProvider('dataProviderForOversizedPrefix')]
+    public function testFromCidrThrowsExceptionReportingInputWhenPrefixIsTooLarge(string $cidr): void
+    {
+        // Given - A CIDR string whose prefix exceeds 32, including one too large to fit in an int
+
+        // Then - The message quotes the input as typed rather than a clamped integer
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'");
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public static function dataProviderForOversizedPrefix(): array
+    {
+        return [
+            '/33'                => ['192.168.1.0/33'],
+            '/100'               => ['192.168.1.0/100'],
+            'beyond PHP_INT_MAX' => ['192.168.1.0/99999999999999999999'],
+        ];
+    }
+
+    /**
+     * @param string $cidr
      * @param int    $expectedPrefix
      */
     #[Test]

@@ -18,11 +18,13 @@
 - **Prefix and mask validation**: Rejects leading zeros in `Subnet::fromCidr()` prefixes and `SubnetParser::fromMask()` octets
 - **JSON serialization**: `IPAddress`, `SubnetMask` and `WildcardMask` encode as dotted-quad strings, and `IPRange` as `start` and `end` addresses, instead of `{}`
 - **`Subnet::toJson()`**: Leaves CIDR slashes unescaped; decoded values are unchanged
+- **`Subnet::fromCidr()`**: Out-of-range prefixes report the input as typed, instead of a clamped integer for prefixes too large to fit in an int
 
 ### Improvements
 - **Aggregation performance**: Faster containment removal and adjacent-block merging in `Subnets::aggregate()`
 - **64-bit requirement**: Composer now enforces the existing 64-bit PHP requirement
 - **PHP 8.5**: Added CI coverage
+- **PHP version constraint**: Composer requires `^8.1` instead of `>=8.1.0`, so untested PHP 9 is no longer admitted
 
 ### Documentation
 - **Examples and reference**: Corrected allocation examples, report output, migration guidance and API contracts; clarified `isPublic()` semantics

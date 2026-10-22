@@ -305,6 +305,7 @@ class SubnetMaskTest extends \PHPUnit\Framework\TestCase
             '/25' => [25, 4_294_967_168], // 0xFFFFFF80
             '/26' => [26, 4_294_967_232], // 0xFFFFFFC0
             '/30' => [30, 4_294_967_292], // 0xFFFFFFFC
+            '/31' => [31, 4_294_967_294], // 0xFFFFFFFE
             '/32' => [32, 4_294_967_295], // 0xFFFFFFFF
         ];
     }

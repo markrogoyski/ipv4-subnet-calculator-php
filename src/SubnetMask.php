@@ -36,7 +36,7 @@ final class SubnetMask implements Mask
             );
         }
 
-        $this->maskBits = $prefix === 0 ? 0 : (0xFFFFFFFF << (32 - $prefix));
+        $this->maskBits = $prefix === 0 ? 0 : (0xFFFFFFFF << (32 - $prefix)) & 0xFFFFFFFF;
     }
 
     /**
