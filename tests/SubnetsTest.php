@@ -144,6 +144,38 @@ class SubnetsTest extends TestCase
                 'inputCidrs' => ['0.0.0.0/2', '64.0.0.0/2'],
                 'expectedCidrs' => ['0.0.0.0/1'],
             ],
+            'cascading merges across several levels' => [
+                'inputCidrs' => ['10.0.0.0/25', '10.0.0.128/26', '10.0.0.192/27', '10.0.0.224/28', '10.0.0.240/28', '10.0.1.0/24'],
+                'expectedCidrs' => ['10.0.0.0/23'],
+            ],
+            'merged block merges with earlier unmerged block' => [
+                'inputCidrs' => ['10.0.0.0/24', '10.0.1.0/25', '10.0.1.128/25'],
+                'expectedCidrs' => ['10.0.0.0/23'],
+            ],
+            'misaligned neighbor left behind while later blocks merge' => [
+                'inputCidrs' => ['10.0.1.0/24', '10.0.2.0/24', '10.0.3.0/24', '10.0.4.0/22'],
+                'expectedCidrs' => ['10.0.1.0/24', '10.0.2.0/23', '10.0.4.0/22'],
+            ],
+            'contained blocks removed before merging neighbors' => [
+                'inputCidrs' => ['10.0.0.0/24', '10.0.0.64/26', '10.0.0.7/32', '10.0.1.0/24', '10.0.1.128/25'],
+                'expectedCidrs' => ['10.0.0.0/23'],
+            ],
+            'block contained by an earlier non-adjacent block' => [
+                'inputCidrs' => ['10.0.0.0/16', '10.0.5.0/24', '10.0.200.1/32', '10.1.0.0/16'],
+                'expectedCidrs' => ['10.0.0.0/15'],
+            ],
+            '/31 and /32 merge into /30' => [
+                'inputCidrs' => ['10.0.0.0/31', '10.0.0.2/32', '10.0.0.3/32'],
+                'expectedCidrs' => ['10.0.0.0/30'],
+            ],
+            'top of address space merges' => [
+                'inputCidrs' => ['255.255.255.254/32', '255.255.255.255/32', '255.255.255.252/31'],
+                'expectedCidrs' => ['255.255.255.252/30'],
+            ],
+            '/0 absorbs everything' => [
+                'inputCidrs' => ['10.0.0.0/8', '0.0.0.0/0', '192.168.1.1/32'],
+                'expectedCidrs' => ['0.0.0.0/0'],
+            ],
         ];
     }
 

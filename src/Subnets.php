@@ -240,6 +240,9 @@ final class Subnets
     /**
      * Remove blocks fully contained by another block.
      *
+     * Blocks must be sorted by start ascending, then end descending. CIDR blocks are either
+     * nested or disjoint, so a block is redundant exactly when the last kept block covers its end.
+     *
      * @param CidrBlock[] $blocks
      *
      * @return CidrBlock[]
@@ -247,27 +250,14 @@ final class Subnets
     private static function removeContainedBlocks(array $blocks): array
     {
         $filtered = [];
+        $lastEnd = -1;
         foreach ($blocks as $block) {
-            $isContained = false;
-            foreach ($filtered as $existing) {
-                if ($block->startInt() >= $existing->startInt() && $block->endInt() <= $existing->endInt()) {
-                    $isContained = true;
-                    break;
-                }
+            if ($block->endInt() <= $lastEnd) {
+                continue;
             }
-            if (!$isContained) {
-                $filtered = \array_filter(
-                    $filtered,
-                    fn(CidrBlock $existing) => !(
-                        $existing->startInt() >= $block->startInt()
-                        && $existing->endInt() <= $block->endInt()
-                    )
-                );
-                $filtered[] = $block;
-            }
+            $filtered[] = $block;
+            $lastEnd = $block->endInt();
         }
-
-        \usort($filtered, self::compareByStart(...));
 
         return $filtered;
     }
@@ -275,60 +265,52 @@ final class Subnets
     /**
      * Merge adjacent blocks with identical prefixes.
      *
+     * Blocks must be sorted and disjoint. A newly merged block can only pair with the block
+     * immediately before it, so a stack collapses each incoming block with its predecessors.
+     *
      * @param CidrBlock[] $blocks
      *
      * @return CidrBlock[]
      */
     private static function mergeAdjacentBlocks(array $blocks): array
     {
-        $merged = true;
-        while ($merged) {
-            $merged = false;
-            $newBlocks = [];
-            $used = [];
-
-            for ($i = 0; $i < \count($blocks); $i++) {
-                if (isset($used[$i])) {
-                    continue;
+        $stack = [];
+        foreach ($blocks as $block) {
+            while ($stack !== []) {
+                $merged = self::mergeSiblings($stack[\count($stack) - 1], $block);
+                if ($merged === null) {
+                    break;
                 }
-
-                $current = $blocks[$i];
-                $foundMerge = false;
-
-                for ($j = $i + 1; $j < \count($blocks); $j++) {
-                    $other = $blocks[$j];
-
-                    if ($current->prefix() === $other->prefix() && $current->prefix() >= 1) {
-                        $prefix = $current->prefix();
-                        $currentEnd = $current->endInt();
-
-                        if ($currentEnd + 1 === $other->startInt()) {
-                            $newPrefix = $prefix - 1;
-                            $newBlockSize = $newPrefix === 0 ? IPv4::ADDRESS_SPACE : (1 << (32 - $newPrefix));
-
-                            if (($current->startInt() % $newBlockSize) === 0) {
-                                $newBlocks[] = new CidrBlock($current->startInt(), $newPrefix);
-                                $used[$i] = true;
-                                $used[$j] = true;
-                                $merged = true;
-                                $foundMerge = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!$foundMerge) {
-                    $newBlocks[] = $current;
-                    $used[$i] = true;
-                }
+                \array_pop($stack);
+                $block = $merged;
             }
-
-            $blocks = $newBlocks;
-            \usort($blocks, self::compareByStart(...));
+            $stack[] = $block;
         }
 
-        return $blocks;
+        return $stack;
+    }
+
+    /**
+     * Merge two blocks into their parent block if they are its two halves.
+     *
+     * @param CidrBlock $left  Lower block
+     * @param CidrBlock $right Block immediately following $left
+     *
+     * @return CidrBlock|null The parent block, or null if the blocks are not siblings
+     */
+    private static function mergeSiblings(CidrBlock $left, CidrBlock $right): ?CidrBlock
+    {
+        $prefix = $left->prefix();
+        if ($prefix === 0 || $right->prefix() !== $prefix || $left->endInt() + 1 !== $right->startInt()) {
+            return null;
+        }
+
+        $parentPrefix = $prefix - 1;
+        if (self::alignToPrefix($left->startInt(), $parentPrefix) !== $left->startInt()) {
+            return null;
+        }
+
+        return new CidrBlock($left->startInt(), $parentPrefix);
     }
 
     /**
