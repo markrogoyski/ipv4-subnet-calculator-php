@@ -128,6 +128,33 @@ class SubnetReportsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * Value objects returned by Subnet encode to their values, not {}
+     */
+    #[Test]
+    public function testJsonEncodeOfReturnedValueObjects(): void
+    {
+        // Given
+        $subnet = new Subnet('192.168.1.100', 24);
+        $payload = [
+            'cidr'     => $subnet->networkCidr(),
+            'network'  => $subnet->networkAddress(),
+            'mask'     => $subnet->mask(),
+            'wildcard' => $subnet->wildcardMask(),
+            'hosts'    => $subnet->hostRange(),
+        ];
+
+        // When
+        $json = \json_encode($payload, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+
+        // Then
+        $this->assertSame(
+            '{"cidr":"192.168.1.0/24","network":"192.168.1.0","mask":"255.255.255.0","wildcard":"0.0.0.255",'
+            . '"hosts":{"start":"192.168.1.1","end":"192.168.1.254"}}',
+            $json
+        );
+    }
+
+    /**
      * \JsonSerializable interface
      */
     #[Test]

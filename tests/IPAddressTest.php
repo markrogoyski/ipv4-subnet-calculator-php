@@ -871,4 +871,30 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'both max' => ['255.255.255.255', '255.255.255.255', true],
         ];
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForJsonEncode')]
+    public function testJsonEncodeProducesDottedQuads(string $ipAddress, string $expectedJson): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $result = \json_encode($ip, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame($expectedJson, $result);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForJsonEncode(): array
+    {
+        return [
+            'zero' => ['0.0.0.0', '"0.0.0.0"'],
+            'private' => ['192.168.1.100', '"192.168.1.100"'],
+            'max' => ['255.255.255.255', '"255.255.255.255"'],
+        ];
+    }
 }

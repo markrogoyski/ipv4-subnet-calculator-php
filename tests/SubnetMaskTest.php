@@ -551,4 +551,32 @@ class SubnetMaskTest extends \PHPUnit\Framework\TestCase
             'Single host /32' => [32, '255.255.255.255', 1],
         ];
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForJsonEncode')]
+    public function testJsonEncodeProducesDottedQuads(int $prefix, string $expectedJson): void
+    {
+        // Given
+        $mask = new SubnetMask($prefix);
+
+        // When
+        $result = \json_encode($mask, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame($expectedJson, $result);
+    }
+
+    /**
+     * @return array<string, array{int, string}>
+     */
+    public static function dataProviderForJsonEncode(): array
+    {
+        return [
+            '/0' => [0, '"0.0.0.0"'],
+            '/8' => [8, '"255.0.0.0"'],
+            '/24' => [24, '"255.255.255.0"'],
+            'RFC 3021 /31' => [31, '"255.255.255.254"'],
+            'Single host /32' => [32, '"255.255.255.255"'],
+        ];
+    }
 }

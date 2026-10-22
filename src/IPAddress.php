@@ -12,7 +12,7 @@ use IPv4\Internal\Platform;
  * Provides formatting in multiple representations (dotted quads, hex, binary, integer)
  * and classification methods to identify address types (private, public, loopback, etc.).
  */
-final class IPAddress implements \Stringable
+final class IPAddress implements \JsonSerializable, \Stringable
 {
     use Formattable;
 

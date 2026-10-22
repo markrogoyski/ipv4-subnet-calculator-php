@@ -10,7 +10,7 @@ namespace IPv4;
  * Both SubnetMask and WildcardMask represent 32-bit values that can be
  * formatted in multiple ways. This interface defines the shared contract.
  */
-interface Mask extends \Stringable
+interface Mask extends \Stringable, \JsonSerializable
 {
     /**
      * Get the CIDR prefix length.

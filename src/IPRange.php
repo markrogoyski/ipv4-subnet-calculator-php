@@ -12,10 +12,11 @@ namespace IPv4;
  * and host ranges (usable addresses only).
  *
  * Implements IteratorAggregate for foreach support and Countable for count().
+ * JSON encodes as its start and end addresses, not every address in the range.
  *
  * @implements \IteratorAggregate<int, IPAddress>
  */
-final class IPRange implements \IteratorAggregate, \Countable, \Stringable
+final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable, \Stringable
 {
     private readonly int $startInt;
     private readonly int $endInt;
@@ -135,5 +136,18 @@ final class IPRange implements \IteratorAggregate, \Countable, \Stringable
     public function __toString(): string
     {
         return "{$this->start} - {$this->end}";
+    }
+
+    /**
+     * JSON serialization (start and end addresses only).
+     *
+     * @return array{start: string, end: string} e.g., ['start' => '192.168.1.0', 'end' => '192.168.1.255']
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'start' => $this->start->asQuads(),
+            'end'   => $this->end->asQuads(),
+        ];
     }
 }

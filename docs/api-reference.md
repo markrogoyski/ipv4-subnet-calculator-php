@@ -714,7 +714,7 @@ $summary = Subnets::summarize([
 
 ## Value Object Classes
 
-All value objects are immutable (readonly) and implement `Stringable`.
+All value objects are immutable (readonly) and implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload.
 
 ### IPAddress Class
 
@@ -780,6 +780,17 @@ Returns IP as 32-bit integer.
 __toString(): string
 ```
 Returns IP in dotted decimal format (same as asQuads()).
+
+##### jsonSerialize()
+```php
+jsonSerialize(): string
+```
+Implement JsonSerializable interface. Encodes as dotted decimal format (same as asQuads()).
+
+**Example:**
+```php
+json_encode($subnet->networkAddress());  // "192.168.1.0"
+```
 
 #### Classification Methods
 
@@ -849,7 +860,7 @@ Compare with another SubnetMask.
 
 #### Format Methods
 
-Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`
+Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`, `jsonSerialize()`
 
 ---
 
@@ -890,17 +901,18 @@ Compare with another WildcardMask.
 
 #### Format Methods
 
-Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`
+Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger()`, `__toString()`, `jsonSerialize()`
 
 ---
 
 ### IPRange Class
 
-`IPv4\IPRange` - Immutable IP range value object. Implements `IteratorAggregate`, `Countable`, and `Stringable`.
+`IPv4\IPRange` - Immutable IP range value object. Implements `IteratorAggregate`, `Countable`, `JsonSerializable`, and `Stringable`.
 
 **Interface Support:**
 - **`IteratorAggregate`** - Use `foreach` to iterate over all IP addresses in the range
 - **`Countable`** - Use PHP's `count()` function to get the number of IPs
+- **`JsonSerializable`** - Encodes as `{"start": ..., "end": ...}`
 - **`Stringable`** - Automatically converts to "start - end" format
 
 #### Construction
@@ -988,6 +1000,17 @@ __toString(): string
 Returns range as "start - end" format.
 
 **Example:** `"192.168.1.0 - 192.168.1.255"`
+
+##### jsonSerialize()
+```php
+jsonSerialize(): array{start: string, end: string}
+```
+Implement JsonSerializable interface. Encodes only the start and end addresses, not every IP in the range.
+
+**Example:**
+```php
+json_encode($subnet->hostRange());  // {"start":"192.168.1.1","end":"192.168.1.254"}
+```
 
 ---
 

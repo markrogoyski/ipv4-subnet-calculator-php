@@ -89,4 +89,14 @@ trait Formattable
     {
         return $this->asQuads();
     }
+
+    /**
+     * JSON serialization (dotted quads).
+     *
+     * @return string e.g., "192.168.1.100"
+     */
+    public function jsonSerialize(): string
+    {
+        return $this->asQuads();
+    }
 }

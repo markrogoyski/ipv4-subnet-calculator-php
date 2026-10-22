@@ -627,4 +627,32 @@ class WildcardMaskTest extends \PHPUnit\Framework\TestCase
         $this->assertIsInt($mask->asInteger());
         $this->assertIsString((string) $mask);
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForJsonEncode')]
+    public function testJsonEncodeProducesDottedQuads(int $prefix, string $expectedJson): void
+    {
+        // Given
+        $mask = new WildcardMask($prefix);
+
+        // When
+        $result = \json_encode($mask, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame($expectedJson, $result);
+    }
+
+    /**
+     * @return array<string, array{int, string}>
+     */
+    public static function dataProviderForJsonEncode(): array
+    {
+        return [
+            '/0' => [0, '"255.255.255.255"'],
+            '/8' => [8, '"0.255.255.255"'],
+            '/24' => [24, '"0.0.0.255"'],
+            'RFC 3021 /31' => [31, '"0.0.0.1"'],
+            'Single host /32' => [32, '"0.0.0.0"'],
+        ];
+    }
 }

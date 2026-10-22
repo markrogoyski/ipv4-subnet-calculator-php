@@ -475,4 +475,31 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
         $ips = \iterator_to_array($iterator, false);
         $this->assertCount(3, $ips);
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForJsonEncode')]
+    public function testJsonEncodeProducesStartAndEnd(string $start, string $end, string $expectedJson): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // When
+        $result = \json_encode($range, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+
+        // Then
+        $this->assertSame($expectedJson, $result);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function dataProviderForJsonEncode(): array
+    {
+        return [
+            '/24' => ['192.168.1.0', '192.168.1.255', '{"start":"192.168.1.0","end":"192.168.1.255"}'],
+            'RFC 3021 /31' => ['10.0.0.0', '10.0.0.1', '{"start":"10.0.0.0","end":"10.0.0.1"}'],
+            'Single host /32' => ['10.0.0.5', '10.0.0.5', '{"start":"10.0.0.5","end":"10.0.0.5"}'],
+            'entire IPv4 space /0' => ['0.0.0.0', '255.255.255.255', '{"start":"0.0.0.0","end":"255.255.255.255"}'],
+        ];
+    }
 }

@@ -1,5 +1,10 @@
 # IPv4 SubnetCalculator Change Log
 
+## Unreleased
+
+### Bug Fixes
+- **Value objects encode to JSON**: `IPAddress`, `SubnetMask` and `WildcardMask` now implement `JsonSerializable` and encode as dotted quads (e.g., `"192.168.1.0"`), and `IPRange` encodes as `{"start": ..., "end": ...}`. Previously their private properties made `json_encode()` silently produce `{}`.
+
 ## v5.0.0 - 2026-02-28
 
 ### Breaking Changes
