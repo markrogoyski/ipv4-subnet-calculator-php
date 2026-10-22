@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 - **Value objects encode to JSON**: `IPAddress`, `SubnetMask` and `WildcardMask` now implement `JsonSerializable` and encode as dotted quads (e.g., `"192.168.1.0"`), and `IPRange` encodes as `{"start": ..., "end": ...}`. Previously their private properties made `json_encode()` silently produce `{}`.
+- **`Subnet::excludeAll()` validates its input**: A non-`Subnet` element now throws `\InvalidArgumentException` naming the offending index, consistent with `Subnets::aggregate()` and `summarize()`. Previously it surfaced as a `TypeError`, or was silently ignored if earlier exclusions had already consumed the whole subnet.
 
 ## v5.0.0 - 2026-02-28
 

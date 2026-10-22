@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IPv4;
 
+use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
 use IPv4\Internal\Platform;
 use IPv4\Internal\SubnetReport;
@@ -711,9 +712,13 @@ final class Subnet implements \JsonSerializable, \Stringable
      * @param self[] $excludes Subnets to exclude
      *
      * @return self[] Remaining subnets
+     *
+     * @throws \InvalidArgumentException If any element is not a Subnet
      */
     public function excludeAll(array $excludes): array
     {
+        Assert::allSubnets($excludes);
+
         if (empty($excludes)) {
             return [new self((string) $this->networkAddress(), $this->networkSize)];
         }

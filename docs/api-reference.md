@@ -506,6 +506,8 @@ excludeAll(array $subnets): Subnet[]
 ```
 Exclude multiple subnets, returning the remaining address space.
 
+Throws `\InvalidArgumentException` if any element is not a `Subnet`.
+
 ### Navigation
 
 #### next()

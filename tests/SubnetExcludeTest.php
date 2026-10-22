@@ -423,6 +423,49 @@ class SubnetExcludeTest extends TestCase
         $this->assertSame(24, $result[0]->networkSize());
     }
 
+    /**
+     * @param array<mixed> $excludes
+     */
+    #[Test]
+    #[DataProvider('dataProviderForExcludeAllWithInvalidElement')]
+    public function excludeAllThrowsExceptionForNonSubnetElement(array $excludes, string $expectedMessage): void
+    {
+        // Given
+        $base = new Subnet('10.0.0.0', 24);
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When
+        $base->excludeAll($excludes);
+    }
+
+    /**
+     * @return array<string, array{array<mixed>, string}>
+     */
+    public static function dataProviderForExcludeAllWithInvalidElement(): array
+    {
+        return [
+            'string at index 0' => [
+                ['10.0.0.0/25'],
+                'Expected Subnet at index 0, got string',
+            ],
+            'null after a valid subnet' => [
+                [new Subnet('10.0.0.0', 25), null],
+                'Expected Subnet at index 1, got null',
+            ],
+            'invalid element after remainder is already empty' => [
+                [new Subnet('10.0.0.0', 16), 'garbage'],
+                'Expected Subnet at index 1, got string',
+            ],
+            'string key' => [
+                ['reserved' => 42],
+                'Expected Subnet at index reserved, got int',
+            ],
+        ];
+    }
+
     #[Test]
     public function excludeAllWithFullCoverageReturnsEmpty(): void
     {
