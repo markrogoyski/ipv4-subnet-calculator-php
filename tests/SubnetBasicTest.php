@@ -132,6 +132,23 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($subnet1->networkCidr(), $subnet2->networkCidr());
     }
 
+    #[Test]
+    #[DataProvider('dataProviderForEquals')]
+    public function testEqualsComparesNetworkAddressAndPrefix(string $cidr1, string $cidr2, bool $expected): void
+    {
+        // Given
+        $subnet1 = Subnet::fromCidr($cidr1);
+        $subnet2 = Subnet::fromCidr($cidr2);
+
+        // When
+        $equals = $subnet1->equals($subnet2);
+        $reverseEquals = $subnet2->equals($subnet1);
+
+        // Then - Result is as expected and symmetric
+        $this->assertSame($expected, $equals);
+        $this->assertSame($expected, $reverseEquals);
+    }
+
     /**
      * @return array<string, array{string, int, string}>
      */
@@ -161,6 +178,27 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
             'slash 16 different hosts' => ['10.20.30.40', '10.20.50.60', 16],
             'slash 30 different hosts' => ['203.0.113.13', '203.0.113.14', 30],
             'slash 31 both IPs' => ['192.0.2.0', '192.0.2.1', 31],
+        ];
+    }
+
+    /**
+     * @return array<string, array{string, string, bool}>
+     */
+    public static function dataProviderForEquals(): array
+    {
+        return [
+            'identical' => ['192.168.1.0/24', '192.168.1.0/24', true],
+            'different input IPs normalize to same network' => ['192.168.1.100/24', '192.168.1.200/24', true],
+            'same network different prefix' => ['10.0.0.0/8', '10.0.0.0/16', false],
+            'same prefix different network' => ['192.168.1.0/24', '192.168.2.0/24', false],
+            'different network and prefix' => ['192.168.1.0/24', '172.16.0.0/12', false],
+            'slash 31 both IPs normalize to same network' => ['192.0.2.0/31', '192.0.2.1/31', true],
+            'slash 31 adjacent networks' => ['192.0.2.0/31', '192.0.2.2/31', false],
+            'slash 32 same host' => ['8.8.8.8/32', '8.8.8.8/32', true],
+            'slash 32 different hosts' => ['8.8.8.8/32', '8.8.8.9/32', false],
+            'slash 32 versus slash 31 same network address' => ['192.0.2.0/32', '192.0.2.0/31', false],
+            'slash 0 any input IP' => ['0.0.0.0/0', '255.255.255.255/0', true],
+            'slash 0 versus slash 1' => ['0.0.0.0/0', '0.0.0.0/1', false],
         ];
     }
 
