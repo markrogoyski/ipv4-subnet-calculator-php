@@ -608,6 +608,110 @@ class SubnetAdjacentSubnetTest extends TestCase
         $this->assertSame('0.0.0.0', $adjacentSubnets[2]->networkPortion()->asQuads());
     }
 
+    /* ****************************** *
+     * Impossible Adjacent Count Tests
+     * ****************************** */
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsImpossibleForwardCount')]
+    public function getAdjacentSubnetsRejectsImpossibleForwardCountBeforeAllocating(
+        string $ip,
+        int $networkSize,
+        int $count
+    ): void {
+        // Given - a count larger than the address space remaining above the subnet
+        $subnet = new Subnet($ip, $networkSize);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Next subnet would exceed valid IPv4 address range');
+
+        // When
+        $subnet->adjacent($count);
+    }
+
+    /**
+     * @return array<string, array{string, int, int}>
+     */
+    public static function dataProviderForGetAdjacentSubnetsImpossibleForwardCount(): array
+    {
+        return [
+            '/32 more than entire address space' => ['10.0.0.0', 32, 4_294_967_296],
+            '/32 one past remaining space'       => ['10.0.0.0', 32, 4_127_195_136],
+            '/32 PHP_INT_MAX'                    => ['10.0.0.0', 32, \PHP_INT_MAX],
+            '/31 one past remaining space'       => ['255.255.255.250', 31, 3],
+            '/31 at top of address space'        => ['255.255.255.254', 31, 1],
+            '/24 one past remaining space'       => ['255.255.252.0', 24, 4],
+            '/0 entire address space'            => ['0.0.0.0', 0, 1],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsImpossibleBackwardCount')]
+    public function getAdjacentSubnetsRejectsImpossibleBackwardCountBeforeAllocating(
+        string $ip,
+        int $networkSize,
+        int $count
+    ): void {
+        // Given - a count larger than the address space remaining below the subnet
+        $subnet = new Subnet($ip, $networkSize);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Previous subnet would be below valid IPv4 address range');
+
+        // When
+        $subnet->adjacent($count);
+    }
+
+    /**
+     * @return array<string, array{string, int, int}>
+     */
+    public static function dataProviderForGetAdjacentSubnetsImpossibleBackwardCount(): array
+    {
+        return [
+            '/32 more than entire address space' => ['245.0.0.0', 32, -4_294_967_296],
+            '/32 one past remaining space'       => ['245.0.0.0', 32, -4_110_417_921],
+            '/32 PHP_INT_MIN'                    => ['245.0.0.0', 32, \PHP_INT_MIN],
+            '/31 one past remaining space'       => ['0.0.0.4', 31, -3],
+            '/31 at bottom of address space'     => ['0.0.0.0', 31, -1],
+            '/24 one past remaining space'       => ['0.0.3.0', 24, -4],
+            '/0 entire address space'            => ['0.0.0.0', 0, -1],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsExactRemainingCount')]
+    public function getAdjacentSubnetsAllowsExactlyRemainingCount(
+        string $ip,
+        int $networkSize,
+        int $count,
+        string $expectedLast
+    ): void {
+        // Given - a count that exactly exhausts the remaining address space
+        $subnet = new Subnet($ip, $networkSize);
+
+        // When
+        $adjacentSubnets = $subnet->adjacent($count);
+
+        // Then
+        $this->assertCount(\abs($count), $adjacentSubnets);
+        $this->assertSame($expectedLast, \end($adjacentSubnets)->networkPortion()->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, int, int, string}>
+     */
+    public static function dataProviderForGetAdjacentSubnetsExactRemainingCount(): array
+    {
+        return [
+            '/32 forward to last address'   => ['255.255.255.250', 32, 5, '255.255.255.255'],
+            '/32 backward to first address' => ['0.0.0.5', 32, -5, '0.0.0.0'],
+            '/31 forward to last pair'      => ['255.255.255.250', 31, 2, '255.255.255.254'],
+            '/31 backward to first pair'    => ['0.0.0.4', 31, -2, '0.0.0.0'],
+        ];
+    }
+
     /* ***************************** *
      * Integration/Chaining Tests
      * ***************************** */

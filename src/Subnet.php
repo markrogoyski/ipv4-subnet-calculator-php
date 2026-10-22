@@ -790,11 +790,32 @@ final class Subnet implements \JsonSerializable, \Stringable
      * @param int $count Number of subnets (positive = forward, negative = backward)
      *
      * @return self[]
+     *
+     * @throws \RuntimeException If the requested subnets exceed the IPv4 range
      */
     public function adjacent(int $count): array
     {
         if ($count === 0) {
             return [];
+        }
+
+        // Check bounds before allocating anything, so an impossible count fails fast
+        // instead of exhausting memory on the way to the boundary.
+        $addressCount = $this->addressCount();
+        if ($count > 0) {
+            $available = \intdiv(IPv4::MAX_ADDRESS - $this->broadcastAddressInt(), $addressCount);
+            if ($count > $available) {
+                throw new \RuntimeException(
+                    'Next subnet would exceed valid IPv4 address range'
+                );
+            }
+        } else {
+            $available = \intdiv($this->networkAddressInt(), $addressCount);
+            if ($count < -$available) {
+                throw new \RuntimeException(
+                    'Previous subnet would be below valid IPv4 address range'
+                );
+            }
         }
 
         $subnets = [];
