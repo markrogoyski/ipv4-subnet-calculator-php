@@ -259,7 +259,7 @@ $subnet = IPv4\Subnet::fromCidr('10.0.0.0/28');
 
 $range = $subnet->hostRange();
 
-echo "Processing {" . count($range) . "} hosts:\n";
+echo "Processing " . count($range) . " hosts:\n";
 
 $index = 1;
 foreach ($range as $ip) {

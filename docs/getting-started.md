@@ -54,7 +54,8 @@ require_once(__DIR__ . '/vendor/autoload.php');
   * (For PHP 5.5–7.1, use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0))
 * **64-bit architecture**
   * (For 32-bit architecture, use [v4.4](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0))
-***Composer** for dependency management
+* **PHP extensions**: `ctype`, `filter` (both enabled by default in standard PHP builds)
+* **Composer** for dependency management
 
 ### Why 64-bit?
 
@@ -323,12 +324,13 @@ This is commonly used for:
 - CIDR summarization that encompasses all addresses
 
 ```php
-$default = Subnet::fromCidr('0.0.0.0/0');
+$default = IPv4\Subnet::fromCidr('0.0.0.0/0');
 $default->addressCount();  // 4,294,967,296
 $default->containsIP('192.168.1.1');  // true for any IP
 ```
 
-**Warning**: Enumeration operations (`foreach`, `toArray()`) on /0 networks will
+**Warning**: Enumerating the address range of a /0 network (`foreach` over
+`$default->addressRange()`, or `$default->addressRange()->toArray()`) will
 attempt to iterate over 4+ billion IP addresses. Use with caution.
 
 ## Next Steps

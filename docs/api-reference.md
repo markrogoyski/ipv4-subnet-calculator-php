@@ -12,6 +12,7 @@ Complete reference of all public methods and classes in the IPv4 Subnet Calculat
   - [SubnetMask](#subnetmask-class)
   - [WildcardMask](#wildcardmask-class)
   - [IPRange](#iprange-class)
+  - [Mask Interface](#mask-interface)
 - [Enum Classes](#enum-classes)
 
 ---
@@ -30,7 +31,7 @@ v5.0 introduces a clean object-oriented architecture:
 - **`WildcardMask`** - Immutable wildcard mask value object
 - **`IPRange`** - Immutable IP range value object (iterable)
 
-All value objects implement the `Stringable` interface and provide format methods.
+All value objects implement the `Stringable` interface. `IPAddress`, `SubnetMask` and `WildcardMask` also provide format methods (`asQuads()`, `asHex()`, etc.); `SubnetMask` and `WildcardMask` share them through the [`Mask`](#mask-interface) interface.
 
 ---
 
@@ -497,7 +498,7 @@ Check if this subnet overlaps with another subnet.
 
 #### exclude()
 ```php
-exclude(Subnet $subnet): Subnet[]
+exclude(Subnet $exclude): Subnet[]
 ```
 Exclude a subnet, returning the remaining address space.
 
@@ -508,7 +509,7 @@ $remaining = $allocated->exclude($reserved);
 
 #### excludeAll()
 ```php
-excludeAll(array $subnets): Subnet[]
+excludeAll(array $excludes): Subnet[]
 ```
 Exclude multiple subnets, returning the remaining address space. With an empty array, returns
 this subnet normalized to its network address.
@@ -928,6 +929,33 @@ Same as IPAddress: `asQuads()`, `asArray()`, `asHex()`, `asBinary()`, `asInteger
 
 ---
 
+### Mask Interface
+
+`IPv4\Mask` - Common interface implemented by `SubnetMask` and `WildcardMask`. Extends `Stringable` and `JsonSerializable`.
+
+```php
+prefix(): int
+asQuads(): string
+asArray(): string[]
+asHex(): string
+asBinary(): string
+asInteger(): int
+```
+
+Use it as a type hint when a function accepts either kind of mask:
+
+```php
+function describe(IPv4\Mask $mask): string
+{
+    return "/{$mask->prefix()} = {$mask->asQuads()}";
+}
+
+describe($subnet->mask());          // '/24 = 255.255.255.0'
+describe($subnet->wildcardMask());  // '/24 = 0.0.0.255'
+```
+
+---
+
 ### IPRange Class
 
 `IPv4\IPRange` - Immutable IP range value object. Implements `IteratorAggregate`, `Countable`, `JsonSerializable`, and `Stringable`.
@@ -1070,6 +1098,27 @@ json_encode($subnet->hostRange());  // {"start":"192.168.1.1","end":"192.168.1.2
 - `NetworkClass::C`
 - `NetworkClass::D`
 - `NetworkClass::E`
+
+**Methods:**
+
+#### getDefaultMask()
+```php
+getDefaultMask(): ?string
+```
+Returns the default classful subnet mask (`'255.0.0.0'`, `'255.255.0.0'`, `'255.255.255.0'`), or `null` for classes D and E.
+
+#### getDefaultPrefix()
+```php
+getDefaultPrefix(): ?int
+```
+Returns the default classful prefix (8, 16 or 24), or `null` for classes D and E.
+
+**Example:**
+```php
+$class = IPv4\Subnet::fromCidr('172.16.0.0/12')->networkClass();  // NetworkClass::B
+$class->getDefaultMask();    // '255.255.0.0'
+$class->getDefaultPrefix();  // 16
+```
 
 ---
 

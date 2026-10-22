@@ -87,6 +87,7 @@ composer install
     * (For PHP 5.5–7.1, use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0))
 * **64-bit architecture**
     * (For 32-bit architecture, use [v4.4](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0))
+* **PHP extensions**: `ctype`, `filter` (both enabled by default in standard PHP builds)
 * **Upgrading from v4?** See the **[Migration Guide](docs/migration-v4-to-v5.md)**
 
 **[Detailed Installation Guide →](docs/getting-started.md)**
@@ -214,7 +215,7 @@ $available = $allocated->excludeAll([$reserved1, $reserved2, $reserved3]);
 $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 // Analyze utilization for host requirements
-$utilization = $subnet->utilizationFor(100);      // 39.37%
+$utilization = $subnet->utilizationFor(100);      // 39.370078740157 (percent)
 $wasted = $subnet->wastedAddressesFor(100);       // 154
 
 // Find optimal subnet size
@@ -263,12 +264,20 @@ echo $subnet;  // "192.168.112.203/23"
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
+Wildcard Mask:           0.0.1.255 000001FF 00000000000000000000000111111111        511
 Network Portion:     192.168.112.0 C0A87000 11000000101010000111000000000000 3232264192
+Host Portion:            0.0.0.203 000000CB 00000000000000000000000011001011        203
 
 Address Type:                private
+Network Class:               C
+Classful:                    No (subnetted/supernetted)
 Number of IP Addresses:      512
 Number of Addressable Hosts: 510
 IP Address Range:            192.168.112.0 - 192.168.113.255
+Broadcast Address:           192.168.113.255
+Min Host:                    192.168.112.1
+Max Host:                    192.168.113.254
+ARPA Domain:                 203.112.168.192.in-addr.arpa
 ```
 
 **[Complete Report Documentation →](docs/reports.md)**

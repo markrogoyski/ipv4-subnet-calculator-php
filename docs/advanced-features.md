@@ -467,15 +467,15 @@ Calculate what percentage of the subnet's total IP addresses are usable as hosts
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
-$percentage = $subnet->usableHostPercentage();  // 99.22% (254 usable of 256 total)
+$percentage = $subnet->usableHostPercentage();  // 99.21875 (254 usable of 256 total)
 
-echo "Usable hosts: {$percentage}%\n";
+echo 'Usable hosts: ' . number_format($percentage, 2) . "%\n";  // Usable hosts: 99.22%
 
 // Different subnet sizes have different efficiency
 $sizes = [24, 25, 26, 27, 28, 29, 30];
 foreach ($sizes as $size) {
     $s = IPv4\Subnet::fromCidr("192.168.1.0/{$size}");
-    echo "/{$size}: {$s->usableHostPercentage()}% usable\n";
+    echo "/{$size}: " . number_format($s->usableHostPercentage(), 2) . "% usable\n";
 }
 ```
 
@@ -519,19 +519,19 @@ $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');  // 254 usable hosts
 
 // Good fit - 78.74% utilization
 $utilization = $subnet->utilizationFor(200);
-echo "200 hosts in /24: {$utilization}% utilization\n";  // 78.74%
+echo "200 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 78.74%
 
 // Perfect fit - 100% utilization
 $utilization = $subnet->utilizationFor(254);
-echo "254 hosts in /24: {$utilization}% utilization\n";  // 100.0%
+echo "254 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 100.00%
 
 // Oversized subnet - wasting addresses
 $utilization = $subnet->utilizationFor(50);
-echo "50 hosts in /24: {$utilization}% utilization\n";   // 19.69% (inefficient)
+echo "50 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";   // 19.69% (inefficient)
 
 // Insufficient capacity - more than 100%
 $utilization = $subnet->utilizationFor(300);
-echo "300 hosts in /24: {$utilization}% utilization\n";  // 118.11% (too small!)
+echo "300 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 118.11% (too small!)
 ```
 
 ### Calculate Wasted Addresses
@@ -586,7 +586,8 @@ foreach ($sizes as $size) {
     $wasted = $subnet->wastedAddressesFor($requiredHosts);
     $usablePercent = $subnet->usableHostPercentage();
 
-    echo "/{$size}: {$usableHosts} usable, {$utilization}% utilized, {$wasted} wasted, {$usablePercent}% efficiency\n";
+    echo "/{$size}: {$usableHosts} usable, " . number_format($utilization, 2) . "% utilized, {$wasted} wasted, "
+        . number_format($usablePercent, 2) . "% efficiency\n";
 
     // Track best fit (highest utilization that meets requirements)
     if ($utilization > $bestUtilization && $utilization <= 100) {
@@ -595,7 +596,7 @@ foreach ($sizes as $size) {
     }
 }
 
-echo "\nRecommendation: /{$bestSubnet} provides the best fit ({$bestUtilization}% utilization)\n";
+echo "\nRecommendation: /{$bestSubnet} provides the best fit (" . number_format($bestUtilization, 2) . "% utilization)\n";
 
 /*
 Output:

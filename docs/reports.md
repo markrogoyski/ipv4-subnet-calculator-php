@@ -75,7 +75,7 @@ echo $report['ip_address']['quads'];              // '192.168.112.203'
 echo $report['subnet_mask']['binary'];            // '11111111111111111111111000000000'
 echo $report['host_count'];                       // 510
 echo $report['network_class']['class'];           // 'C'
-echo $report['network_class']['is_classful'];     // false
+var_dump($report['network_class']['is_classful']); // bool(false)
 ```
 
 **Complete Array Structure:**
@@ -97,7 +97,7 @@ Array
             [class] => C
             [default_mask] => 255.255.255.0
             [default_prefix] => 24
-            [is_classful] => false
+            [is_classful] =>
         )
 
     [subnet_mask] => Array

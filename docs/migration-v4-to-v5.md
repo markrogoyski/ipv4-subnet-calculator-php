@@ -80,7 +80,7 @@ $subnet->getIPAddress();        // '192.168.1.100'
 $subnet->getIPAddressHex();     // 'C0A80164'
 $subnet->getIPAddressBinary();  // '11000000101010000000000101100100'
 $subnet->getIPAddressInteger(); // 3232235876
-$subnet->getIPAddressQuads();   // [192, 168, 1, 100]
+$subnet->getIPAddressQuads();   // ['192', '168', '1', '100']
 
 // v5.0 - Methods on value object
 $ip = $subnet->ipAddress();
@@ -183,9 +183,9 @@ $subnet->toPrintable();
 echo $subnet->toPrintable();  // echo $subnet alone prints only the CIDR
 ```
 
-## SubnetFactory Split (v5 Architecture Update)
+## SubnetCalculatorFactory Split (v5 Architecture Update)
 
-In v5, the original `SubnetFactory` class has been split into two focused classes for better semantic clarity:
+In v5, the original `SubnetCalculatorFactory` class has been split into two focused classes for better semantic clarity:
 
 ### SubnetParser (Parsing/Creation)
 
@@ -212,6 +212,7 @@ $prefix = SubnetParser::optimalPrefixForHosts(100);  // Returns: 25
 Handles operations on arrays of Subnet objects:
 
 ```php
+use IPv4\Subnet;
 use IPv4\Subnets;
 
 $subnets = [
@@ -230,14 +231,14 @@ $summary = Subnets::summarize($subnets);
 
 ### Migration Summary
 
-| Old (SubnetFactory) | New Class | Method |
+| Old (SubnetCalculatorFactory) | New Class | Method |
 |---------------------|-----------|--------|
-| `SubnetFactory::fromMask()` | `SubnetParser` | `fromMask()` |
-| `SubnetFactory::fromRange()` | `SubnetParser` | `fromRange()` |
-| `SubnetFactory::fromHostCount()` | `SubnetParser` | `fromHostCount()` |
-| `SubnetFactory::optimalPrefixForHosts()` | `SubnetParser` | `optimalPrefixForHosts()` |
-| `SubnetFactory::aggregate()` | `Subnets` | `aggregate()` |
-| `SubnetFactory::summarize()` | `Subnets` | `summarize()` |
+| `SubnetCalculatorFactory::fromMask()` | `SubnetParser` | `fromMask()` |
+| `SubnetCalculatorFactory::fromRange()` | `SubnetParser` | `fromRange()` |
+| `SubnetCalculatorFactory::fromHostCount()` | `SubnetParser` | `fromHostCount()` |
+| `SubnetCalculatorFactory::optimalPrefixForHosts()` | `SubnetParser` | `optimalPrefixForHosts()` |
+| `SubnetCalculatorFactory::aggregate()` | `Subnets` | `aggregate()` |
+| `SubnetCalculatorFactory::summarize()` | `Subnets` | `summarize()` |
 
 ## Detailed API Changes
 
@@ -394,12 +395,9 @@ $ip = $subnet->ipAddress();
 // Cannot modify $ip - it's readonly
 ```
 
-### 4. Smaller Codebase
+### 4. Separation of Concerns
 
-- v4.x: ~2,370 lines (SubnetCalculator + Factory + Report)
-- v5.0: ~1,105 lines (distributed across specialized classes)
-- 53% reduction in code size
-- Better separation of concerns
+The v4 monolithic `SubnetCalculator` is split into focused classes: value objects for addresses, masks and ranges, `SubnetParser` for creation, and `Subnets` for collection operations.
 
 ### 5. Better IDE Support
 

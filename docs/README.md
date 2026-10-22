@@ -112,8 +112,8 @@ $wasted = $subnet->wastedAddressesFor(100);
 ### Generate Reports
 
 ```php
-// Print to console
-echo $subnet;
+// Print report to console
+echo $subnet->toPrintable();
 
 // Get as JSON
 $json = $subnet->toJson();
@@ -196,7 +196,7 @@ Practical examples are organized by use case in [Real-World Examples](examples.m
 
 **IP Addresses:**
 - [Core Features - IP Address](core-features.md#ip-address)
-- [API Reference - IP Address Methods](api-reference.md#ip-address-methods)
+- [API Reference - IP Address Methods](api-reference.md#ipaddress-class)
 
 **Subnet Masks:**
 - [Core Features - Subnet Mask](core-features.md#subnet-mask)
