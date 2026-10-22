@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IPv4;
 
+use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
 
 /**
@@ -156,9 +157,9 @@ final class SubnetParser
 
         $maskInt = 0;
         foreach ($quads as $quad) {
-            if (!\ctype_digit($quad)) {
+            if (!Assert::isDecimal($quad)) {
                 throw new \InvalidArgumentException(
-                    "Invalid subnet mask: non-numeric octet in '{$subnetMask}'"
+                    "Invalid subnet mask: octet is not a decimal integer in '{$subnetMask}'"
                 );
             }
             $octet = (int) $quad;

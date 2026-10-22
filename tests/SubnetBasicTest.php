@@ -313,4 +313,68 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         // When
         Subnet::fromCidr($cidr);
     }
+
+    /**
+     * @param string $cidr
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLeadingZeroPrefix')]
+    public function testFromCidrThrowsExceptionWhenPrefixHasLeadingZeros(string $cidr): void
+    {
+        // Given - A CIDR string whose prefix has leading zeros, matching IPAddress's rejection of them
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('prefix must be an integer');
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public static function dataProviderForLeadingZeroPrefix(): array
+    {
+        return [
+            'zero-padded /24' => ['192.168.1.0/024'],
+            'zero-padded /0'  => ['0.0.0.0/00'],
+            'zero-padded /8'  => ['10.0.0.0/08'],
+            'zero-padded /31' => ['10.0.0.0/031'],
+            'zero-padded /32' => ['10.0.0.1/032'],
+        ];
+    }
+
+    /**
+     * @param string $cidr
+     * @param int    $expectedPrefix
+     */
+    #[Test]
+    #[DataProvider('dataProviderForCanonicalPrefix')]
+    public function testFromCidrAcceptsCanonicalPrefix(string $cidr, int $expectedPrefix): void
+    {
+        // Given - A CIDR string with a canonical decimal prefix
+
+        // When
+        $subnet = Subnet::fromCidr($cidr);
+
+        // Then
+        $this->assertSame($expectedPrefix, $subnet->networkSize());
+    }
+
+    /**
+     * @return array[] [cidr, expectedPrefix]
+     */
+    public static function dataProviderForCanonicalPrefix(): array
+    {
+        return [
+            '/0'  => ['0.0.0.0/0', 0],
+            '/8'  => ['10.0.0.0/8', 8],
+            '/10' => ['100.64.0.0/10', 10],
+            '/20' => ['10.0.0.0/20', 20],
+            '/30' => ['10.0.0.0/30', 30],
+            '/31' => ['10.0.0.0/31', 31],
+            '/32' => ['10.0.0.1/32', 32],
+        ];
+    }
 }

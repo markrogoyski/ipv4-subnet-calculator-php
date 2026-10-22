@@ -7,7 +7,7 @@ namespace IPv4\Internal;
 use IPv4\Subnet;
 
 /**
- * Shared input validation for methods that accept arrays of subnets.
+ * Shared input validation.
  *
  * @internal This class is not part of the public API
  */
@@ -29,6 +29,20 @@ final class Assert
                 );
             }
         }
+    }
+
+    /**
+     * Check that a string is a plain decimal integer with no sign, whitespace or leading zeros.
+     *
+     * Leading zeros are rejected to match IPAddress, which refuses them as octal-ambiguous.
+     *
+     * @param string $value
+     *
+     * @return bool
+     */
+    public static function isDecimal(string $value): bool
+    {
+        return \ctype_digit($value) && ($value === '0' || $value[0] !== '0');
     }
 
     /**

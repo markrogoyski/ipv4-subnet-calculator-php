@@ -471,6 +471,12 @@ Split subnet into smaller subnets with the specified prefix.
 $smaller = $subnet->split(26);  // Split /24 into four /26 subnets
 ```
 
+#### splitIterator()
+```php
+splitIterator(int $newPrefix): \Generator<int, Subnet>
+```
+Lazy version of `split()` that yields one subnet at a time. Use for large splits. Throws on call for an invalid prefix.
+
 #### contains()
 ```php
 contains(Subnet $other): bool

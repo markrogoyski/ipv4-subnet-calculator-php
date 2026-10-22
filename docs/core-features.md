@@ -629,6 +629,14 @@ foreach ($smallerNetworks as $network) {
 
 **Warning:** Be cautious when splitting large subnets into very small ones, as this can generate enormous arrays and exhaust memory. For example, splitting /0 to /32 would attempt to create 4.3 billion Subnet objects. Consider the result count before splitting: a split from prefix X to prefix Y generates 2^(Y-X) subnets.
 
+For large splits, use `splitIterator()`, which yields subnets one at a time instead of building the array:
+
+```php
+foreach (IPv4\Subnet::fromCidr('10.0.0.0/8')->splitIterator(24) as $network) {
+    echo $network->cidr() . "\n";  // 65,536 /24s, one in memory at a time
+}
+```
+
 **Practical Example - Department Allocation:**
 
 ```php

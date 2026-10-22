@@ -101,6 +101,9 @@ class SubnetParserTest extends TestCase
             'Numeric exponent octet'   => ['192.168.1.0', '0e0.0.0.0'],
             'Plus-signed octet'        => ['192.168.1.0', '+255.255.255.0'],
             'Whitespace octet'         => ['192.168.1.0', ' 255.255.255.0'],
+            'Leading-zero zero octet'  => ['192.168.1.0', '255.255.255.00'],
+            'Leading-zero octet'       => ['192.168.1.0', '255.255.0255.0'],
+            'Leading-zero /31 octet'   => ['192.168.1.0', '255.255.255.0254'],
         ];
     }
 

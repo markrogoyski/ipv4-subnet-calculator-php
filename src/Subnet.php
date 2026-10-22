@@ -84,7 +84,7 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         [$ipAddress, $prefix] = $parts;
 
-        if ($prefix === '' || !\ctype_digit($prefix)) {
+        if (!Assert::isDecimal($prefix)) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be an integer in '{$cidr}'"
             );
@@ -607,6 +607,8 @@ final class Subnet implements \JsonSerializable, \Stringable
     /**
      * Split the subnet into smaller subnets.
      *
+     * Returns 2^(newPrefix - prefix) subnets; use splitIterator() for large splits.
+     *
      * @param int $newPrefix New CIDR prefix (must be larger than current)
      *
      * @return self[]
@@ -614,6 +616,20 @@ final class Subnet implements \JsonSerializable, \Stringable
      * @throws \InvalidArgumentException If newPrefix is invalid
      */
     public function split(int $newPrefix): array
+    {
+        return \iterator_to_array($this->splitIterator($newPrefix), false);
+    }
+
+    /**
+     * Lazily split the subnet into smaller subnets, one at a time.
+     *
+     * @param int $newPrefix New CIDR prefix (must be larger than current)
+     *
+     * @return \Generator<int, self>
+     *
+     * @throws \InvalidArgumentException If newPrefix is invalid (thrown on call, not on first iteration)
+     */
+    public function splitIterator(int $newPrefix): \Generator
     {
         if ($newPrefix <= $this->networkSize) {
             throw new \InvalidArgumentException(
@@ -627,17 +643,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        $networkInt = $this->networkAddress()->asInteger();
-        $addressCount = 1 << (32 - $newPrefix);
-        $numSubnets = 1 << ($newPrefix - $this->networkSize);
-
-        $subnets = [];
-        for ($i = 0; $i < $numSubnets; $i++) {
-            $subnetStart = $networkInt + ($i * $addressCount);
-            $subnets[] = new self(\long2ip($subnetStart), $newPrefix);
-        }
-
-        return $subnets;
+        return $this->generateSplit($newPrefix);
     }
 
     /**
@@ -947,6 +953,24 @@ final class Subnet implements \JsonSerializable, \Stringable
     /* ==================== *
      * PRIVATE HELPERS
      * ==================== */
+
+    /**
+     * Generate the subnets of a split whose prefix has already been validated.
+     *
+     * @param int $newPrefix
+     *
+     * @return \Generator<int, self>
+     */
+    private function generateSplit(int $newPrefix): \Generator
+    {
+        $networkInt = $this->networkAddressInt();
+        $addressCount = 1 << (32 - $newPrefix);
+        $numSubnets = 1 << ($newPrefix - $this->networkSize);
+
+        for ($i = 0; $i < $numSubnets; $i++) {
+            yield new self(\long2ip($networkInt + ($i * $addressCount)), $newPrefix);
+        }
+    }
 
     /**
      * Get the network address as an integer for comparison.

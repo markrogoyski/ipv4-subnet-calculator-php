@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+### New Features
+- **`Subnet::splitIterator()`**: Lazy version of `split()` that yields subnets one at a time, so large splits (e.g., /8 into /32) don't build a huge array. Invalid prefixes throw on call, not on first iteration.
+
 ### Bug Fixes
+- **Leading zeros rejected in prefixes and masks**: `Subnet::fromCidr()` now rejects zero-padded prefixes (e.g., `192.168.1.0/024`), and `SubnetParser::fromMask()` rejects zero-padded mask octets (e.g., `255.255.255.00`). This matches `IPAddress`, which already rejected leading zeros as octal-ambiguous.
 - **Value objects encode to JSON**: `IPAddress`, `SubnetMask` and `WildcardMask` now implement `JsonSerializable` and encode as dotted quads (e.g., `"192.168.1.0"`), and `IPRange` encodes as `{"start": ..., "end": ...}`. Previously their private properties made `json_encode()` silently produce `{}`.
 - **`IPAddress::fromInteger()` rejects out-of-range integers**: Integers outside `0` to `4294967295` now throw `\InvalidArgumentException` instead of silently wrapping modulo 2^32 (e.g., `-1` previously became `255.255.255.255`). Arithmetic that overflows the IPv4 space now fails loudly instead of yielding a plausible wrong address.
 - **`Subnet::excludeAll()` validates its input**: A non-`Subnet` element now throws `\InvalidArgumentException` naming the offending index, consistent with `Subnets::aggregate()` and `summarize()`. Previously it surfaced as a `TypeError`, or was silently ignored if earlier exclusions had already consumed the whole subnet.

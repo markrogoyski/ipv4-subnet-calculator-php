@@ -307,6 +307,15 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     {
         return [
             [
+                '10.0.0.0',
+                31,
+                32,
+                [
+                    '10.0.0.0/32',
+                    '10.0.0.1/32',
+                ],
+            ],
+            [
                 '0.0.0.0',
                 1,
                 2,
@@ -644,5 +653,68 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
             $splitSubnets
         );
         $this->assertSame($expectedSubnets, $splitSubnetCidrNotations);
+    }
+
+    /**
+     * @param string $inputString
+     * @param int    $networkSize
+     * @param int    $newNetworkSize
+     * @param array  $expectedSubnets
+     */
+    #[Test]
+    #[DataProvider('validIPV4Provider')]
+    public function splitIteratorYieldsSameSubnetsAsSplit(string $inputString, int $networkSize, int $newNetworkSize, array $expectedSubnets): void
+    {
+        // Given
+        $subnet = new Subnet($inputString, $networkSize);
+
+        // When
+        $cidrs = \array_map(
+            fn (Subnet $split) => $split->cidr(),
+            \iterator_to_array($subnet->splitIterator($newNetworkSize), false)
+        );
+
+        // Then
+        $this->assertSame($expectedSubnets, $cidrs);
+    }
+
+    /**
+     * @param string $inputString
+     * @param int    $networkSize
+     * @param int    $newNetworkSize
+     * @param string $expectedMessage
+     */
+    #[Test]
+    #[DataProvider('invalidIPV4Provider')]
+    public function splitIteratorThrowsOnCallWithoutIterating(string $inputString, int $networkSize, int $newNetworkSize, string $expectedMessage): void
+    {
+        // Given
+        $subnet = new Subnet($inputString, $networkSize);
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When - the generator is never advanced
+        $subnet->splitIterator($newNetworkSize);
+    }
+
+    #[Test]
+    public function splitIteratorIsLazyForEntireAddressSpace(): void
+    {
+        // Given - /0 into /32 would be 4.3 billion subnets if materialized
+        $subnet = new Subnet('0.0.0.0', 0);
+
+        // When
+        $first = [];
+        foreach ($subnet->splitIterator(32) as $split) {
+            $first[] = $split->cidr();
+            if (\count($first) === 3) {
+                break;
+            }
+        }
+
+        // Then
+        $this->assertSame(['0.0.0.0/32', '0.0.0.1/32', '0.0.0.2/32'], $first);
     }
 }
