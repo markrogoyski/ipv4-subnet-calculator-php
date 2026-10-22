@@ -122,7 +122,7 @@ final class Subnets
             return null;
         }
 
-        $subnet = $subnets[0];
+        $subnet = $subnets[\array_key_first($subnets)];
 
         return new Subnet((string) $subnet->networkAddress(), $subnet->networkSize());
     }

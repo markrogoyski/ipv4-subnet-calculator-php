@@ -235,6 +235,57 @@ class SubnetsTest extends TestCase
         Subnets::summarize($subnets);
     }
 
+    /**
+     * @param array<int|string, Subnet> $subnets Subnets keyed by something other than a 0-indexed list
+     * @param string $expectedCidr Expected resulting CIDR string
+     */
+    #[Test]
+    #[DataProvider('dataProviderForSummarizeNonListKeys')]
+    public function summarizeAcceptsArraysWithoutKeyZero(array $subnets, string $expectedCidr): void
+    {
+        // When
+        $result = Subnets::summarize($subnets);
+
+        // Then
+        $resultCidr = $result->networkPortion()->asQuads() . '/' . $result->networkSize();
+        $this->assertSame($expectedCidr, $resultCidr);
+    }
+
+    /**
+     * @return array<string, array{subnets: array<int|string, Subnet>, expectedCidr: string}>
+     */
+    public static function dataProviderForSummarizeNonListKeys(): array
+    {
+        return [
+            'single subnet at non-zero integer key' => [
+                'subnets' => [1 => Subnet::fromCidr('10.0.0.1/24')],
+                'expectedCidr' => '10.0.0.0/24',
+            ],
+            'single subnet at string key' => [
+                'subnets' => ['office' => Subnet::fromCidr('10.0.0.1/24')],
+                'expectedCidr' => '10.0.0.0/24',
+            ],
+            'single subnet retained by array_filter' => [
+                'subnets' => \array_filter(
+                    [Subnet::fromCidr('192.168.0.0/24'), Subnet::fromCidr('10.0.0.0/24')],
+                    fn(Subnet $subnet) => $subnet->networkPortion()->asQuads() === '10.0.0.0'
+                ),
+                'expectedCidr' => '10.0.0.0/24',
+            ],
+            'single /32 at non-zero integer key' => [
+                'subnets' => [5 => Subnet::fromCidr('10.0.0.1/32')],
+                'expectedCidr' => '10.0.0.1/32',
+            ],
+            'multiple subnets at string keys' => [
+                'subnets' => [
+                    'a' => Subnet::fromCidr('192.168.0.0/24'),
+                    'b' => Subnet::fromCidr('192.168.1.0/24'),
+                ],
+                'expectedCidr' => '192.168.0.0/23',
+            ],
+        ];
+    }
+
     #[Test]
     public function testSummarizeProducesSlashZeroWhenRequired(): void
     {
