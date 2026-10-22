@@ -34,6 +34,7 @@ Version 5 introduces a major architectural refactoring:
 | **Method Naming** | `getNetworkPortion()` | `networkAddress()` |
 | **Return Types** | Strings/arrays | Immutable value objects |
 | **Format Methods** | Multiple methods per concept | Single method returning value object with format methods |
+| **Classification** | `getAddressType()`, `getNetworkClass()` return strings | `addressType()`, `networkClass()` return enums |
 
 ## Quick Migration
 
@@ -274,14 +275,21 @@ $summary = Subnets::summarize($subnets);
 | `getAdjacentSubnets($n)` | `adjacent($n)` | `Subnet[]` |
 | `getUtilizationForHosts($n)` | `utilizationFor($n)` | float |
 | `getWastedAddresses($n)` | `wastedAddressesFor($n)` | int |
+| `getUsableHostPercentage()` | `usableHostPercentage()` | float |
+| `getUnusableAddressCount()` | `unusableAddressCount()` | int |
+| `getAddressType()` | `addressType()` | `AddressType` enum |
+| `getNetworkClass()` | `networkClass()` | `NetworkClass` enum |
+| `getDefaultClassMask()` | `defaultClassMask()` | ?string |
+| `getDefaultClassPrefix()` | `defaultClassPrefix()` | ?int |
+| `getIPv4ArpaDomain()` | `arpaDomain()` | string |
 | `getSubnetArrayReport()` | `toArray()` | array |
 | `getSubnetJsonReport()` | `toJson()` | string |
 | `getPrintableReport()` | `toPrintable()` | string |
 | `printSubnetReport()` | `echo $subnet->toPrintable();` | void |
 
-### Classification Methods (Unchanged)
+### Classification Methods
 
-These methods remain the same in both versions:
+These methods keep the same name and signature in both versions:
 
 - `isPrivate()`
 - `isPublic()`
@@ -292,7 +300,50 @@ These methods remain the same in both versions:
 - `isDocumentation()`
 - `isBenchmarking()`
 - `isReserved()`
-- `addressType()`
+- `isLimitedBroadcast()`
+- `isThisNetwork()`
+- `isClassful()`
+
+v5 adds `isIetfProtocol()`, `is6to4Relay()`, and `isIanaReserved()`.
+
+#### Address type and network class are now enums
+
+`getAddressType()` is renamed to `addressType()` and returns an `AddressType` enum instead of a string.
+`getNetworkClass()` is renamed to `networkClass()` and returns a `NetworkClass` enum. String comparisons
+against the new methods do not throw; they silently evaluate to `false`:
+
+```php
+// v4.x
+if ($subnet->getAddressType() === 'private') { ... }
+if ($subnet->getNetworkClass() === 'C') { ... }
+
+// v5.0 - WRONG: compares an enum to a string, always false
+if ($subnet->addressType() === 'private') { ... }
+
+// v5.0 - compare enum cases
+use IPv4\AddressType;
+use IPv4\NetworkClass;
+
+if ($subnet->addressType() === AddressType::Private) { ... }
+if ($subnet->networkClass() === NetworkClass::C) { ... }
+
+// v5.0 - or use the backing string value
+$type = $subnet->addressType()->value;   // 'private'
+$class = $subnet->networkClass()->value; // 'C'
+```
+
+The string values are the same as v4's return values, so stored or serialized types remain compatible.
+
+#### New special-purpose ranges
+
+v5 recognizes five IANA special-purpose ranges that v4 classified as public. For addresses in these ranges,
+`isPublic()` now returns `false`, and `addressType()` returns a new type instead of `public`:
+
+| Range | v4 `getAddressType()` | v5 `addressType()` |
+|-------|-----------------------|--------------------|
+| `192.0.0.0/24` | `'public'` | `AddressType::IetfProtocol` (`'ietf-protocol'`) |
+| `192.88.99.0/24` | `'public'` | `AddressType::Deprecated6to4` (`'deprecated-6to4'`) |
+| `192.31.196.0/24`, `192.52.193.0/24`, `192.175.48.0/24` | `'public'` | `AddressType::IanaReserved` (`'iana-reserved'`) |
 
 ### Network Operations (Unchanged)
 
