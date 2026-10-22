@@ -43,17 +43,18 @@ All value objects implement the `Stringable` interface. `IPAddress`, `SubnetMask
 
 #### __construct()
 ```php
-new Subnet(string $ipAddress, int $networkSize): Subnet
+new Subnet(string|IPAddress $ipAddress, int $networkSize): Subnet
 ```
 Create a subnet from IP address and prefix length.
 
 **Parameters:**
-- `$ipAddress` - IP address in dotted decimal format
+- `$ipAddress` - IP address in dotted decimal format, or an `IPAddress`
 - `$networkSize` - CIDR prefix (0-32)
 
 **Example:**
 ```php
 $subnet = new Subnet('192.168.1.100', 24);
+$subnet = new Subnet(new IPAddress('192.168.1.100'), 24);
 ```
 
 #### fromCidr()
@@ -736,12 +737,16 @@ All value objects are immutable (readonly) and implement `Stringable` and `JsonS
 #### Construction
 
 ```php
-new IPAddress(string $ipAddress): IPAddress
+new IPAddress(string|int $ipAddress): IPAddress
 ```
+Create an IP address from dotted decimal format or its unsigned 32-bit integer value.
+A string is always parsed as dotted decimal, so a numeric string such as `'3232235876'` is rejected.
+Throws `\InvalidArgumentException` if the string is not a valid IPv4 address or the integer is outside `0` to `4294967295`.
 
 **Example:**
 ```php
 $ip = new IPAddress('192.168.1.100');
+$ip = new IPAddress(3232235876);  // 192.168.1.100
 ```
 
 ##### fromInteger()
@@ -749,6 +754,7 @@ $ip = new IPAddress('192.168.1.100');
 IPAddress::fromInteger(int $integer): IPAddress
 ```
 Create an IP address from its unsigned 32-bit integer value (the inverse of `asInteger()`).
+Equivalent to `new IPAddress($integer)`.
 Throws `\InvalidArgumentException` if the integer is outside `0` to `4294967295`.
 
 **Example:**

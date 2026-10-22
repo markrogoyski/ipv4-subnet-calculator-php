@@ -24,16 +24,37 @@ final class IPAddress implements \JsonSerializable, \Stringable
     private readonly int $intValue;
 
     /**
-     * Create an IP address from dotted quad notation.
+     * Create an IP address from dotted quad notation or a 32-bit integer.
      *
-     * @param string $ipAddress IP address (e.g., "192.168.1.100")
+     * A string is always parsed as dotted quad notation, so a numeric string such as
+     * "3232235777" is rejected; pass an int to construct from an integer.
      *
-     * @throws \InvalidArgumentException If IP address format is invalid
+     * @param string|int $ipAddress IP address (e.g., "192.168.1.100" or 3232235777)
+     *
+     * @throws \InvalidArgumentException If IP address format is invalid or the integer is outside the IPv4 range
      * @throws \RuntimeException If running on 32-bit PHP
      */
-    public function __construct(private readonly string $ipAddress)
+    public function __construct(string|int $ipAddress)
     {
         Platform::ensure64Bit();
+
+        if (\is_int($ipAddress)) {
+            if ($ipAddress < 0 || $ipAddress > IPv4::MAX_ADDRESS) {
+                throw new \InvalidArgumentException(
+                    "IP integer out of range: {$ipAddress}"
+                );
+            }
+
+            $this->intValue = $ipAddress;
+            $this->octetValues = [
+                ($ipAddress >> 24) & 0xFF,
+                ($ipAddress >> 16) & 0xFF,
+                ($ipAddress >> 8) & 0xFF,
+                $ipAddress & 0xFF,
+            ];
+
+            return;
+        }
 
         if (!\filter_var($ipAddress, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
             throw new \InvalidArgumentException(
@@ -50,6 +71,8 @@ final class IPAddress implements \JsonSerializable, \Stringable
     /**
      * Create an IP address from a 32-bit integer.
      *
+     * Equivalent to `new IPAddress($integer)`.
+     *
      * @param int $integer IP address as unsigned integer (0 to 4294967295)
      *
      * @return self
@@ -59,13 +82,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public static function fromInteger(int $integer): self
     {
-        if ($integer < 0 || $integer > IPv4::MAX_ADDRESS) {
-            throw new \InvalidArgumentException(
-                "IP integer out of range: {$integer}"
-            );
-        }
-
-        return new self(\long2ip($integer));
+        return new self($integer);
     }
 
     /**
@@ -230,7 +247,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isLimitedBroadcast(): bool
     {
-        return $this->ipAddress === '255.255.255.255';
+        return $this->intValue === IPv4::MAX_ADDRESS;
     }
 
     /**
@@ -400,7 +417,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function equals(self $other): bool
     {
-        return $this->ipAddress === $other->ipAddress;
+        return $this->intValue === $other->intValue;
     }
 
     /**

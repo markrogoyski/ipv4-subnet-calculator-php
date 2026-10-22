@@ -35,14 +35,14 @@ final class Subnet implements \JsonSerializable, \Stringable
     /**
      * Create a subnet from an IP address and CIDR prefix.
      *
-     * @param string $ipAddress   IP address in dotted quad notation
-     * @param int    $networkSize CIDR prefix (0-32)
+     * @param string|IPAddress $ipAddress   IP address in dotted quad notation, or an IPAddress
+     * @param int              $networkSize CIDR prefix (0-32)
      *
      * @throws \InvalidArgumentException If IP address or network size is invalid
      * @throws \RuntimeException If running on 32-bit PHP
      */
     public function __construct(
-        string $ipAddress,
+        string|IPAddress $ipAddress,
         private readonly int $networkSize,
     ) {
         Platform::ensure64Bit();
@@ -53,7 +53,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        $this->ip = new IPAddress($ipAddress);
+        $this->ip = $ipAddress instanceof IPAddress ? $ipAddress : new IPAddress($ipAddress);
         $this->subnetMaskBits = $networkSize === 0 ? 0 : (0xFFFFFFFF << (32 - $networkSize)) & 0xFFFFFFFF;
     }
 
@@ -706,7 +706,7 @@ final class Subnet implements \JsonSerializable, \Stringable
     public function exclude(self $exclude): array
     {
         if (!$this->overlaps($exclude)) {
-            return [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
+            return [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
         }
 
         if ($exclude->contains($this)) {
@@ -730,10 +730,10 @@ final class Subnet implements \JsonSerializable, \Stringable
         Assert::allSubnets($excludes);
 
         if (empty($excludes)) {
-            return [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
+            return [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
         }
 
-        $remaining = [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
+        $remaining = [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
 
         foreach ($excludes as $exclude) {
             $newRemaining = [];
@@ -773,7 +773,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        return new self(\long2ip($nextStart), $this->networkSize);
+        return new self(new IPAddress($nextStart), $this->networkSize);
     }
 
     /**
@@ -796,7 +796,7 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         $previousStart = $currentStart - $addressCount;
 
-        return new self(\long2ip($previousStart), $this->networkSize);
+        return new self(new IPAddress($previousStart), $this->networkSize);
     }
 
     /**
@@ -977,7 +977,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         $numSubnets = 1 << ($newPrefix - $this->networkSize);
 
         for ($i = 0; $i < $numSubnets; $i++) {
-            yield new self(\long2ip($networkInt + ($i * $addressCount)), $newPrefix);
+            yield new self(new IPAddress($networkInt + ($i * $addressCount)), $newPrefix);
         }
     }
 
@@ -1020,10 +1020,10 @@ final class Subnet implements \JsonSerializable, \Stringable
         $networkInt = $this->networkAddressInt();
         $halfSize = \intdiv($this->addressCount(), 2);
 
-        $firstHalf = new self(\long2ip($networkInt), $newPrefix);
+        $firstHalf = new self(new IPAddress($networkInt), $newPrefix);
 
         $secondHalfStart = $networkInt + $halfSize;
-        $secondHalf = new self(\long2ip($secondHalfStart), $newPrefix);
+        $secondHalf = new self(new IPAddress($secondHalfStart), $newPrefix);
 
         $result = [];
 

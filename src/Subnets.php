@@ -109,7 +109,7 @@ final class Subnets
 
         $subnet = $subnets[\array_key_first($subnets)];
 
-        return new Subnet((string) $subnet->networkAddress(), $subnet->networkSize());
+        return new Subnet($subnet->networkAddress(), $subnet->networkSize());
     }
 
     /**
@@ -199,7 +199,7 @@ final class Subnets
      */
     private static function subnetFromStartAndPrefix(int $start, int $prefix): Subnet
     {
-        return new Subnet(\long2ip($start), $prefix);
+        return new Subnet(new IPAddress($start), $prefix);
     }
 
     /**
@@ -309,8 +309,7 @@ final class Subnets
     {
         $result = [];
         foreach ($blocks as $block) {
-            $ip = \long2ip($block->startInt());
-            $result[] = new Subnet($ip, $block->prefix());
+            $result[] = new Subnet(new IPAddress($block->startInt()), $block->prefix());
         }
 
         return $result;

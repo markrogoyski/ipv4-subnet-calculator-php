@@ -187,18 +187,18 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
     public static function dataProviderForEquals(): array
     {
         return [
-            'identical' => ['192.168.1.0/24', '192.168.1.0/24', true],
+            'identical'                                     => ['192.168.1.0/24', '192.168.1.0/24', true],
             'different input IPs normalize to same network' => ['192.168.1.100/24', '192.168.1.200/24', true],
-            'same network different prefix' => ['10.0.0.0/8', '10.0.0.0/16', false],
-            'same prefix different network' => ['192.168.1.0/24', '192.168.2.0/24', false],
-            'different network and prefix' => ['192.168.1.0/24', '172.16.0.0/12', false],
-            'slash 31 both IPs normalize to same network' => ['192.0.2.0/31', '192.0.2.1/31', true],
-            'slash 31 adjacent networks' => ['192.0.2.0/31', '192.0.2.2/31', false],
-            'slash 32 same host' => ['8.8.8.8/32', '8.8.8.8/32', true],
-            'slash 32 different hosts' => ['8.8.8.8/32', '8.8.8.9/32', false],
+            'same network different prefix'                 => ['10.0.0.0/8', '10.0.0.0/16', false],
+            'same prefix different network'                 => ['192.168.1.0/24', '192.168.2.0/24', false],
+            'different network and prefix'                  => ['192.168.1.0/24', '172.16.0.0/12', false],
+            'slash 31 both IPs normalize to same network'   => ['192.0.2.0/31', '192.0.2.1/31', true],
+            'slash 31 adjacent networks'                    => ['192.0.2.0/31', '192.0.2.2/31', false],
+            'slash 32 same host'                            => ['8.8.8.8/32', '8.8.8.8/32', true],
+            'slash 32 different hosts'                      => ['8.8.8.8/32', '8.8.8.9/32', false],
             'slash 32 versus slash 31 same network address' => ['192.0.2.0/32', '192.0.2.0/31', false],
-            'slash 0 any input IP' => ['0.0.0.0/0', '255.255.255.255/0', true],
-            'slash 0 versus slash 1' => ['0.0.0.0/0', '0.0.0.0/1', false],
+            'slash 0 any input IP'                          => ['0.0.0.0/0', '255.255.255.255/0', true],
+            'slash 0 versus slash 1'                        => ['0.0.0.0/0', '0.0.0.0/1', false],
         ];
     }
 
@@ -290,6 +290,25 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
             [34],
             [89394839],
         ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIpAddresses')]
+    public function testConstructorFromIPAddressMatchesConstructorFromString(
+        string $ipAddress,
+        int $networkSize,
+        string $cidr
+    ): void {
+        // Given
+        $fromString = new Subnet($ipAddress, $networkSize);
+
+        // When
+        $fromIPAddress = new Subnet(new IPAddress($ipAddress), $networkSize);
+
+        // Then - The input IP is preserved and the subnets are equal
+        $this->assertSame($cidr, $fromIPAddress->cidr());
+        $this->assertSame($fromString->networkCidr(), $fromIPAddress->networkCidr());
+        $this->assertTrue($fromIPAddress->equals($fromString));
     }
 
     /* ************************** *

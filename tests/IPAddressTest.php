@@ -93,12 +93,12 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
     public static function dataProviderForFromInteger(): array
     {
         return [
-            'zero' => [0, '0.0.0.0'],
-            'max value' => [4_294_967_295, '255.255.255.255'],
-            'localhost' => [2_130_706_433, '127.0.0.1'],
-            'google DNS' => [134_744_072, '8.8.8.8'],
+            'zero'                => [0, '0.0.0.0'],
+            'max value'           => [4_294_967_295, '255.255.255.255'],
+            'localhost'           => [2_130_706_433, '127.0.0.1'],
+            'google DNS'          => [134_744_072, '8.8.8.8'],
             'private 192.168.1.1' => [3_232_235_777, '192.168.1.1'],
-            'private 10.0.0.1' => [167_772_161, '10.0.0.1'],
+            'private 10.0.0.1'    => [167_772_161, '10.0.0.1'],
         ];
     }
 
@@ -122,12 +122,59 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
     public static function dataProviderForOutOfRangeIntegers(): array
     {
         return [
-            'negative one' => [-1],
-            'one above max' => [4_294_967_296],
+            'negative one'         => [-1],
+            'one above max'        => [4_294_967_296],
             'overflow by 2^32 + 5' => [4_294_967_301],
-            'PHP_INT_MIN' => [\PHP_INT_MIN],
-            'PHP_INT_MAX' => [\PHP_INT_MAX],
+            'PHP_INT_MIN'          => [\PHP_INT_MIN],
+            'PHP_INT_MAX'          => [\PHP_INT_MAX],
         ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromInteger')]
+    public function testConstructorFromIntegerMatchesConstructorFromString(int $integer, string $dottedQuad): void
+    {
+        // Given
+        $fromString = new IPAddress($dottedQuad);
+
+        // When
+        $fromInteger = new IPAddress($integer);
+
+        // Then - Both construction paths produce the same address in every form
+        $this->assertSame($dottedQuad, $fromInteger->asQuads());
+        $this->assertSame($fromString->asArray(), $fromInteger->asArray());
+        $this->assertSame($fromString->asInteger(), $fromInteger->asInteger());
+        $this->assertSame($fromString->addressType(), $fromInteger->addressType());
+        $this->assertSame($fromString->isLimitedBroadcast(), $fromInteger->isLimitedBroadcast());
+        $this->assertTrue($fromInteger->equals($fromString));
+        $this->assertTrue($fromString->equals($fromInteger));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForOutOfRangeIntegers')]
+    public function testConstructorThrowsExceptionForOutOfRangeInteger(int $integer): void
+    {
+        // Given - An integer outside the IPv4 range
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("IP integer out of range: {$integer}");
+
+        // When
+        new IPAddress($integer);
+    }
+
+    #[Test]
+    public function testConstructorRejectsNumericStringAsDottedQuad(): void
+    {
+        // Given - The integer form of 192.168.1.1, passed as a string
+
+        // Then - Strings are always parsed as dotted quads
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid IPv4 address: '3232235777'");
+
+        // When
+        new IPAddress('3232235777');
     }
 
     #[Test]

@@ -8,6 +8,8 @@
 
 ### New Features
 - **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
+- **`IPAddress` constructor**: Accepts an unsigned 32-bit integer as well as a dotted-quad string
+- **`Subnet` constructor**: Accepts an `IPAddress` as well as a dotted-quad string
 
 ### Fixed
 - **`Subnet::arpaDomain()`**: Returns the input IP's reverse DNS domain instead of the network address's
@@ -22,6 +24,7 @@
 
 ### Improvements
 - **Aggregation performance**: Faster containment removal and adjacent-block merging in `Subnets::aggregate()`
+- **Performance**: Containment, overlap, equality and exclusion use integer arithmetic instead of reparsing addresses; `IPAddress::fromInteger()`, range iteration, splitting and aggregation build addresses from integers without string parsing
 - **64-bit requirement**: Composer now enforces the existing 64-bit PHP requirement
 - **PHP 8.5**: Added CI coverage
 - **PHP version constraint**: Composer requires `^8.1` instead of `>=8.1.0`, so untested PHP 9 is no longer admitted
