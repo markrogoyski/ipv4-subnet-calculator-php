@@ -170,7 +170,7 @@ final class SubnetReport
             $hostPortion->asInteger()
         );
 
-        $output .= \PHP_EOL;
+        $output .= "\n";
 
         $output .= \sprintf("%-28s %s\n", 'Address Type:', $subnet->addressType()->value);
         $output .= \sprintf("%-28s %s\n", 'Network Class:', $subnet->networkClass()->value);
