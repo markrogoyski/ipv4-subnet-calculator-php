@@ -80,6 +80,20 @@ class SubnetReportsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * toJson leaves slashes in CIDR notation unescaped
+     */
+    #[Test]
+    public function testGetSubnetJsonReportDoesNotEscapeSlashes(): void
+    {
+        // When
+        $json = $this->sub->toJson();
+
+        // Then
+        $this->assertStringContainsString('"cidr": "192.168.112.0/23"', $json);
+        $this->assertStringNotContainsString('\/', $json);
+    }
+
+    /**
      * toPrintable outputs the expected report format
      */
     #[Test]

@@ -346,12 +346,11 @@ The Subnet class implements `JsonSerializable`, enabling direct JSON encoding:
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
-// These are equivalent:
+// Same data as toJson(), compact and with escaped slashes ("192.168.112.0\/23")
 $json = json_encode($subnet);
-$json = $subnet->toJson();
 
-// Pretty print JSON
-$prettyJson = json_encode($subnet, JSON_PRETTY_PRINT);
+// Equivalent to toJson()
+$prettyJson = json_encode($subnet, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 echo $prettyJson;
 ```
 

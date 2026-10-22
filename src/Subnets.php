@@ -29,6 +29,8 @@ final class Subnets
      *
      * @return Subnet[] Aggregated supernets
      *
+     * @throws \InvalidArgumentException If any element is not a Subnet
+     *
      * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - CIDR
      */
     public static function aggregate(array $subnets): array
@@ -56,7 +58,7 @@ final class Subnets
      *
      * @return Subnet The smallest supernet containing all inputs
      *
-     * @throws \InvalidArgumentException If the subnet array is empty
+     * @throws \InvalidArgumentException If the subnet array is empty or any element is not a Subnet
      *
      * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - CIDR
      */

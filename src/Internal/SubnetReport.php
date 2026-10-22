@@ -88,7 +88,7 @@ final class SubnetReport
     {
         return \json_encode(
             self::createArray($subnet),
-            \JSON_PRETTY_PRINT | \JSON_THROW_ON_ERROR
+            \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR
         );
     }
 
