@@ -197,7 +197,7 @@ final class Subnets
      */
     private static function subnetFromStartAndPrefix(int $start, int $prefix): Subnet
     {
-        return new Subnet(self::unsignedToIp($start), $prefix);
+        return new Subnet(IPAddress::fromInteger($start)->asQuads(), $prefix);
     }
 
     /**
@@ -307,7 +307,7 @@ final class Subnets
     {
         $result = [];
         foreach ($blocks as $block) {
-            $ip = self::unsignedToIp($block->startInt());
+            $ip = IPAddress::fromInteger($block->startInt())->asQuads();
             $result[] = new Subnet($ip, $block->prefix());
         }
 
@@ -325,23 +325,5 @@ final class Subnets
         }
 
         return $b->endInt() <=> $a->endInt();
-    }
-
-    /**
-     * Convert IP integer to dotted quad.
-     *
-     * @param int $ip
-     *
-     * @return string
-     */
-    private static function unsignedToIp(int $ip): string
-    {
-        if ($ip < 0 || $ip > IPv4::MAX_ADDRESS) {
-            throw new \InvalidArgumentException(
-                "IP integer out of range: {$ip}"
-            );
-        }
-
-        return \long2ip($ip);
     }
 }

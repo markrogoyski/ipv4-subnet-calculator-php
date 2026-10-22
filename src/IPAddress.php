@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IPv4;
 
+use IPv4\Internal\IPv4;
 use IPv4\Internal\Platform;
 
 /**
@@ -49,17 +50,21 @@ final class IPAddress implements \JsonSerializable, \Stringable
     /**
      * Create an IP address from a 32-bit integer.
      *
-     * Note: Out-of-range integers are wrapped using modulo 2^32, consistent
-     * with PHP's long2ip() behavior.
-     *
-     * @param int $integer IP address as integer
+     * @param int $integer IP address as unsigned integer (0 to 4294967295)
      *
      * @return self
      *
+     * @throws \InvalidArgumentException If the integer is outside the IPv4 range
      * @throws \RuntimeException If running on 32-bit PHP
      */
     public static function fromInteger(int $integer): self
     {
+        if ($integer < 0 || $integer > IPv4::MAX_ADDRESS) {
+            throw new \InvalidArgumentException(
+                "IP integer out of range: {$integer}"
+            );
+        }
+
         return new self(\long2ip($integer));
     }
 

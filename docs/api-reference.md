@@ -733,6 +733,19 @@ new IPAddress(string $ipAddress): IPAddress
 $ip = new IPAddress('192.168.1.100');
 ```
 
+##### fromInteger()
+```php
+IPAddress::fromInteger(int $integer): IPAddress
+```
+Create an IP address from its unsigned 32-bit integer value (the inverse of `asInteger()`).
+Throws `\InvalidArgumentException` if the integer is outside `0` to `4294967295`.
+
+**Example:**
+```php
+$ip = IPAddress::fromInteger(3232235876);  // 192.168.1.100
+$next = IPAddress::fromInteger($ip->asInteger() + 1);  // 192.168.1.101
+```
+
 #### Format Methods
 
 All format methods are provided via the `Formattable` trait:

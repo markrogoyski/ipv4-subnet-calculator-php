@@ -490,32 +490,4 @@ class SubnetsTest extends TestCase
         // When
         Subnets::summarize($subnets);
     }
-
-    #[Test]
-    public function unsignedToIpThrowsExceptionForNegativeInteger(): void
-    {
-        // Given - A negative IP integer
-        $method = new \ReflectionMethod(Subnets::class, 'unsignedToIp');
-
-        // Then
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('IP integer out of range');
-
-        // When
-        $method->invoke(null, -1);
-    }
-
-    #[Test]
-    public function unsignedToIpThrowsExceptionForOverflowInteger(): void
-    {
-        // Given - An IP integer exceeding max address
-        $method = new \ReflectionMethod(Subnets::class, 'unsignedToIp');
-
-        // Then
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('IP integer out of range');
-
-        // When
-        $method->invoke(null, 4_294_967_296);
-    }
 }

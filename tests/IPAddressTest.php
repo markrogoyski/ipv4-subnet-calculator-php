@@ -99,8 +99,34 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'google DNS' => [134_744_072, '8.8.8.8'],
             'private 192.168.1.1' => [3_232_235_777, '192.168.1.1'],
             'private 10.0.0.1' => [167_772_161, '10.0.0.1'],
-            'negative wraps' => [-1, '255.255.255.255'],
-            'overflow wraps to zero' => [4_294_967_296, '0.0.0.0'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForOutOfRangeIntegers')]
+    public function testFromIntegerThrowsExceptionForOutOfRangeInteger(int $integer): void
+    {
+        // Given - An integer outside the IPv4 range
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("IP integer out of range: {$integer}");
+
+        // When
+        IPAddress::fromInteger($integer);
+    }
+
+    /**
+     * @return array<string, array{int}>
+     */
+    public static function dataProviderForOutOfRangeIntegers(): array
+    {
+        return [
+            'negative one' => [-1],
+            'one above max' => [4_294_967_296],
+            'overflow by 2^32 + 5' => [4_294_967_301],
+            'PHP_INT_MIN' => [\PHP_INT_MIN],
+            'PHP_INT_MAX' => [\PHP_INT_MAX],
         ];
     }
 

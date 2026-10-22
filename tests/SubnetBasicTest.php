@@ -32,35 +32,6 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
-    #[DataProvider('dataProviderForFromIntegerWrapping')]
-    public function testFromIntegerWrapsOutOfRangeValues(int $input, string $expectedIp): void
-    {
-        // Given - Out-of-range integers are wrapped using modulo 2^32,
-        // consistent with PHP's long2ip() behavior
-
-        // When
-        $ip = IPAddress::fromInteger($input);
-
-        // Then
-        $this->assertSame($expectedIp, $ip->asQuads());
-    }
-
-    /**
-     * @return array<string, array{int, string}>
-     */
-    public static function dataProviderForFromIntegerWrapping(): array
-    {
-        return [
-            'negative -1 wraps to max IP' => [-1, '255.255.255.255'],
-            'overflow wraps to 0.0.0.0' => [4_294_967_296, '0.0.0.0'],
-            'overflow + 1 wraps to 0.0.0.1' => [4_294_967_297, '0.0.0.1'],
-            'valid min boundary' => [0, '0.0.0.0'],
-            'valid max boundary' => [4_294_967_295, '255.255.255.255'],
-            'valid mid-range' => [3_232_235_777, '192.168.1.1'],
-        ];
-    }
-
-    #[Test]
     #[DataProvider('dataProviderForIpAddresses')]
     public function testGetIpAddress(string $given_ip_address, int $network_size): void
     {

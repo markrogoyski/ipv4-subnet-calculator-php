@@ -4,6 +4,7 @@
 
 ### Bug Fixes
 - **Value objects encode to JSON**: `IPAddress`, `SubnetMask` and `WildcardMask` now implement `JsonSerializable` and encode as dotted quads (e.g., `"192.168.1.0"`), and `IPRange` encodes as `{"start": ..., "end": ...}`. Previously their private properties made `json_encode()` silently produce `{}`.
+- **`IPAddress::fromInteger()` rejects out-of-range integers**: Integers outside `0` to `4294967295` now throw `\InvalidArgumentException` instead of silently wrapping modulo 2^32 (e.g., `-1` previously became `255.255.255.255`). Arithmetic that overflows the IPv4 space now fails loudly instead of yielding a plausible wrong address.
 - **`Subnet::excludeAll()` validates its input**: A non-`Subnet` element now throws `\InvalidArgumentException` naming the offending index, consistent with `Subnets::aggregate()` and `summarize()`. Previously it surfaced as a `TypeError`, or was silently ignored if earlier exclusions had already consumed the whole subnet.
 
 ## v5.0.0 - 2026-02-28
