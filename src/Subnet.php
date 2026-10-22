@@ -346,7 +346,7 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
-     * Check if the IP address is publicly routable.
+     * Check if the IP address is public: not in any of the special-purpose ranges recognized by this library.
      *
      * @return bool
      */

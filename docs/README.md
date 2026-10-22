@@ -92,7 +92,7 @@ $prev = $subnet->previous();
 
 // Check IP type
 $subnet->isPrivate();   // true for RFC 1918 addresses
-$subnet->isPublic();    // true for publicly routable addresses
+$subnet->isPublic();    // true if not in any special-purpose range
 ```
 
 ### Advanced Operations

@@ -26,8 +26,8 @@ enum AddressType: string
     case Private = 'private';
 
     /**
-     * Publicly routable address.
-     * Any address not in a special-purpose range.
+     * Public address.
+     * Any address not in any of the special-purpose ranges recognized by this library.
      */
     case Public = 'public';
 

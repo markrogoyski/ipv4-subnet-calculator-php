@@ -96,9 +96,10 @@ final class IPAddress implements \Stringable
     }
 
     /**
-     * Check if the IP address is publicly routable.
+     * Check if the IP address is public: not in any of the special-purpose ranges recognized by this library.
      *
-     * An IP is public if it's not in any special-purpose range.
+     * Stricter than global reachability: a few special-purpose blocks (e.g., 192.0.0.9/32,
+     * 192.31.196.0/24) are globally reachable but are not counted as public.
      *
      * @return bool
      */

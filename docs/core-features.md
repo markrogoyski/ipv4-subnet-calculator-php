@@ -419,7 +419,7 @@ Useful for security validation, routing decisions, and network classification. A
 
 ### Private vs Public Addresses
 
-Check if an IP address is private (RFC 1918) or publicly routable:
+Check if an IP address is private (RFC 1918) or public (not in any special-purpose range):
 
 ```php
 $private = IPv4\Subnet::fromCidr('192.168.1.100/24');
@@ -515,7 +515,7 @@ if ($type === IPv4\AddressType::Private) {
 // Use in match expressions
 $description = match ($type) {
     IPv4\AddressType::Private => 'RFC 1918 private address',
-    IPv4\AddressType::Public => 'Publicly routable address',
+    IPv4\AddressType::Public => 'Public address',
     IPv4\AddressType::Loopback => 'Loopback address',
     default => 'Special-purpose address',
 };
@@ -538,7 +538,7 @@ $description = match ($type) {
 | `isLimitedBroadcast()` | 255.255.255.255/32 | RFC 919 | Limited broadcast address |
 | `isIanaReserved()` | 192.31.196.0/24<br>192.52.193.0/24<br>192.175.48.0/24 | RFC 7535, RFC 7450, RFC 7534 | IANA Special-Purpose assignments |
 | `isThisNetwork()` | 0.0.0.0/8 | RFC 1122 | "This" network addresses |
-| `isPublic()` | All others | - | Publicly routable addresses |
+| `isPublic()` | All others | - | Public addresses |
 
 ### Use Cases
 
@@ -567,6 +567,10 @@ if ($destination->isPrivate()) {
     // Special handling for loopback, multicast, etc.
 }
 ```
+
+`isPublic()` excludes every special-purpose block, including the few IANA marks globally reachable
+(192.0.0.9/32, 192.0.0.10/32, 192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24). Check those
+separately if you need to route to them.
 
 **Network Configuration Validation:**
 ```php

@@ -299,7 +299,7 @@ Check if the IP is in private address space (RFC 1918).
 ```php
 isPublic(): bool
 ```
-Check if the IP is a public address.
+Check if the IP is public: not in any of the [special-purpose ranges recognized by this library](core-features.md#supported-range-types-reference). Stricter than global reachability: a few special-purpose blocks are globally reachable but are not counted as public.
 
 #### isLoopback()
 ```php
@@ -999,7 +999,7 @@ Returns range as "start - end" format.
 
 **Values:**
 - `AddressType::Private` - RFC 1918 private addresses
-- `AddressType::Public` - Publicly routable addresses
+- `AddressType::Public` - Addresses not in any special-purpose range
 - `AddressType::Loopback` - 127.0.0.0/8 loopback addresses
 - `AddressType::LinkLocal` - 169.254.0.0/16 link-local/APIPA addresses
 - `AddressType::Multicast` - 224.0.0.0/4 multicast addresses
