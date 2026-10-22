@@ -243,10 +243,17 @@ echo $data['host_count'];  // 510
 ```php
 // API endpoint that returns subnet information
 function getSubnetInfo($cidr) {
+    header('Content-Type: application/json');
+
+    // Missing or array-valued (?cidr[]=...) query parameters are not strings
+    if (!is_string($cidr)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'cidr query parameter is required']);
+        return;
+    }
+
     try {
         $subnet = IPv4\Subnet::fromCidr($cidr);
-
-        header('Content-Type: application/json');
         echo $subnet->toJson();
     } catch (\Exception $e) {
         http_response_code(400);
@@ -254,8 +261,8 @@ function getSubnetInfo($cidr) {
     }
 }
 
-// Usage: GET /api/subnet/192.168.1.0/24
-getSubnetInfo($_GET['cidr']);
+// Usage: GET /api/subnet?cidr=192.168.1.0/24
+getSubnetInfo($_GET['cidr'] ?? null);
 ```
 
 ## String Report
@@ -378,8 +385,15 @@ try {
 // REST API endpoint
 header('Content-Type: application/json');
 
+// Missing or array-valued (?cidr[]=...) query parameters are not strings
+$cidr = $_GET['cidr'] ?? null;
+if (!is_string($cidr)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'cidr query parameter is required']);
+    exit;
+}
+
 try {
-    $cidr = $_GET['cidr'] ?? '';
     $subnet = IPv4\Subnet::fromCidr($cidr);
 
     echo $subnet->toJson();
