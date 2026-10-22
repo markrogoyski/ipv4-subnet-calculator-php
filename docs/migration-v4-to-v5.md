@@ -179,7 +179,7 @@ $subnet->printSubnetReport();
 $subnet->toArray();
 $subnet->toJson();
 $subnet->toPrintable();
-echo $subnet;  // Automatically converts to string
+echo $subnet->toPrintable();  // echo $subnet alone prints only the CIDR
 ```
 
 ## SubnetFactory Split (v5 Architecture Update)
@@ -277,7 +277,7 @@ $summary = Subnets::summarize($subnets);
 | `getSubnetArrayReport()` | `toArray()` | array |
 | `getSubnetJsonReport()` | `toJson()` | string |
 | `getPrintableReport()` | `toPrintable()` | string |
-| `printSubnetReport()` | `echo $subnet;` | void |
+| `printSubnetReport()` | `echo $subnet->toPrintable();` | void |
 
 ### Classification Methods (Unchanged)
 

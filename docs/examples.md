@@ -39,13 +39,24 @@ echo str_repeat('=', 80) . "\n\n";
 echo "Available: {$corporateBlock->cidr()}\n";
 echo "Total IPs: {$corporateBlock->addressCount()}\n\n";
 
-$currentNetwork = '10.0.0.0';
+// Allocate largest offices first (VLSM) so each subnet starts on a boundary
+// aligned to its size. Allocating a larger subnet after a smaller one
+// would round its network address backward into space already in use.
+arsort($offices);
+
+$currentNetwork = $corporateBlock->networkAddress()->asQuads();
 $allocations = [];
 
 foreach ($offices as $office => $requiredHosts) {
     // Find optimal subnet size
     $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
     $subnet = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
+
+    // Verify subnet fits within corporate block
+    if (!$corporateBlock->contains($subnet)) {
+        echo "ERROR: Insufficient space for {$office}\n";
+        break;
+    }
 
     $allocations[$office] = $subnet;
 
@@ -94,6 +105,12 @@ class SimpleIPAM {
     }
 
     public function allocate($name, $cidr) {
+        // Reject duplicate names before touching the pool, or the earlier
+        // allocation would be overwritten and its block lost from tracking
+        if (isset($this->allocations[$name])) {
+            throw new \Exception("Allocation name {$name} is already in use");
+        }
+
         $allocation = IPv4\Subnet::fromCidr($cidr);
 
         // Check if requested subnet is available
@@ -637,13 +654,12 @@ class ReverseDNSZoneGenerator {
         }
         $zone .= "\n";
 
-        // PTR records
+        // PTR records use absolute owner names (trailing dot), which are
+        // correct for any prefix length, not just /24 zones
         foreach ($hostnames as $ip => $hostname) {
-            $ipSubnet = IPv4\Subnet::fromCidr($ip . '/32');
             if ($subnet->containsIP($ip)) {
-                $octets = $ipSubnet->ipAddress()->asArray();
-                $ptrRecord = $octets[3];
-                $zone .= "{$ptrRecord}    IN    PTR    {$hostname}.\n";
+                $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
+                $zone .= "{$ptrRecord}.    IN    PTR    {$hostname}.\n";
             }
         }
 
