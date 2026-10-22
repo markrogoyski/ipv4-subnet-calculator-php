@@ -21,6 +21,10 @@ The IPv4 Subnet Calculator v5.0 provides three ways to generate comprehensive su
 
 All formats include complete network information: IP address, masks, network/host portions, address ranges, and metadata.
 
+The CIDR shown in every report is the canonical network CIDR (`networkCidr()`), so `192.168.112.203/23` reports as
+`192.168.112.0/23`. The input IP address is still reported in the IP address fields. This differs from casting the subnet
+to a string, which keeps the input IP (see [String Representation](#string-representation-__tostring)).
+
 ## Printed Report
 
 Get a detailed formatted report as a string variable using `toPrintable()`:
@@ -32,7 +36,7 @@ echo $subnet->toPrintable();
 
 **Output:**
 ```
-192.168.112.203/23           Quads      Hex                           Binary    Integer
+192.168.112.0/23             Quads      Hex                           Binary    Integer
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
@@ -78,7 +82,7 @@ echo $report['network_class']['is_classful'];     // false
 ```php
 Array
 (
-    [cidr] => 192.168.112.203/23
+    [cidr] => 192.168.112.0/23
     [ip_address] => Array
         (
             [quads] => 192.168.112.203
@@ -178,7 +182,7 @@ echo $data['host_count'];  // 510
 **Complete JSON Output:**
 ```json
 {
-    "cidr": "192.168.112.203/23",
+    "cidr": "192.168.112.0/23",
     "ip_address": {
         "quads": "192.168.112.203",
         "hex": "C0A870CB",
@@ -269,7 +273,7 @@ echo $stringReport;
 
 **Output (same as printed report):**
 ```
-192.168.112.203/23           Quads      Hex                           Binary    Integer
+192.168.112.0/23             Quads      Hex                           Binary    Integer
 ------------------ --------------- -------- -------------------------------- ----------
 IP Address:        192.168.112.203 C0A870CB 11000000101010000111000011001011 3232264395
 Subnet Mask:         255.255.254.0 FFFFFE00 11111111111111111111111000000000 4294966784
@@ -313,7 +317,8 @@ file_put_contents('/var/log/subnet-analysis.log', $logEntry, FILE_APPEND);
 
 ### String Representation (__toString)
 
-The Subnet class implements `__toString()`, which returns CIDR notation:
+The Subnet class implements `__toString()`, which returns CIDR notation using the input IP address (`cidr()`).
+Unlike the reports, it does not normalize to the network address; use `networkCidr()` for that:
 
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
@@ -321,6 +326,7 @@ $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 // String representation (CIDR notation)
 echo $subnet;              // "192.168.112.203/23"
 print($subnet);            // "192.168.112.203/23"
+echo $subnet->networkCidr(); // "192.168.112.0/23"
 
 // For a detailed formatted report, use toPrintable()
 echo $subnet->toPrintable();  // Full multi-line report
