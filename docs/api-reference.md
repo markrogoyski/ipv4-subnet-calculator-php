@@ -568,7 +568,8 @@ Get the reverse DNS ARPA domain for the input IP address.
 
 **Example:**
 ```php
-$arpa = $subnet->arpaDomain();  // "1.168.192.in-addr.arpa"
+$subnet = Subnet::fromCidr('192.168.1.100/24');
+$arpa   = $subnet->arpaDomain();  // "100.1.168.192.in-addr.arpa"
 ```
 
 #### toArray()

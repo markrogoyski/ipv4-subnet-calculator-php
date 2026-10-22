@@ -50,6 +50,22 @@ class SubnetReportsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * toArray arpa_domain reflects the input IP address
+     */
+    #[Test]
+    public function arrayReportArpaDomainUsesInputIpAddress(): void
+    {
+        // Given
+        $subnet = $this->sub;
+
+        // When
+        $report = $subnet->toArray();
+
+        // Then
+        $this->assertSame('203.112.168.192.in-addr.arpa', $report['arpa_domain']);
+    }
+
+    /**
      * toJson returns valid JSON string
      */
     #[Test]

@@ -215,39 +215,45 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * getIPv4ArpaDomain
+     * arpaDomain reverses the input IP address, not the network address
      *
      * @param string $ipAddress
-     * @param string $expectedIPv4ArpaDomain
+     * @param int    $networkSize
+     * @param string $expectedArpaDomain
      */
     #[Test]
-    #[DataProvider('dataProviderForIpv4ArpaDomain')]
-    public function testGetIPv4ArpaDomain(string $ipAddress, string $expectedIPv4ArpaDomain): void
+    #[DataProvider('dataProviderForArpaDomain')]
+    public function arpaDomainReversesInputIpAddress(string $ipAddress, int $networkSize, string $expectedArpaDomain): void
     {
         // Given
-        $subnet = new Subnet($ipAddress, 24);
+        $subnet = new Subnet($ipAddress, $networkSize);
 
         // When
-        $ipv4ArpaDomain = $subnet->arpaDomain();
+        $arpaDomain = $subnet->arpaDomain();
 
         // Then
-        $this->assertEquals($expectedIPv4ArpaDomain, $ipv4ArpaDomain);
+        $this->assertSame($expectedArpaDomain, $arpaDomain);
     }
 
     /**
-     * @return string[][]
+     * @return array<string, array{string, int, string}>
      */
-    public static function dataProviderForIpv4ArpaDomain(): array
+    public static function dataProviderForArpaDomain(): array
     {
         return [
-            ['8.8.4.4', '0.4.8.8.in-addr.arpa'],
-            ['74.6.231.21', '0.231.6.74.in-addr.arpa'],
-            ['192.168.21.165', '0.21.168.192.in-addr.arpa'],
-            ['202.12.28.131', '0.28.12.202.in-addr.arpa'],
-            ['1.2.3.4', '0.3.2.1.in-addr.arpa'],
-            ['101.102.103.104', '0.103.102.101.in-addr.arpa'],
-            ['192.0.2.0', '0.2.0.192.in-addr.arpa'],
-            ['206.6.177.200', '0.177.6.206.in-addr.arpa'],
+            '/24 host'              => ['8.8.4.4', 24, '4.4.8.8.in-addr.arpa'],
+            '/24 host 2'            => ['74.6.231.21', 24, '21.231.6.74.in-addr.arpa'],
+            '/24 private host'      => ['192.168.21.165', 24, '165.21.168.192.in-addr.arpa'],
+            '/24 host 3'            => ['202.12.28.131', 24, '131.28.12.202.in-addr.arpa'],
+            '/24 host 4'            => ['1.2.3.4', 24, '4.3.2.1.in-addr.arpa'],
+            '/24 host 5'            => ['101.102.103.104', 24, '104.103.102.101.in-addr.arpa'],
+            '/24 network address'   => ['192.0.2.0', 24, '0.2.0.192.in-addr.arpa'],
+            '/24 host 6'            => ['206.6.177.200', 24, '200.177.6.206.in-addr.arpa'],
+            '/23 documented example' => ['192.168.112.203', 23, '203.112.168.192.in-addr.arpa'],
+            '/8 host'               => ['10.20.30.40', 8, '40.30.20.10.in-addr.arpa'],
+            '/0 host'               => ['203.0.113.7', 0, '7.113.0.203.in-addr.arpa'],
+            '/31 upper address'     => ['10.0.0.1', 31, '1.0.0.10.in-addr.arpa'],
+            '/32 single host'       => ['10.0.0.7', 32, '7.0.0.10.in-addr.arpa'],
         ];
     }
 

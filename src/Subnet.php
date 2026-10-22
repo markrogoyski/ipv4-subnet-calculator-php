@@ -855,13 +855,15 @@ final class Subnet implements \JsonSerializable, \Stringable
      * ==================== */
 
     /**
-     * Get the reverse DNS (ARPA) domain.
+     * Get the reverse DNS (ARPA) domain for the input IP address.
      *
-     * @return string
+     * For the network address's ARPA domain, use networkAddress()->arpaDomain().
+     *
+     * @return string e.g., "203.112.168.192.in-addr.arpa" for 192.168.112.203/23
      */
     public function arpaDomain(): string
     {
-        return $this->networkAddress()->arpaDomain();
+        return $this->ip->arpaDomain();
     }
 
     /**
