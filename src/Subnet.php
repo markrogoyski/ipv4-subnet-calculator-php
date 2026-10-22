@@ -573,10 +573,6 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        if ($requiredHosts === 0) {
-            return 0.0;
-        }
-
         return ((float) $requiredHosts / (float) $this->hostCount()) * 100.0;
     }
 
@@ -763,7 +759,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         $nextStart = $currentStart + $addressCount;
 
         $maxValid = IPv4::MAX_ADDRESS;
-        if ($nextStart > $maxValid || ($nextStart + $addressCount - 1) > $maxValid) {
+        if ($nextStart + $addressCount - 1 > $maxValid) {
             throw new \RuntimeException(
                 'Next subnet would exceed valid IPv4 address range'
             );

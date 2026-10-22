@@ -158,7 +158,7 @@ final class Subnets
 
         while ($prefix > 0) {
             $blockSize = 1 << (32 - $prefix);
-            $networkStart = ((int) ($min / $blockSize)) * $blockSize;
+            $networkStart = \intdiv($min, $blockSize) * $blockSize;
             $networkEnd = $networkStart + $blockSize - 1;
 
             if ($networkStart <= $min && $networkEnd >= $max) {
@@ -184,7 +184,7 @@ final class Subnets
     {
         $blockSize = $prefix === 0 ? IPv4::ADDRESS_SPACE : (1 << (32 - $prefix));
 
-        return ((int) ($address / $blockSize)) * $blockSize;
+        return \intdiv($address, $blockSize) * $blockSize;
     }
 
     /**

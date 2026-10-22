@@ -163,7 +163,7 @@ final class SubnetParser
                 );
             }
             $octet = (int) $quad;
-            if ($octet < 0 || $octet > 255) {
+            if ($octet > 255) {
                 throw new \InvalidArgumentException(
                     "Invalid subnet mask: octet out of range in '{$subnetMask}'"
                 );
