@@ -34,11 +34,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForExcludeFirstHalf(): array
@@ -69,11 +74,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForExcludeSecondHalf(): array
@@ -104,11 +114,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForExcludeFirstQuarter(): array
@@ -283,11 +298,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForRfc3021Exclusions(): array
@@ -588,11 +608,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForLargeNetworks(): array
@@ -686,11 +711,16 @@ class SubnetExcludeTest extends TestCase
         $result = $base->exclude($exclude);
 
         // Then
-        $this->assertCount(\count($expectedResults), $result);
-        foreach ($expectedResults as $index => $expected) {
-            $this->assertSame($expected['network'], $result[$index]->networkPortion()->asQuads());
-            $this->assertSame($expected['prefix'], $result[$index]->networkSize());
-        }
+        $this->assertSame(
+            $expectedResults,
+            \array_map(
+                static fn (Subnet $subnet): array => [
+                    'network' => $subnet->networkPortion()->asQuads(),
+                    'prefix'  => $subnet->networkSize(),
+                ],
+                $result
+            )
+        );
     }
 
     public static function dataProviderForHighIpRanges(): array

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IPv4\Tests;
 
 use IPv4\Subnet;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
 class SubnetReportsTest extends \PHPUnit\Framework\TestCase
@@ -200,5 +201,146 @@ class SubnetReportsTest extends \PHPUnit\Framework\TestCase
 
         // Then
         $this->assertSame('192.168.112.203/23', $result);
+    }
+
+    /**
+     * toArray reports counts and host bounds for /0, /31 and /32
+     */
+    #[Test]
+    #[DataProvider('dataProviderForEdgeCasePrefixes')]
+    public function arrayReportHandlesEdgeCasePrefixes(
+        string $ip,
+        int $prefix,
+        int $expectedAddressCount,
+        int $expectedHostCount,
+        string $expectedMinHost,
+        string $expectedMaxHost
+    ): void {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // When
+        $report = $subnet->toArray();
+
+        // Then
+        $this->assertSame(
+            [$expectedAddressCount, $expectedHostCount, $expectedMinHost, $expectedMaxHost],
+            [$report['address_count'], $report['host_count'], $report['min_host'], $report['max_host']]
+        );
+    }
+
+    /**
+     * toPrintable reports counts and host bounds for /0, /31 and /32
+     */
+    #[Test]
+    #[DataProvider('dataProviderForEdgeCasePrefixes')]
+    public function printableReportHandlesEdgeCasePrefixes(
+        string $ip,
+        int $prefix,
+        int $expectedAddressCount,
+        int $expectedHostCount,
+        string $expectedMinHost,
+        string $expectedMaxHost
+    ): void {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // When
+        $report = $subnet->toPrintable();
+
+        // Then
+        $this->assertStringContainsString(\sprintf("%-28s %d\n", 'Number of IP Addresses:', $expectedAddressCount), $report);
+        $this->assertStringContainsString(\sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $expectedHostCount), $report);
+        $this->assertStringContainsString(\sprintf("%-28s %s\n", 'Min Host:', $expectedMinHost), $report);
+        $this->assertStringContainsString(\sprintf("%-28s %s\n", 'Max Host:', $expectedMaxHost), $report);
+    }
+
+    /**
+     * @return array<string, array{ip: string, prefix: int, expectedAddressCount: int, expectedHostCount: int, expectedMinHost: string, expectedMaxHost: string}>
+     */
+    public static function dataProviderForEdgeCasePrefixes(): array
+    {
+        return [
+            '/0 entire IPv4 space' => [
+                'ip'                   => '0.0.0.0',
+                'prefix'               => 0,
+                'expectedAddressCount' => 4294967296,
+                'expectedHostCount'    => 4294967294,
+                'expectedMinHost'      => '0.0.0.1',
+                'expectedMaxHost'      => '255.255.255.254',
+            ],
+            '/31 point-to-point (RFC 3021)' => [
+                'ip'                   => '192.168.1.0',
+                'prefix'               => 31,
+                'expectedAddressCount' => 2,
+                'expectedHostCount'    => 2,
+                'expectedMinHost'      => '192.168.1.0',
+                'expectedMaxHost'      => '192.168.1.1',
+            ],
+            '/32 single host' => [
+                'ip'                   => '192.168.1.1',
+                'prefix'               => 32,
+                'expectedAddressCount' => 1,
+                'expectedHostCount'    => 1,
+                'expectedMinHost'      => '192.168.1.1',
+                'expectedMaxHost'      => '192.168.1.1',
+            ],
+        ];
+    }
+
+    /**
+     * toPrintable includes the Classful: line for classes A, B and C
+     */
+    #[Test]
+    #[DataProvider('dataProviderForClassfulLinePresent')]
+    public function printableReportIncludesClassfulLineForClassesAThroughC(string $ip, int $prefix, string $expectedClassfulLine): void
+    {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // When
+        $report = $subnet->toPrintable();
+
+        // Then
+        $this->assertStringContainsString($expectedClassfulLine, $report);
+    }
+
+    /**
+     * @return array<string, array{ip: string, prefix: int, expectedClassfulLine: string}>
+     */
+    public static function dataProviderForClassfulLinePresent(): array
+    {
+        return [
+            'class A classful'  => ['ip' => '10.0.0.0', 'prefix' => 8, 'expectedClassfulLine' => "Classful:                    Yes\n"],
+            'class C subnetted' => ['ip' => '192.168.1.0', 'prefix' => 25, 'expectedClassfulLine' => "Classful:                    No (subnetted/supernetted)\n"],
+        ];
+    }
+
+    /**
+     * toPrintable omits the Classful: line for classes D and E, which have no default mask
+     */
+    #[Test]
+    #[DataProvider('dataProviderForClassfulLineAbsent')]
+    public function printableReportOmitsClassfulLineForClassesDAndE(string $ip, int $prefix): void
+    {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // When
+        $report = $subnet->toPrintable();
+
+        // Then
+        $this->assertStringNotContainsString('Classful:', $report);
+    }
+
+    /**
+     * @return array<string, array{ip: string, prefix: int}>
+     */
+    public static function dataProviderForClassfulLineAbsent(): array
+    {
+        return [
+            'class D multicast' => ['ip' => '224.0.0.1', 'prefix' => 4],
+            'class E reserved'  => ['ip' => '240.0.0.1', 'prefix' => 32],
+        ];
     }
 }

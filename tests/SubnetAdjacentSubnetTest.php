@@ -347,12 +347,14 @@ class SubnetAdjacentSubnetTest extends TestCase
         $adjacentSubnets = $subnet->adjacent($count);
 
         // Then
-        $this->assertCount(\count($expectedNetworkPortions), $adjacentSubnets);
-        foreach ($adjacentSubnets as $index => $adjacentSubnet) {
-            $this->assertInstanceOf(Subnet::class, $adjacentSubnet);
-            $this->assertSame($expectedNetworkPortions[$index], $adjacentSubnet->networkPortion()->asQuads());
-            $this->assertSame($networkSize, $adjacentSubnet->networkSize());
-        }
+        $this->assertSame(
+            $expectedNetworkPortions,
+            \array_map(static fn (Subnet $subnet): string => $subnet->networkPortion()->asQuads(), $adjacentSubnets)
+        );
+        $this->assertSame(
+            \array_fill(0, \count($expectedNetworkPortions), $networkSize),
+            \array_map(static fn (Subnet $subnet): int => $subnet->networkSize(), $adjacentSubnets)
+        );
     }
 
     public static function dataProviderForGetAdjacentSubnetsForward(): array
@@ -406,12 +408,14 @@ class SubnetAdjacentSubnetTest extends TestCase
         $adjacentSubnets = $subnet->adjacent($count);
 
         // Then
-        $this->assertCount(\count($expectedNetworkPortions), $adjacentSubnets);
-        foreach ($adjacentSubnets as $index => $adjacentSubnet) {
-            $this->assertInstanceOf(Subnet::class, $adjacentSubnet);
-            $this->assertSame($expectedNetworkPortions[$index], $adjacentSubnet->networkPortion()->asQuads());
-            $this->assertSame($networkSize, $adjacentSubnet->networkSize());
-        }
+        $this->assertSame(
+            $expectedNetworkPortions,
+            \array_map(static fn (Subnet $subnet): string => $subnet->networkPortion()->asQuads(), $adjacentSubnets)
+        );
+        $this->assertSame(
+            \array_fill(0, \count($expectedNetworkPortions), $networkSize),
+            \array_map(static fn (Subnet $subnet): int => $subnet->networkSize(), $adjacentSubnets)
+        );
     }
 
     public static function dataProviderForGetAdjacentSubnetsBackward(): array
