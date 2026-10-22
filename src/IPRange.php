@@ -79,6 +79,8 @@ final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable
      * @param string|IPAddress $ip IP address to check
      *
      * @return bool
+     *
+     * @throws \InvalidArgumentException If $ip is a string that is not a valid IPv4 address
      */
     public function contains(string|IPAddress $ip): bool
     {

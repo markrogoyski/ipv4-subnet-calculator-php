@@ -188,14 +188,16 @@ foreach ($ipam->getAvailableBlocks() as $block) {
 
 #### Non-overlapping Subnets
 
-If the excluded subnet doesn't overlap with the base subnet, returns the original subnet unchanged:
+If the excluded subnet doesn't overlap with the base subnet, returns the base subnet as a single
+element, normalized to its network address (e.g. `192.168.1.100/24` becomes `192.168.1.0/24`).
+`excludeAll([])` behaves the same way:
 
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 $other  = IPv4\Subnet::fromCidr('192.168.2.0/24');
 
 $result = $subnet->exclude($other);
-// Returns: [192.168.1.0/24] (unchanged - no overlap)
+// Returns: [192.168.1.0/24] (no overlap)
 ```
 
 #### Full Exclusion

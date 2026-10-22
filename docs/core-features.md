@@ -544,20 +544,26 @@ $description = match ($type) {
 
 **Security Validation:**
 ```php
-$userIP = IPv4\Subnet::fromCidr($_SERVER['REMOTE_ADDR'] . '/32');
+// Behind a proxy or load balancer, REMOTE_ADDR is the proxy's address
+try {
+    $userIP = new IPv4\IPAddress($_SERVER['REMOTE_ADDR']);
+} catch (\InvalidArgumentException $e) {
+    // Not IPv4 (e.g. an IPv6 client)
+    $userIP = null;
+}
 
-if ($userIP->isPrivate()) {
+if ($userIP !== null && $userIP->isPrivate()) {
     // Internal user
     $accessLevel = 'full';
 } else {
-    // External user
+    // External or non-IPv4 user
     $accessLevel = 'limited';
 }
 ```
 
 **Routing Decisions:**
 ```php
-$destination = IPv4\Subnet::fromCidr($targetIP . '/32');
+$destination = new IPv4\IPAddress($targetIP);
 
 if ($destination->isPrivate()) {
     $route = 'internal-gateway';

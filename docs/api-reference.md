@@ -510,7 +510,8 @@ $remaining = $allocated->exclude($reserved);
 ```php
 excludeAll(array $subnets): Subnet[]
 ```
-Exclude multiple subnets, returning the remaining address space.
+Exclude multiple subnets, returning the remaining address space. With an empty array, returns
+this subnet normalized to its network address.
 
 Throws `\InvalidArgumentException` if any element is not a `Subnet`.
 
@@ -552,6 +553,7 @@ $backward = $subnet->adjacent(-3); // Previous 3 subnets
 containsIP(string|IPAddress $ip): bool
 ```
 Check if an IP address is within this subnet.
+Throws `\InvalidArgumentException` if `$ip` is a string that is not a valid IPv4 address.
 
 **Example:**
 ```php
@@ -984,6 +986,7 @@ $count = count($range);  // 256
 contains(string|IPAddress $ip): bool
 ```
 Check if an IP is within the range.
+Throws `\InvalidArgumentException` if `$ip` is a string that is not a valid IPv4 address.
 
 ##### equals()
 ```php

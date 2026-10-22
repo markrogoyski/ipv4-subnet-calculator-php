@@ -857,6 +857,8 @@ final class Subnet implements \JsonSerializable, \Stringable
      * @param string|IPAddress $ip
      *
      * @return bool
+     *
+     * @throws \InvalidArgumentException If $ip is a string that is not a valid IPv4 address
      */
     public function containsIP(string|IPAddress $ip): bool
     {
