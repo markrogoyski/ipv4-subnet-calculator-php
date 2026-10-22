@@ -425,7 +425,7 @@ class BGPRouteOptimizer {
             echo "Region: {$region}\n";
             echo str_repeat('-', 80) . "\n";
 
-            echo "Original routes (" . \count($subnets) . "):\n";
+            echo "Original routes (" . count($subnets) . "):\n";
             foreach ($subnets as $subnet) {
                 echo "  {$subnet->cidr()}\n";
             }
@@ -444,7 +444,9 @@ class BGPRouteOptimizer {
         }
 
         $totalReduction = $totalOriginal - $totalOptimized;
-        $percentReduction = round(($totalReduction / $totalOriginal) * 100, 2);
+        $percentReduction = $totalOriginal > 0
+            ? round(($totalReduction / $totalOriginal) * 100, 2)
+            : 0.0;
 
         echo str_repeat('=', 80) . "\n";
         echo "Total Summary:\n";
