@@ -850,11 +850,21 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
         echo "  - No capacity change\n";
     }
 
+    // Hosts are preserved only if every current host is still a usable host in the proposed network.
+    // Expanding a /31 or /32 can turn a usable host into the new network or broadcast address.
+    $proposedHosts = $proposed->hostRange();
+    $hostsPreserved = $proposedHosts->contains($current->minHost())
+        && $proposedHosts->contains($current->maxHost());
+
     // Address compatibility
     if ($current->overlaps($proposed)) {
         if ($proposed->contains($current)) {
             echo "  ✓ Proposed network contains current network (expansion)\n";
-            echo "  ✓ Existing IPs will remain valid\n";
+            if ($hostsPreserved) {
+                echo "  ✓ Existing IPs will remain valid\n";
+            } else {
+                echo "  ⚠ Some existing host IPs become the new network or broadcast address\n";
+            }
         } elseif ($current->contains($proposed)) {
             echo "  ⚠ Proposed network is smaller than current (contraction)\n";
             echo "  ⚠ Some existing IPs may become invalid\n";
@@ -881,6 +891,10 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
         echo "  • Partial renumbering required\n";
         echo "  • Audit existing IP allocations\n";
         echo "  • Migrate hosts outside new range\n";
+    } elseif (!$hostsPreserved) {
+        echo "  • Expansion, but some hosts must be renumbered\n";
+        echo "  • Move hosts off the new network and broadcast addresses\n";
+        echo "  • Update DHCP scope if applicable\n";
     } else {
         echo "  • Low-risk change (expansion)\n";
         echo "  • Update DHCP scope if applicable\n";
@@ -894,6 +908,8 @@ echo "\n" . str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/24', '192.168.1.0/25');  // Contraction
 echo "\n" . str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/24', '192.168.2.0/24');  // Complete change
+echo "\n" . str_repeat('=', 80) . "\n\n";
+analyzeNetworkChange('192.168.1.0/31', '192.168.1.0/30');  // Expansion that consumes a host
 ```
 
 ---
