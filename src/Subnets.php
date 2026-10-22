@@ -199,7 +199,7 @@ final class Subnets
      */
     private static function subnetFromStartAndPrefix(int $start, int $prefix): Subnet
     {
-        return new Subnet(IPAddress::fromInteger($start)->asQuads(), $prefix);
+        return new Subnet(\long2ip($start), $prefix);
     }
 
     /**
@@ -309,7 +309,7 @@ final class Subnets
     {
         $result = [];
         foreach ($blocks as $block) {
-            $ip = IPAddress::fromInteger($block->startInt())->asQuads();
+            $ip = \long2ip($block->startInt());
             $result[] = new Subnet($ip, $block->prefix());
         }
 

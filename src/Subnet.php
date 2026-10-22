@@ -162,9 +162,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function networkAddress(): IPAddress
     {
-        $networkInt = $this->ip->asInteger() & $this->subnetMaskBits;
-
-        return IPAddress::fromInteger($networkInt);
+        return IPAddress::fromInteger($this->networkAddressInt());
     }
 
     /**
@@ -174,11 +172,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function broadcastAddress(): IPAddress
     {
-        $networkInt = $this->ip->asInteger() & $this->subnetMaskBits;
-        $hostBits = ~$this->subnetMaskBits & 0xFFFFFFFF;
-        $broadcastInt = $networkInt | $hostBits;
-
-        return IPAddress::fromInteger($broadcastInt);
+        return IPAddress::fromInteger($this->broadcastAddressInt());
     }
 
     /**
@@ -224,9 +218,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             return $this->broadcastAddress();
         }
 
-        $broadcastInt = $this->broadcastAddress()->asInteger();
-
-        return IPAddress::fromInteger($broadcastInt - 1);
+        return IPAddress::fromInteger($this->broadcastAddressInt() - 1);
     }
 
     /* ==================== *
@@ -714,7 +706,7 @@ final class Subnet implements \JsonSerializable, \Stringable
     public function exclude(self $exclude): array
     {
         if (!$this->overlaps($exclude)) {
-            return [new self((string) $this->networkAddress(), $this->networkSize)];
+            return [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
         }
 
         if ($exclude->contains($this)) {
@@ -738,10 +730,10 @@ final class Subnet implements \JsonSerializable, \Stringable
         Assert::allSubnets($excludes);
 
         if (empty($excludes)) {
-            return [new self((string) $this->networkAddress(), $this->networkSize)];
+            return [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
         }
 
-        $remaining = [new self((string) $this->networkAddress(), $this->networkSize)];
+        $remaining = [new self(\long2ip($this->networkAddressInt()), $this->networkSize)];
 
         foreach ($excludes as $exclude) {
             $newRemaining = [];
@@ -794,7 +786,7 @@ final class Subnet implements \JsonSerializable, \Stringable
     public function previous(): self
     {
         $addressCount = $this->addressCount();
-        $currentStart = $this->networkAddress()->asInteger();
+        $currentStart = $this->networkAddressInt();
 
         if ($currentStart < $addressCount) {
             throw new \RuntimeException(
@@ -892,7 +884,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function equals(self $other): bool
     {
-        return $this->networkAddress()->equals($other->networkAddress())
+        return $this->networkAddressInt() === $other->networkAddressInt()
             && $this->networkSize === $other->networkSize;
     }
 
@@ -996,7 +988,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     private function networkAddressInt(): int
     {
-        return $this->networkAddress()->asInteger();
+        return $this->ip->asInteger() & $this->subnetMaskBits;
     }
 
     /**
@@ -1006,7 +998,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     private function broadcastAddressInt(): int
     {
-        return $this->broadcastAddress()->asInteger();
+        return $this->networkAddressInt() | (~$this->subnetMaskBits & 0xFFFFFFFF);
     }
 
     /**

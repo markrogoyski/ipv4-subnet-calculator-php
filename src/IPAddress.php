@@ -414,6 +414,19 @@ final class IPAddress implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Get the IP address as a 32-bit unsigned integer.
+     *
+     * Overrides the Formattable default to return the value stored at construction
+     * rather than rebuilding it from the octets.
+     *
+     * @return int
+     */
+    public function asInteger(): int
+    {
+        return $this->intValue;
+    }
+
+    /**
      * Check if the IP is within a given range (inclusive).
      *
      * @param int $start Start of range as integer
