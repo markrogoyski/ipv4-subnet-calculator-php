@@ -819,15 +819,21 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
     #[Test]
     public function testPrivateAndPublicAreMutuallyExclusive(): void
     {
-        // Public address
+        // Given
         $public = Subnet::fromCidr('8.8.8.8/32');
-        $this->assertTrue($public->isPublic());
-        $this->assertFalse($public->isPrivate());
-
-        // Private address
         $private = Subnet::fromCidr('192.168.1.1/32');
-        $this->assertTrue($private->isPrivate());
-        $this->assertFalse($private->isPublic());
+
+        // When
+        $publicIsPublic = $public->isPublic();
+        $publicIsPrivate = $public->isPrivate();
+        $privateIsPrivate = $private->isPrivate();
+        $privateIsPublic = $private->isPublic();
+
+        // Then
+        $this->assertTrue($publicIsPublic);
+        $this->assertFalse($publicIsPrivate);
+        $this->assertTrue($privateIsPrivate);
+        $this->assertFalse($privateIsPublic);
     }
 
     /**
@@ -878,17 +884,21 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
     #[Test]
     public function testSlash31And32EdgeCases(): void
     {
-        // /31 in private range
-        $subnet31 = Subnet::fromCidr('192.168.1.0/31');
-        $this->assertTrue($subnet31->isPrivate());
-        $this->assertFalse($subnet31->isPublic());
+        // Given
+        $subnet31 = Subnet::fromCidr('192.168.1.0/31');      // /31 in private range
+        $subnet32 = Subnet::fromCidr('10.255.255.255/32');   // /32 at boundary of private range
+        $loopback31 = Subnet::fromCidr('127.0.0.0/31');      // /31 in loopback range
 
-        // /32 at boundary of private range
-        $subnet32 = Subnet::fromCidr('10.255.255.255/32');
-        $this->assertTrue($subnet32->isPrivate());
+        // When
+        $subnet31IsPrivate = $subnet31->isPrivate();
+        $subnet31IsPublic = $subnet31->isPublic();
+        $subnet32IsPrivate = $subnet32->isPrivate();
+        $loopback31IsLoopback = $loopback31->isLoopback();
 
-        // /31 in loopback range
-        $loopback31 = Subnet::fromCidr('127.0.0.0/31');
-        $this->assertTrue($loopback31->isLoopback());
+        // Then
+        $this->assertTrue($subnet31IsPrivate);
+        $this->assertFalse($subnet31IsPublic);
+        $this->assertTrue($subnet32IsPrivate);
+        $this->assertTrue($loopback31IsLoopback);
     }
 }

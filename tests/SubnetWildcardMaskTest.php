@@ -279,20 +279,23 @@ class SubnetWildcardMaskTest extends \PHPUnit\Framework\TestCase
     #[Test]
     public function testAllFormatsAreConsistent(): void
     {
+        // Given
         $subnet = Subnet::fromCidr('192.168.1.0/24');
-
-        // Expected values for /24
         $expectedDotted = '0.0.0.255';
         $expectedQuads = ['0', '0', '0', '255'];
         $expectedHex = '000000FF';
         $expectedBinary = '00000000000000000000000011111111';
         $expectedInteger = 255;
 
-        $this->assertSame($expectedDotted, $subnet->wildcardMask()->asQuads());
-        $this->assertSame($expectedQuads, $subnet->wildcardMask()->asArray());
-        $this->assertSame($expectedHex, $subnet->wildcardMask()->asHex());
-        $this->assertSame($expectedBinary, $subnet->wildcardMask()->asBinary());
-        $this->assertSame($expectedInteger, $subnet->wildcardMask()->asInteger());
+        // When
+        $wildcardMask = $subnet->wildcardMask();
+
+        // Then
+        $this->assertSame($expectedDotted, $wildcardMask->asQuads());
+        $this->assertSame($expectedQuads, $wildcardMask->asArray());
+        $this->assertSame($expectedHex, $wildcardMask->asHex());
+        $this->assertSame($expectedBinary, $wildcardMask->asBinary());
+        $this->assertSame($expectedInteger, $wildcardMask->asInteger());
     }
 
     /**
@@ -337,15 +340,19 @@ class SubnetWildcardMaskTest extends \PHPUnit\Framework\TestCase
     #[Test]
     public function testSlash31And32EdgeCases(): void
     {
-        // /31: Point-to-point link (RFC 3021)
-        $subnet31 = Subnet::fromCidr('10.0.0.0/31');
-        $this->assertSame('0.0.0.1', $subnet31->wildcardMask()->asQuads());
-        $this->assertSame(1, $subnet31->wildcardMask()->asInteger());
+        // Given
+        $subnet31 = Subnet::fromCidr('10.0.0.0/31');       // Point-to-point link (RFC 3021)
+        $subnet32 = Subnet::fromCidr('192.168.1.1/32');    // Single host
 
-        // /32: Single host
-        $subnet32 = Subnet::fromCidr('192.168.1.1/32');
-        $this->assertSame('0.0.0.0', $subnet32->wildcardMask()->asQuads());
-        $this->assertSame(0, $subnet32->wildcardMask()->asInteger());
+        // When
+        $mask31 = $subnet31->wildcardMask();
+        $mask32 = $subnet32->wildcardMask();
+
+        // Then
+        $this->assertSame('0.0.0.1', $mask31->asQuads());
+        $this->assertSame(1, $mask31->asInteger());
+        $this->assertSame('0.0.0.0', $mask32->asQuads());
+        $this->assertSame(0, $mask32->asInteger());
     }
 
     /**
@@ -354,11 +361,16 @@ class SubnetWildcardMaskTest extends \PHPUnit\Framework\TestCase
     #[Test]
     public function testWildcardMaskIsIndependentOfIPAddress(): void
     {
-        // Same network size, different IPs - should have same wildcard mask
+        // Given
         $subnet1 = Subnet::fromCidr('192.168.1.0/24');
         $subnet2 = Subnet::fromCidr('10.20.30.40/24');
 
-        $this->assertSame($subnet1->wildcardMask()->asQuads(), $subnet2->wildcardMask()->asQuads());
-        $this->assertSame($subnet1->wildcardMask()->asInteger(), $subnet2->wildcardMask()->asInteger());
+        // When
+        $mask1 = $subnet1->wildcardMask();
+        $mask2 = $subnet2->wildcardMask();
+
+        // Then
+        $this->assertSame($mask1->asQuads(), $mask2->asQuads());
+        $this->assertSame($mask1->asInteger(), $mask2->asInteger());
     }
 }

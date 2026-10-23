@@ -4,7 +4,8 @@
   "description": "Minimal composer config for CI unit tests on PHP 8.1+",
   "license": "MIT",
   "require": {
-    "php": ">=8.1.0",
+    "php": "^8.1",
+    "php-64bit": "*",
     "ext-ctype": "*",
     "ext-filter": "*"
   },
