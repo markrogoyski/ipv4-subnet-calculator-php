@@ -644,9 +644,9 @@ Implement JsonSerializable interface.
 
 #### fromMask()
 ```php
-SubnetParser::fromMask(string $ipAddress, string $subnetMask): Subnet
+SubnetParser::fromMask(string|IPAddress $ipAddress, string|SubnetMask $subnetMask): Subnet
 ```
-Create subnet from IP address and subnet mask string.
+Create subnet from an IP address and subnet mask. Each argument may be a string or an `IPAddress`/`SubnetMask` object.
 
 Throws `\InvalidArgumentException` if the subnet mask is invalid or non-contiguous.
 
@@ -657,9 +657,9 @@ $subnet = SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
 
 #### fromRange()
 ```php
-SubnetParser::fromRange(string $startIp, string $endIp): Subnet
+SubnetParser::fromRange(string|IPAddress $startIp, string|IPAddress $endIp): Subnet
 ```
-Create subnet from IP range (must be valid CIDR block).
+Create subnet from IP range (must be valid CIDR block). Each endpoint may be a string or an `IPAddress`.
 
 Throws `\InvalidArgumentException` if the range does not represent a valid CIDR block.
 
@@ -670,9 +670,9 @@ $subnet = SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
 
 #### fromHostCount()
 ```php
-SubnetParser::fromHostCount(string $ipAddress, int $hostCount): Subnet
+SubnetParser::fromHostCount(string|IPAddress $ipAddress, int $hostCount): Subnet
 ```
-Create smallest subnet that accommodates the required host count.
+Create smallest subnet that accommodates the required host count. The address may be a string or an `IPAddress`.
 
 Throws `\InvalidArgumentException` if the host count is invalid.
 

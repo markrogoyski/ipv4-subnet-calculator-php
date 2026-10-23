@@ -10,6 +10,7 @@
 - **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
 - **`IPAddress` constructor**: Accepts an unsigned 32-bit integer as well as a dotted-quad string
 - **`Subnet` constructor**: Accepts an `IPAddress` as well as a dotted-quad string
+- **`SubnetParser`**: `fromMask()`, `fromRange()` and `fromHostCount()` accept `IPAddress` objects as well as dotted-quad strings, and `fromMask()` also accepts a `SubnetMask`
 
 ### Fixed
 - **`Subnet::arpaDomain()`**: Returns the input IP's reverse DNS domain instead of the network address's
