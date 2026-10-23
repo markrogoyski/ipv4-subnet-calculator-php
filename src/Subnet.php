@@ -148,7 +148,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function networkCidr(): string
     {
-        return (string) $this->networkAddress() . '/' . $this->networkSize;
+        return \long2ip($this->networkAddressInt()) . '/' . $this->networkSize;
     }
 
     /* ==================== *
@@ -194,9 +194,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             return $this->networkAddress();
         }
 
-        $networkInt = $this->ip->asInteger() & $this->subnetMaskBits;
-
-        return IPAddress::fromInteger($networkInt + 1);
+        return IPAddress::fromInteger($this->networkAddressInt() + 1);
     }
 
     /**
