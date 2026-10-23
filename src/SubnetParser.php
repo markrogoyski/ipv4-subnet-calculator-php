@@ -51,8 +51,9 @@ final class SubnetParser
      */
     public static function fromRange(string $startIp, string $endIp): Subnet
     {
-        $startLong = self::validateAndConvertIp($startIp);
-        $endLong = self::validateAndConvertIp($endIp);
+        $start = new IPAddress($startIp);
+        $startLong = $start->asInteger();
+        $endLong = (new IPAddress($endIp))->asInteger();
 
         if ($startLong > $endLong) {
             throw new \InvalidArgumentException(
@@ -72,14 +73,14 @@ final class SubnetParser
         $networkSize = 32 - (int) \log($rangeSize, 2);
 
         // Validate alignment
-        $mask = self::calculateSubnetMaskInt($networkSize);
+        $mask = (new SubnetMask($networkSize))->asInteger();
         if (($startLong & $mask) !== $startLong) {
             throw new \InvalidArgumentException(
                 "Start IP '{$startIp}' is not a valid network address for a /{$networkSize} subnet"
             );
         }
 
-        return new Subnet($startIp, $networkSize);
+        return new Subnet($start, $networkSize);
     }
 
     /**
@@ -96,21 +97,7 @@ final class SubnetParser
      */
     public static function fromHostCount(string $ipAddress, int $hostCount): Subnet
     {
-        if ($hostCount <= 0) {
-            throw new \InvalidArgumentException(
-                "Host count must be positive, got {$hostCount}"
-            );
-        }
-
-        if ($hostCount > IPv4::MAX_HOSTS) {
-            throw new \InvalidArgumentException(
-                "Host count {$hostCount} exceeds maximum possible hosts in IPv4"
-            );
-        }
-
-        $networkSize = self::calculateOptimalNetworkSize($hostCount);
-
-        return new Subnet($ipAddress, $networkSize);
+        return new Subnet($ipAddress, self::optimalPrefixForHosts($hostCount));
     }
 
     /**
@@ -193,39 +180,6 @@ final class SubnetParser
         }
 
         return $networkSize;
-    }
-
-    /**
-     * Validate and convert an IP address to integer.
-     *
-     * @param string $ipAddress
-     *
-     * @return int
-     */
-    private static function validateAndConvertIp(string $ipAddress): int
-    {
-        if (!\filter_var($ipAddress, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
-            throw new \InvalidArgumentException(
-                "Invalid IP address: '{$ipAddress}'"
-            );
-        }
-
-        return (int) \ip2long($ipAddress);
-    }
-
-    /**
-     * Calculate subnet mask as integer.
-     *
-     * @param int $networkSize
-     *
-     * @return int
-     */
-    private static function calculateSubnetMaskInt(int $networkSize): int
-    {
-        if ($networkSize === 0) {
-            return 0;
-        }
-        return (0xFF_FF_FF_FF << (32 - $networkSize)) & 0xFF_FF_FF_FF;
     }
 
     /**
