@@ -64,8 +64,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
 
         $this->octetValues = \array_map(\intval(...), \explode('.', $ipAddress));
 
-        $longValue = \ip2long($ipAddress);
-        $this->intValue = $longValue !== false ? $longValue : 0;
+        $this->intValue = (int) \ip2long($ipAddress);
     }
 
     /**

@@ -729,10 +729,6 @@ final class Subnet implements \JsonSerializable, \Stringable
     {
         Assert::allSubnets($excludes);
 
-        if (empty($excludes)) {
-            return [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
-        }
-
         $remaining = [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
 
         foreach ($excludes as $exclude) {
