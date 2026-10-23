@@ -296,7 +296,7 @@ Documentation
 - **[Network Component Access](docs/core-features.md#network-component-access)** - IP addresses, masks, network/host portions
 - **[Network Overlap & Containment](docs/core-features.md#network-overlap-and-containment)** - Conflict detection
 - **[IP Address Type Detection](docs/core-features.md#ip-address-type-detection)** - Classify addresses (private, public, etc.)
-- **[Subnet Operations](docs/core-features.md#subnet-operations)** - Split, navigate, reverse DNS
+- **[Subnet Operations](docs/core-features.md#subnet-operations)** - Split networks into smaller subnets
 - **[Adjacent Subnet Navigation](docs/core-features.md#adjacent-subnet-navigation)** - Sequential subnet allocation
 
 ### Advanced Features

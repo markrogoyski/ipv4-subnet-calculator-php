@@ -246,42 +246,42 @@ $summary = Subnets::summarize($subnets);
 
 | v4.x Method | v5.0 Equivalent | Return Type |
 |-------------|-----------------|-------------|
-| `getIPAddress()` | `ipAddress()->asQuads()` or `(string) ipAddress()` | `IPAddress` |
+| `getIPAddress()` | `ipAddress()->asQuads()` or `(string) ipAddress()` | string via `IPAddress` |
 | `getIPAddressHex()` | `ipAddress()->asHex()` | string via `IPAddress` |
 | `getIPAddressBinary()` | `ipAddress()->asBinary()` | string via `IPAddress` |
 | `getIPAddressInteger()` | `ipAddress()->asInteger()` | int via `IPAddress` |
 | `getIPAddressQuads()` | `ipAddress()->asArray()` | array via `IPAddress` |
 | `getNetworkSize()` | `networkSize()` | int |
 | `getCidrNotation()` | `cidr()` | string |
-| `getNetworkPortion()` | `networkAddress()->asQuads()` | `IPAddress` |
+| `getNetworkPortion()` | `networkAddress()->asQuads()` | string via `IPAddress` |
 | `getNetworkPortionQuads()` | `networkAddress()->asArray()` | array via `IPAddress` |
 | `getNetworkPortionHex()` | `networkAddress()->asHex()` | string via `IPAddress` |
 | `getNetworkPortionBinary()` | `networkAddress()->asBinary()` | string via `IPAddress` |
 | `getNetworkPortionInteger()` | `networkAddress()->asInteger()` | int via `IPAddress` |
-| `getBroadcastAddress()` | `broadcastAddress()->asQuads()` | `IPAddress` |
+| `getBroadcastAddress()` | `broadcastAddress()->asQuads()` | string via `IPAddress` |
 | `getNumberIPAddresses()` | `addressCount()` | int |
 | `getNumberAddressableHosts()` | `hostCount()` | int |
-| `getSubnetMask()` | `mask()->asQuads()` or `(string) mask()` | `SubnetMask` |
+| `getSubnetMask()` | `mask()->asQuads()` or `(string) mask()` | string via `SubnetMask` |
 | `getSubnetMaskHex()` | `mask()->asHex()` | string via `SubnetMask` |
 | `getSubnetMaskBinary()` | `mask()->asBinary()` | string via `SubnetMask` |
 | `getSubnetMaskInteger()` | `mask()->asInteger()` | int via `SubnetMask` |
 | `getSubnetMaskQuads()` | `mask()->asArray()` | array via `SubnetMask` |
-| `getWildcardMask()` | `wildcardMask()->asQuads()` | `WildcardMask` |
+| `getWildcardMask()` | `wildcardMask()->asQuads()` | string via `WildcardMask` |
 | `getWildcardMaskQuads()` | `wildcardMask()->asArray()` | array via `WildcardMask` |
 | `getWildcardMaskHex()` | `wildcardMask()->asHex()` | string via `WildcardMask` |
 | `getWildcardMaskBinary()` | `wildcardMask()->asBinary()` | string via `WildcardMask` |
 | `getWildcardMaskInteger()` | `wildcardMask()->asInteger()` | int via `WildcardMask` |
-| `getHostPortion()` | `hostPortion()->asQuads()` | `IPAddress` |
+| `getHostPortion()` | `hostPortion()->asQuads()` | string via `IPAddress` |
 | `getHostPortionQuads()` | `hostPortion()->asArray()` | array via `IPAddress` |
 | `getHostPortionHex()` | `hostPortion()->asHex()` | string via `IPAddress` |
 | `getHostPortionBinary()` | `hostPortion()->asBinary()` | string via `IPAddress` |
 | `getHostPortionInteger()` | `hostPortion()->asInteger()` | int via `IPAddress` |
-| `getMinHost()` | `minHost()->asQuads()` | `IPAddress` |
+| `getMinHost()` | `minHost()->asQuads()` | string via `IPAddress` |
 | `getMinHostQuads()` | `minHost()->asArray()` | array via `IPAddress` |
 | `getMinHostHex()` | `minHost()->asHex()` | string via `IPAddress` |
 | `getMinHostBinary()` | `minHost()->asBinary()` | string via `IPAddress` |
 | `getMinHostInteger()` | `minHost()->asInteger()` | int via `IPAddress` |
-| `getMaxHost()` | `maxHost()->asQuads()` | `IPAddress` |
+| `getMaxHost()` | `maxHost()->asQuads()` | string via `IPAddress` |
 | `getMaxHostQuads()` | `maxHost()->asArray()` | array via `IPAddress` |
 | `getMaxHostHex()` | `maxHost()->asHex()` | string via `IPAddress` |
 | `getMaxHostBinary()` | `maxHost()->asBinary()` | string via `IPAddress` |

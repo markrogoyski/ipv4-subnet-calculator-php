@@ -308,7 +308,7 @@ If you get `command not found: composer`:
 
 ### Autoloader Not Working
 
-If you get `Class 'IPv4\Subnet' not found`:
+If you get `Class "IPv4\Subnet" not found`:
 
 1. Ensure you've run `composer install`
 2. Check that `vendor/autoload.php` exists

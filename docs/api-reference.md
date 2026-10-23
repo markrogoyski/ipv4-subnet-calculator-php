@@ -17,6 +17,16 @@ Complete reference of all public methods and classes in the IPv4 Subnet Calculat
 
 ---
 
+## Conventions in Examples
+
+Snippets assume the classes are imported (`use IPv4\Subnet;`, `use IPv4\IPAddress;`, `use IPv4\SubnetMask;`, and so on) and, unless a snippet defines its own, that `$subnet` is:
+
+```php
+$subnet = new Subnet('192.168.1.100', 24);
+```
+
+---
+
 ## Main Classes
 
 ### Overview
@@ -68,7 +78,7 @@ Create a subnet from CIDR notation.
 
 **Example:**
 ```php
-$subnet = Subnet::fromCidr('192.168.1.0/24');
+$subnet = Subnet::fromCidr('192.168.1.100/24');
 ```
 
 ### Core Identity

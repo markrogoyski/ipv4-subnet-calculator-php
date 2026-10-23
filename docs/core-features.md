@@ -273,6 +273,8 @@ foreach ($range as $ip) {
 IPRange provides a readable string format:
 
 ```php
+$subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
+
 $range = $subnet->addressRange();
 
 echo $range;  // "192.168.1.0 - 192.168.1.255"
