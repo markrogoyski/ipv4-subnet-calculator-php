@@ -1024,4 +1024,123 @@ class SubnetExcludeTest extends TestCase
             $this->assertFalse($subnet->containsIP('10.0.0.15'));
         }
     }
+
+    /**
+     * @param string[] $excludeCidrs
+     * @param string[] $expectedCidrs
+     */
+    #[Test]
+    #[DataProvider('dataProviderForExcludeAllExactBlocks')]
+    public function excludeAllReturnsExactBlocksInAddressOrder(
+        string $baseCidr,
+        array $excludeCidrs,
+        array $expectedCidrs
+    ): void {
+        // Given
+        $base = Subnet::fromCidr($baseCidr);
+        $excludes = \array_map(static fn (string $cidr): Subnet => Subnet::fromCidr($cidr), $excludeCidrs);
+
+        // When
+        $result = $base->excludeAll($excludes);
+
+        // Then
+        $this->assertSame(
+            $expectedCidrs,
+            \array_map(static fn (Subnet $subnet): string => $subnet->networkCidr(), $result)
+        );
+    }
+
+    /**
+     * @return array<string, array{string, string[], string[]}>
+     */
+    public static function dataProviderForExcludeAllExactBlocks(): array
+    {
+        return [
+            'unsorted exclusions'                 => [
+                '10.0.0.0/24',
+                ['10.0.0.192/26', '10.0.0.0/26'],
+                ['10.0.0.64/26', '10.0.0.128/26'],
+            ],
+            'duplicate exclusions'                => [
+                '10.0.0.0/24',
+                ['10.0.0.0/25', '10.0.0.0/25'],
+                ['10.0.0.128/25'],
+            ],
+            'nested exclusion listed second'      => [
+                '10.0.0.0/24',
+                ['10.0.0.64/26', '10.0.0.96/27'],
+                ['10.0.0.0/26', '10.0.0.128/25'],
+            ],
+            'adjacent exclusions'                 => [
+                '10.0.0.0/24',
+                ['10.0.0.16/28', '10.0.0.32/27'],
+                ['10.0.0.0/28', '10.0.0.64/26', '10.0.0.128/25'],
+            ],
+            'exclusion containing the base'       => [
+                '10.0.0.0/24',
+                ['10.0.0.0/8'],
+                [],
+            ],
+            'exclusions outside the base ignored' => [
+                '10.0.0.0/24',
+                ['10.0.1.0/24', '9.255.255.255/32', '10.0.0.128/25'],
+                ['10.0.0.0/25'],
+            ],
+            'unaligned gap'                       => [
+                '10.0.0.0/28',
+                ['10.0.0.0/32', '10.0.0.12/30'],
+                ['10.0.0.1/32', '10.0.0.2/31', '10.0.0.4/30', '10.0.0.8/30'],
+            ],
+            'entire IPv4 space minus 10.0.0.0/8'  => [
+                '0.0.0.0/0',
+                ['10.0.0.0/8'],
+                ['0.0.0.0/5', '8.0.0.0/7', '11.0.0.0/8', '12.0.0.0/6', '16.0.0.0/4', '32.0.0.0/3', '64.0.0.0/2', '128.0.0.0/1'],
+            ],
+            'top of IPv4 space'                   => [
+                '255.255.255.0/24',
+                ['255.255.255.0/25', '255.255.255.254/32'],
+                ['255.255.255.128/26', '255.255.255.192/27', '255.255.255.224/28', '255.255.255.240/29', '255.255.255.248/30', '255.255.255.252/31', '255.255.255.255/32'],
+            ],
+            '/31 minus one address'               => [
+                '10.0.0.0/31',
+                ['10.0.0.0/32'],
+                ['10.0.0.1/32'],
+            ],
+            '/31 minus both addresses'            => [
+                '10.0.0.0/31',
+                ['10.0.0.1/32', '10.0.0.0/32'],
+                [],
+            ],
+            '/32 minus itself'                    => [
+                '10.0.0.1/32',
+                ['10.0.0.1/32'],
+                [],
+            ],
+            '/32 minus a neighbor'                => [
+                '10.0.0.1/32',
+                ['10.0.0.0/32', '10.0.0.2/31'],
+                ['10.0.0.1/32'],
+            ],
+        ];
+    }
+
+    #[Test]
+    public function excludeAllWithThousandsOfExclusions(): void
+    {
+        // Given - A /20 network with every odd address excluded, in descending order
+        $base = new Subnet('10.0.0.0', 20);
+        $excludes = \array_map(
+            static fn (int $offset): Subnet => new Subnet(\long2ip(0x0A000000 + $offset), 32),
+            \range(4095, 1, -2)
+        );
+
+        // When
+        $result = $base->excludeAll($excludes);
+
+        // Then - Every even address remains as its own /32, in ascending order
+        $this->assertSame(
+            \array_map(static fn (int $offset): string => \long2ip(0x0A000000 + $offset) . '/32', \range(0, 4094, 2)),
+            \array_map(static fn (Subnet $subnet): string => $subnet->networkCidr(), $result)
+        );
+    }
 }

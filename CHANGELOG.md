@@ -24,6 +24,7 @@
 
 ### Improvements
 - **Aggregation performance**: Faster containment removal and adjacent-block merging in `Subnets::aggregate()`
+- **Exclusion performance**: `Subnet::excludeAll()` sorts and sweeps its exclusions in O(n log n) instead of re-excluding every remaining block per exclusion, which grew quadratically (2,000 host exclusions from a /16 drop from about 10 s to under 10 ms); results are unchanged
 - **Performance**: Containment, overlap, equality, exclusion and `networkCidr()` (and so string casts) use integer arithmetic instead of reparsing addresses; `IPAddress::fromInteger()`, range iteration, splitting and aggregation build addresses from integers without string parsing
 - **64-bit requirement**: Composer now enforces the existing 64-bit PHP requirement
 - **PHP 8.5**: Added CI coverage

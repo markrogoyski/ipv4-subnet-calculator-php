@@ -705,19 +705,14 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function exclude(self $exclude): array
     {
-        if (!$this->overlaps($exclude)) {
-            return [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
-        }
-
-        if ($exclude->contains($this)) {
-            return [];
-        }
-
-        return $this->excludeRecursive($exclude);
+        return $this->excludeAll([$exclude]);
     }
 
     /**
      * Exclude multiple subnets from this subnet.
+     *
+     * Exclusions may overlap, repeat, or extend beyond this subnet. The remaining space is
+     * returned in ascending address order as the fewest aligned CIDR blocks that cover it.
      *
      * @param self[] $excludes Subnets to exclude
      *
@@ -729,17 +724,31 @@ final class Subnet implements \JsonSerializable, \Stringable
     {
         Assert::allSubnets($excludes);
 
-        $remaining = [new self(new IPAddress($this->networkAddressInt()), $this->networkSize)];
+        $start = $this->networkAddressInt();
+        $end = $this->broadcastAddressInt();
 
+        // Clip exclusions to this subnet, then sweep the gaps between them in address order
+        $ranges = [];
         foreach ($excludes as $exclude) {
-            $newRemaining = [];
-            foreach ($remaining as $subnet) {
-                $afterExclude = $subnet->exclude($exclude);
-                foreach ($afterExclude as $s) {
-                    $newRemaining[] = $s;
-                }
+            $excludeStart = $exclude->networkAddressInt();
+            $excludeEnd = $exclude->broadcastAddressInt();
+            if ($excludeEnd < $start || $excludeStart > $end) {
+                continue;
             }
-            $remaining = $newRemaining;
+            $ranges[] = [\max($excludeStart, $start), \min($excludeEnd, $end)];
+        }
+        \sort($ranges);
+
+        $remaining = [];
+        $cursor = $start;
+        foreach ($ranges as [$rangeStart, $rangeEnd]) {
+            if ($rangeStart > $cursor) {
+                \array_push($remaining, ...self::rangeToSubnets($cursor, $rangeStart - 1));
+            }
+            $cursor = \max($cursor, $rangeEnd + 1);
+        }
+        if ($cursor <= $end) {
+            \array_push($remaining, ...self::rangeToSubnets($cursor, $end));
         }
 
         return $remaining;
@@ -998,51 +1007,32 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
-     * Recursively exclude a subnet by splitting into halves.
+     * Cover an address range with the fewest aligned CIDR blocks.
      *
-     * @param self $exclude
+     * Each block is the largest one aligned at the current address that stays within the range.
      *
-     * @return self[]
+     * @param int $start First address of the range
+     * @param int $end   Last address of the range
+     *
+     * @return self[] Blocks in ascending address order
      */
-    private function excludeRecursive(self $exclude): array
+    private static function rangeToSubnets(int $start, int $end): array
     {
-        // @codeCoverageIgnoreStart
-        if ($this->networkSize >= 32) {
-            return [];
-        }
-        // @codeCoverageIgnoreEnd
-
-        $newPrefix = $this->networkSize + 1;
-        $networkInt = $this->networkAddressInt();
-        $halfSize = \intdiv($this->addressCount(), 2);
-
-        $firstHalf = new self(new IPAddress($networkInt), $newPrefix);
-
-        $secondHalfStart = $networkInt + $halfSize;
-        $secondHalf = new self(new IPAddress($secondHalfStart), $newPrefix);
-
-        $result = [];
-
-        // Process first half
-        if (!$firstHalf->overlaps($exclude)) {
-            $result[] = $firstHalf;
-        } elseif (!$exclude->contains($firstHalf)) {
-            $subResult = $firstHalf->excludeRecursive($exclude);
-            foreach ($subResult as $s) {
-                $result[] = $s;
+        $subnets = [];
+        while ($start <= $end) {
+            $prefix = 32;
+            while ($prefix > 0) {
+                $parentSize = 1 << (33 - $prefix);
+                if ($start % $parentSize !== 0 || $start + $parentSize - 1 > $end) {
+                    break;
+                }
+                $prefix--;
             }
+
+            $subnets[] = new self(new IPAddress($start), $prefix);
+            $start += 1 << (32 - $prefix);
         }
 
-        // Process second half
-        if (!$secondHalf->overlaps($exclude)) {
-            $result[] = $secondHalf;
-        } elseif (!$exclude->contains($secondHalf)) {
-            $subResult = $secondHalf->excludeRecursive($exclude);
-            foreach ($subResult as $s) {
-                $result[] = $s;
-            }
-        }
-
-        return $result;
+        return $subnets;
     }
 }
