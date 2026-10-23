@@ -109,6 +109,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: PHP Version Check
+        run: php -v
+
       - name: Install Dependencies
         run: composer install --no-interaction --prefer-dist
 
