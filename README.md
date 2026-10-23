@@ -204,7 +204,9 @@ $available = $allocated->exclude($reserved);
 // Returns: [192.168.1.64/26, 192.168.1.128/25] (array of Subnet objects)
 
 // Exclude multiple subnets
-$available = $allocated->excludeAll([$reserved1, $reserved2, $reserved3]);
+$reserved2 = IPv4\Subnet::fromCidr('192.168.1.64/27');
+$reserved3 = IPv4\Subnet::fromCidr('192.168.1.128/27');
+$available = $allocated->excludeAll([$reserved, $reserved2, $reserved3]);
 ```
 
 **[Subnet Exclusion Guide →](docs/advanced-features.md#subnet-exclusion-and-difference-operations)**

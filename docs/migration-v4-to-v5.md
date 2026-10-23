@@ -254,6 +254,10 @@ $summary = Subnets::summarize($subnets);
 | `getNetworkSize()` | `networkSize()` | int |
 | `getCidrNotation()` | `cidr()` | string |
 | `getNetworkPortion()` | `networkAddress()->asQuads()` | `IPAddress` |
+| `getNetworkPortionQuads()` | `networkAddress()->asArray()` | array via `IPAddress` |
+| `getNetworkPortionHex()` | `networkAddress()->asHex()` | string via `IPAddress` |
+| `getNetworkPortionBinary()` | `networkAddress()->asBinary()` | string via `IPAddress` |
+| `getNetworkPortionInteger()` | `networkAddress()->asInteger()` | int via `IPAddress` |
 | `getBroadcastAddress()` | `broadcastAddress()->asQuads()` | `IPAddress` |
 | `getNumberIPAddresses()` | `addressCount()` | int |
 | `getNumberAddressableHosts()` | `hostCount()` | int |
@@ -263,9 +267,25 @@ $summary = Subnets::summarize($subnets);
 | `getSubnetMaskInteger()` | `mask()->asInteger()` | int via `SubnetMask` |
 | `getSubnetMaskQuads()` | `mask()->asArray()` | array via `SubnetMask` |
 | `getWildcardMask()` | `wildcardMask()->asQuads()` | `WildcardMask` |
+| `getWildcardMaskQuads()` | `wildcardMask()->asArray()` | array via `WildcardMask` |
+| `getWildcardMaskHex()` | `wildcardMask()->asHex()` | string via `WildcardMask` |
+| `getWildcardMaskBinary()` | `wildcardMask()->asBinary()` | string via `WildcardMask` |
+| `getWildcardMaskInteger()` | `wildcardMask()->asInteger()` | int via `WildcardMask` |
 | `getHostPortion()` | `hostPortion()->asQuads()` | `IPAddress` |
+| `getHostPortionQuads()` | `hostPortion()->asArray()` | array via `IPAddress` |
+| `getHostPortionHex()` | `hostPortion()->asHex()` | string via `IPAddress` |
+| `getHostPortionBinary()` | `hostPortion()->asBinary()` | string via `IPAddress` |
+| `getHostPortionInteger()` | `hostPortion()->asInteger()` | int via `IPAddress` |
 | `getMinHost()` | `minHost()->asQuads()` | `IPAddress` |
+| `getMinHostQuads()` | `minHost()->asArray()` | array via `IPAddress` |
+| `getMinHostHex()` | `minHost()->asHex()` | string via `IPAddress` |
+| `getMinHostBinary()` | `minHost()->asBinary()` | string via `IPAddress` |
+| `getMinHostInteger()` | `minHost()->asInteger()` | int via `IPAddress` |
 | `getMaxHost()` | `maxHost()->asQuads()` | `IPAddress` |
+| `getMaxHostQuads()` | `maxHost()->asArray()` | array via `IPAddress` |
+| `getMaxHostHex()` | `maxHost()->asHex()` | string via `IPAddress` |
+| `getMaxHostBinary()` | `maxHost()->asBinary()` | string via `IPAddress` |
+| `getMaxHostInteger()` | `maxHost()->asInteger()` | int via `IPAddress` |
 | `getIPAddressRange()` | `addressRange()` | `IPRange` (iterable) |
 | `getAddressableHostRange()` | `hostRange()` | `IPRange` (iterable) |
 | `getAllIPAddresses()` | `addressRange()` | `IPRange` (iterable) |
@@ -287,6 +307,7 @@ $summary = Subnets::summarize($subnets);
 | `getSubnetJsonReport()` | `toJson()` | string |
 | `getPrintableReport()` | `toPrintable()` | string |
 | `printSubnetReport()` | `echo $subnet->toPrintable();` | void |
+| `new SubnetCalculator($ip, $size, $report)` | `new Subnet($ip, $size)` | `Subnet` (the `SubnetReportInterface` parameter is removed; reports are built in via `toArray()`, `toJson()` and `toPrintable()`) |
 
 ### Classification Methods
 

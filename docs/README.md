@@ -175,13 +175,16 @@ $array = $subnet->toArray();
 
 ### Finding Methods
 All public methods are documented in the [API Reference](api-reference.md), organized by category:
-- Factory Methods
-- Network Information
-- IP Address Operations
-- Network Operations
-- Type Detection
+- Construction
+- Core Identity
+- Network Addresses
+- Masks
+- Ranges and Counts
+- Classification
+- Utilization
+- Operations
 - Navigation
-- Reports
+- Output
 
 ### Finding Examples
 Practical examples are organized by use case in [Real-World Examples](examples.md):
@@ -295,8 +298,7 @@ Found an issue or have a suggestion for improving the documentation?
 
 5. **[API Reference](api-reference.md)**
    - Complete method documentation
-   - Organized by category
-   - Quick reference by use case
+   - Organized by class and category (Construction, Core Identity, Masks, Classification, and so on)
 
 6. **[Real-World Examples](examples.md)**
    - Network Planning and IPAM

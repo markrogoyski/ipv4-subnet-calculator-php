@@ -446,6 +446,8 @@ utilizationFor(int $requiredHosts): float
 ```
 Calculate utilization percentage for a given host requirement.
 
+Throws `\InvalidArgumentException` if `$requiredHosts` is negative.
+
 **Example:**
 ```php
 $utilization = $subnet->utilizationFor(100);  // 39.37% for /24
@@ -456,6 +458,8 @@ $utilization = $subnet->utilizationFor(100);  // 39.37% for /24
 wastedAddressesFor(int $requiredHosts): int
 ```
 Calculate wasted addresses for a given host requirement.
+
+Throws `\InvalidArgumentException` if `$requiredHosts` is negative.
 
 **Example:**
 ```php
@@ -469,6 +473,8 @@ $wasted = $subnet->wastedAddressesFor(100);  // 154 for /24
 split(int $newPrefix): Subnet[]
 ```
 Split subnet into smaller subnets with the specified prefix.
+
+Throws `\InvalidArgumentException` if `$newPrefix` is invalid.
 
 **Example:**
 ```php
@@ -527,6 +533,8 @@ next(): Subnet
 ```
 Get the next adjacent subnet of the same size.
 
+Throws `\RuntimeException` if the next subnet exceeds the IPv4 range.
+
 **Example:**
 ```php
 $next = $subnet->next();  // 192.168.2.0/24
@@ -538,11 +546,15 @@ previous(): Subnet
 ```
 Get the previous adjacent subnet of the same size.
 
+Throws `\RuntimeException` if the previous subnet is below 0.0.0.0.
+
 #### adjacent()
 ```php
 adjacent(int $count): Subnet[]
 ```
 Get adjacent subnets. Positive count for forward, negative for backward.
+
+Throws `\RuntimeException` if the requested subnets exceed the IPv4 range.
 
 **Example:**
 ```php
@@ -636,6 +648,8 @@ SubnetParser::fromMask(string $ipAddress, string $subnetMask): Subnet
 ```
 Create subnet from IP address and subnet mask string.
 
+Throws `\InvalidArgumentException` if the subnet mask is invalid or non-contiguous.
+
 **Example:**
 ```php
 $subnet = SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
@@ -647,6 +661,8 @@ SubnetParser::fromRange(string $startIp, string $endIp): Subnet
 ```
 Create subnet from IP range (must be valid CIDR block).
 
+Throws `\InvalidArgumentException` if the range does not represent a valid CIDR block.
+
 **Example:**
 ```php
 $subnet = SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
@@ -657,6 +673,8 @@ $subnet = SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
 SubnetParser::fromHostCount(string $ipAddress, int $hostCount): Subnet
 ```
 Create smallest subnet that accommodates the required host count.
+
+Throws `\InvalidArgumentException` if the host count is invalid.
 
 **Example:**
 ```php
@@ -670,6 +688,8 @@ $subnet = SubnetParser::fromHostCount('192.168.1.0', 100);  // Creates /25
 SubnetParser::optimalPrefixForHosts(int $hostCount): int
 ```
 Calculate optimal CIDR prefix for a given host count.
+
+Throws `\InvalidArgumentException` if the host count is invalid.
 
 **Example:**
 ```php
@@ -690,6 +710,8 @@ Subnets::aggregate(array $subnets): Subnet[]
 ```
 Combine contiguous subnets into minimal set of larger blocks.
 
+Throws `\InvalidArgumentException` if any element is not a `Subnet`.
+
 **Parameters:**
 - `$subnets` - Array of Subnet objects
 
@@ -709,6 +731,8 @@ $aggregated = Subnets::aggregate([
 Subnets::summarize(array $subnets): Subnet
 ```
 Find smallest single CIDR block containing all input subnets.
+
+Throws `\InvalidArgumentException` if the array is empty or any element is not a `Subnet`.
 
 **Parameters:**
 - `$subnets` - Array of Subnet objects

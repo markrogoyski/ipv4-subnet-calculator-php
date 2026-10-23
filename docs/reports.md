@@ -22,8 +22,8 @@ The IPv4 Subnet Calculator v5.0 provides three ways to generate comprehensive su
 All formats include complete network information: IP address, masks, network/host portions, address ranges, and metadata.
 
 The CIDR shown in every report is the canonical network CIDR (`networkCidr()`), so `192.168.112.203/23` reports as
-`192.168.112.0/23`. The input IP address is still reported in the IP address fields. This differs from casting the subnet
-to a string, which keeps the input IP (see [String Representation](#string-representation-__tostring)).
+`192.168.112.0/23`. The input IP address is still reported in the IP address fields. Casting the subnet to a string gives the
+same network CIDR (see [String Representation](#string-representation-__tostring)).
 
 ## Printed Report
 
