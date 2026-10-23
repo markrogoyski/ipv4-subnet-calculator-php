@@ -22,16 +22,18 @@ final class SubnetParser
     /**
      * Create a Subnet from an IP address and subnet mask.
      *
-     * @param string $ipAddress  IP address in dotted quad notation
-     * @param string $subnetMask Subnet mask in dotted quad notation (e.g., "255.255.255.0")
+     * @param string|IPAddress  $ipAddress  IP address in dotted quad notation, or an IPAddress
+     * @param string|SubnetMask $subnetMask Subnet mask in dotted quad notation (e.g., "255.255.255.0"), or a SubnetMask
      *
      * @return Subnet
      *
      * @throws \InvalidArgumentException If subnet mask is invalid or non-contiguous
      */
-    public static function fromMask(string $ipAddress, string $subnetMask): Subnet
+    public static function fromMask(string|IPAddress $ipAddress, string|SubnetMask $subnetMask): Subnet
     {
-        $networkSize = self::maskToNetworkSize($subnetMask);
+        $networkSize = $subnetMask instanceof SubnetMask
+            ? $subnetMask->prefix()
+            : self::maskToNetworkSize($subnetMask);
 
         return new Subnet($ipAddress, $networkSize);
     }
@@ -42,18 +44,21 @@ final class SubnetParser
      * The range must represent a valid CIDR block. The start IP must be the
      * network address and the end IP must be the broadcast address.
      *
-     * @param string $startIp Start IP address (network address)
-     * @param string $endIp   End IP address (broadcast address)
+     * @param string|IPAddress $startIp Start IP address (network address)
+     * @param string|IPAddress $endIp   End IP address (broadcast address)
      *
      * @return Subnet
      *
      * @throws \InvalidArgumentException If range does not represent a valid CIDR block
      */
-    public static function fromRange(string $startIp, string $endIp): Subnet
+    public static function fromRange(string|IPAddress $startIp, string|IPAddress $endIp): Subnet
     {
-        $start = new IPAddress($startIp);
+        $start = $startIp instanceof IPAddress ? $startIp : new IPAddress($startIp);
+        $end = $endIp instanceof IPAddress ? $endIp : new IPAddress($endIp);
         $startLong = $start->asInteger();
-        $endLong = (new IPAddress($endIp))->asInteger();
+        $endLong = $end->asInteger();
+        $startIp = $start->asQuads();
+        $endIp = $end->asQuads();
 
         if ($startLong > $endLong) {
             throw new \InvalidArgumentException(
@@ -88,14 +93,14 @@ final class SubnetParser
      *
      * Returns the smallest subnet that can accommodate the specified number of hosts.
      *
-     * @param string $ipAddress Base IP address
-     * @param int    $hostCount Number of hosts required
+     * @param string|IPAddress $ipAddress Base IP address
+     * @param int              $hostCount Number of hosts required
      *
      * @return Subnet
      *
      * @throws \InvalidArgumentException If host count is invalid
      */
-    public static function fromHostCount(string $ipAddress, int $hostCount): Subnet
+    public static function fromHostCount(string|IPAddress $ipAddress, int $hostCount): Subnet
     {
         return new Subnet($ipAddress, self::optimalPrefixForHosts($hostCount));
     }

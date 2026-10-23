@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace IPv4\Tests;
 
+use IPv4\IPAddress;
 use IPv4\Subnet;
+use IPv4\SubnetMask;
 use IPv4\SubnetParser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -561,5 +563,38 @@ class SubnetParserTest extends TestCase
         $this->assertSame($fromCidr->networkPortion()->asQuads(), $fromRange->networkPortion()->asQuads());
         $this->assertSame($fromCidr->networkSize(), $fromRange->networkSize());
         $this->assertSame($fromCidr->broadcastAddress()->asQuads(), $fromRange->broadcastAddress()->asQuads());
+    }
+
+    #[Test]
+    public function testFromMaskAcceptsIpAddressAndSubnetMaskObjects(): void
+    {
+        // When
+        $subnet = SubnetParser::fromMask(new IPAddress('192.168.1.7'), new SubnetMask(24));
+
+        // Then
+        $this->assertSame('192.168.1.7', $subnet->ipAddress()->asQuads());
+        $this->assertSame(24, $subnet->networkSize());
+    }
+
+    #[Test]
+    public function testFromRangeAcceptsIpAddressObjects(): void
+    {
+        // When
+        $subnet = SubnetParser::fromRange(new IPAddress('192.168.1.0'), new IPAddress('192.168.1.255'));
+
+        // Then
+        $this->assertSame('192.168.1.0', $subnet->networkAddress()->asQuads());
+        $this->assertSame(24, $subnet->networkSize());
+    }
+
+    #[Test]
+    public function testFromHostCountAcceptsIpAddressObject(): void
+    {
+        // When
+        $subnet = SubnetParser::fromHostCount(new IPAddress('10.0.0.0'), 100);
+
+        // Then
+        $this->assertSame('10.0.0.0', $subnet->ipAddress()->asQuads());
+        $this->assertSame(25, $subnet->networkSize());
     }
 }
