@@ -54,7 +54,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         }
 
         $this->ip = $ipAddress instanceof IPAddress ? $ipAddress : new IPAddress($ipAddress);
-        $this->subnetMaskBits = $networkSize === 0 ? 0 : (0xFFFFFFFF << (32 - $networkSize)) & 0xFFFFFFFF;
+        $this->subnetMaskBits = (new SubnetMask($networkSize))->asInteger();
     }
 
     /**
