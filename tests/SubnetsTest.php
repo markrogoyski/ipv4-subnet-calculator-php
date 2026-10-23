@@ -226,6 +226,26 @@ class SubnetsTest extends TestCase
                 'inputCidrs' => ['192.168.1.0/24'],
                 'expectedCidr' => '192.168.1.0/24',
             ],
+            'single /32 returns unchanged' => [
+                'inputCidrs'   => ['10.0.0.7/32'],
+                'expectedCidr' => '10.0.0.7/32',
+            ],
+            'single /31 returns unchanged' => [
+                'inputCidrs'   => ['10.0.0.6/31'],
+                'expectedCidr' => '10.0.0.6/31',
+            ],
+            'single /0 returns unchanged' => [
+                'inputCidrs'   => ['0.0.0.0/0'],
+                'expectedCidr' => '0.0.0.0/0',
+            ],
+            'single /32 at top of address space' => [
+                'inputCidrs'   => ['255.255.255.255/32'],
+                'expectedCidr' => '255.255.255.255/32',
+            ],
+            'single subnet with host bits normalizes to network' => [
+                'inputCidrs'   => ['192.168.1.77/24'],
+                'expectedCidr' => '192.168.1.0/24',
+            ],
             'two /32s summarize to /31' => [
                 'inputCidrs' => ['10.0.0.0/32', '10.0.0.1/32'],
                 'expectedCidr' => '10.0.0.0/31',

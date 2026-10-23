@@ -67,10 +67,6 @@ final class Subnets
         self::assertNonEmpty($subnets);
         Assert::allSubnets($subnets);
 
-        if ($single = self::summarizeSingle($subnets)) {
-            return $single;
-        }
-
         $span = self::findAddressSpan($subnets);
         $prefix = self::findSmallestCoveringPrefix($span['min'], $span['max']);
         $start = self::alignToPrefix($span['min'], $prefix);
@@ -95,24 +91,6 @@ final class Subnets
     }
 
     /**
-     * Return a normalized subnet if the array contains exactly one element.
-     *
-     * @param Subnet[] $subnets
-     *
-     * @return Subnet|null The single subnet, or null if multiple subnets
-     */
-    private static function summarizeSingle(array $subnets): ?Subnet
-    {
-        if (\count($subnets) !== 1) {
-            return null;
-        }
-
-        $subnet = $subnets[\array_key_first($subnets)];
-
-        return new Subnet($subnet->networkAddress(), $subnet->networkSize());
-    }
-
-    /**
      * Find the minimum and maximum addresses spanned by the subnets.
      *
      * @param Subnet[] $subnets Non-empty array of subnets
@@ -121,25 +99,18 @@ final class Subnets
      */
     private static function findAddressSpan(array $subnets): array
     {
-        $first = true;
-        $min = 0;
+        $min = IPv4::MAX_ADDRESS;
         $max = 0;
 
         foreach ($subnets as $subnet) {
             $start = $subnet->networkAddress()->asInteger();
             $end = $start + $subnet->addressCount() - 1;
 
-            if ($first) {
+            if ($start < $min) {
                 $min = $start;
+            }
+            if ($end > $max) {
                 $max = $end;
-                $first = false;
-            } else {
-                if ($start < $min) {
-                    $min = $start;
-                }
-                if ($end > $max) {
-                    $max = $end;
-                }
             }
         }
 
