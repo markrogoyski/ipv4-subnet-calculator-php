@@ -84,14 +84,16 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         [$ipAddress, $prefix] = $parts;
 
-        if (!Assert::isDecimal($prefix)) {
+        $isNegative = \strpos($prefix, '-') === 0 && Assert::isDecimal(\substr($prefix, 1));
+
+        if (!$isNegative && !Assert::isDecimal($prefix)) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be an integer in '{$cidr}'"
             );
         }
 
         // Range-check here so an oversized prefix, which (int) clamps to PHP_INT_MAX, is reported as typed
-        if ((int) $prefix > 32) {
+        if ($isNegative || (int) $prefix > 32) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'"
             );

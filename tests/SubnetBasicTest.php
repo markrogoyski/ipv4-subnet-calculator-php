@@ -407,9 +407,9 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
      */
     #[Test]
     #[DataProvider('dataProviderForOversizedPrefix')]
-    public function testFromCidrThrowsExceptionReportingInputWhenPrefixIsTooLarge(string $cidr): void
+    public function testFromCidrThrowsExceptionReportingInputWhenPrefixIsOutOfRange(string $cidr): void
     {
-        // Given - A CIDR string whose prefix exceeds 32, including one too large to fit in an int
+        // Given - A CIDR string whose prefix is negative or exceeds 32, including one too large to fit in an int
 
         // Then - The message quotes the input as typed rather than a clamped integer
         $this->expectException(\InvalidArgumentException::class);
@@ -427,6 +427,8 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         return [
             '/33'                => ['192.168.1.0/33'],
             '/100'               => ['192.168.1.0/100'],
+            '/-1'                => ['192.168.1.0/-1'],
+            '/-24'               => ['192.168.1.0/-24'],
             'beyond PHP_INT_MAX' => ['192.168.1.0/99999999999999999999'],
         ];
     }
