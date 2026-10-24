@@ -29,9 +29,7 @@ final class CidrBlock
 
     public function blockSize(): int
     {
-        return $this->prefix === 0
-            ? IPv4::ADDRESS_SPACE
-            : (1 << (32 - $this->prefix));
+        return 1 << (32 - $this->prefix);
     }
 
     public function endInt(): int

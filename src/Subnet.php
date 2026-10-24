@@ -306,7 +306,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function addressCount(): int
     {
-        return $this->networkSize === 0 ? IPv4::ADDRESS_SPACE : (1 << (32 - $this->networkSize));
+        return 1 << (32 - $this->networkSize);
     }
 
     /**

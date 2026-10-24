@@ -155,7 +155,7 @@ final class Subnets
      */
     private static function alignToPrefix(int $address, int $prefix): int
     {
-        $blockSize = $prefix === 0 ? IPv4::ADDRESS_SPACE : (1 << (32 - $prefix));
+        $blockSize = 1 << (32 - $prefix);
 
         return \intdiv($address, $blockSize) * $blockSize;
     }

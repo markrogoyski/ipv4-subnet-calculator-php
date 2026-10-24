@@ -38,7 +38,7 @@ final class WildcardMask implements Mask
             );
         }
 
-        $subnetMask = $prefix === 0 ? 0 : (0xFFFFFFFF << (32 - $prefix));
+        $subnetMask = (0xFFFFFFFF << (32 - $prefix)) & 0xFFFFFFFF;
         $this->maskBits = ~$subnetMask & 0xFFFFFFFF;
     }
 
