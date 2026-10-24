@@ -20,11 +20,6 @@ final class IPv4
     public const MAX_ADDRESS = 4_294_967_295; // 0xFFFFFFFF
 
     /**
-     * Total IPv4 address space (2^32).
-     */
-    public const ADDRESS_SPACE = 4_294_967_296;
-
-    /**
      * Maximum usable hosts in the entire IPv4 space (/0 network).
      * Excludes network (0.0.0.0) and broadcast (255.255.255.255) addresses.
      */
