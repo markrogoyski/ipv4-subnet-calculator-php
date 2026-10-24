@@ -64,30 +64,19 @@ final class Subnets
      */
     public static function summarize(array $subnets): Subnet
     {
-        self::assertNonEmpty($subnets);
+        if (empty($subnets)) {
+            throw new \InvalidArgumentException(
+                'Cannot summarize empty subnet array'
+            );
+        }
+
         Assert::allSubnets($subnets);
 
         $span = self::findAddressSpan($subnets);
         $prefix = self::findSmallestCoveringPrefix($span['min'], $span['max']);
         $start = self::alignToPrefix($span['min'], $prefix);
 
-        return self::subnetFromStartAndPrefix($start, $prefix);
-    }
-
-    /**
-     * Assert that the subnet array is not empty.
-     *
-     * @param Subnet[] $subnets
-     *
-     * @throws \InvalidArgumentException If the array is empty
-     */
-    private static function assertNonEmpty(array $subnets): void
-    {
-        if (empty($subnets)) {
-            throw new \InvalidArgumentException(
-                'Cannot summarize empty subnet array'
-            );
-        }
+        return new Subnet(new IPAddress($start), $prefix);
     }
 
     /**
@@ -106,12 +95,8 @@ final class Subnets
             $start = $subnet->networkAddress()->asInteger();
             $end = $start + $subnet->addressCount() - 1;
 
-            if ($start < $min) {
-                $min = $start;
-            }
-            if ($end > $max) {
-                $max = $end;
-            }
+            $min = \min($min, $start);
+            $max = \max($max, $end);
         }
 
         return ['min' => $min, 'max' => $max];
@@ -131,10 +116,9 @@ final class Subnets
 
         while ($prefix > 0) {
             $blockSize = 1 << (32 - $prefix);
-            $networkStart = \intdiv($min, $blockSize) * $blockSize;
-            $networkEnd = $networkStart + $blockSize - 1;
+            $networkEnd = self::alignToPrefix($min, $prefix) + $blockSize - 1;
 
-            if ($networkStart <= $min && $networkEnd >= $max) {
+            if ($networkEnd >= $max) {
                 return $prefix;
             }
 
@@ -158,19 +142,6 @@ final class Subnets
         $blockSize = 1 << (32 - $prefix);
 
         return \intdiv($address, $blockSize) * $blockSize;
-    }
-
-    /**
-     * Create a subnet from a start address and prefix.
-     *
-     * @param int $start  Network start address as integer
-     * @param int $prefix CIDR prefix (0-32)
-     *
-     * @return Subnet
-     */
-    private static function subnetFromStartAndPrefix(int $start, int $prefix): Subnet
-    {
-        return new Subnet(new IPAddress($start), $prefix);
     }
 
     /**
