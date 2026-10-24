@@ -89,6 +89,11 @@ $subnetMaskInteger = $mask->asInteger();  // 4294966784
 
 // Or use string casting
 echo $mask;  // "255.255.254.0"
+
+// Create one directly from a prefix or a dotted quad
+$mask = new IPv4\SubnetMask(23);
+$mask = IPv4\SubnetMask::fromString('255.255.254.0');
+$mask->prefix();  // 23
 ```
 
 ### Wildcard Mask

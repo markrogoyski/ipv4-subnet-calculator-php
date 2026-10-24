@@ -7,6 +7,7 @@
 - **`Subnet::__toString()`**: Returns the canonical network CIDR (`networkCidr()`) instead of the input-IP CIDR (`cidr()`), so equal subnets have identical string forms and match the reports' `cidr` field
 
 ### New Features
+- **`SubnetMask::fromString()`**: Creates a subnet mask from dotted-quad notation, rejecting malformed and non-contiguous masks
 - **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
 - **`IPAddress` constructor**: Accepts an unsigned 32-bit integer as well as a dotted-quad string
 - **`Subnet` constructor**: Accepts an `IPAddress` as well as a dotted-quad string

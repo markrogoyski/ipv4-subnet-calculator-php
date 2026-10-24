@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace IPv4;
 
-use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
 
 /**
@@ -33,7 +32,7 @@ final class SubnetParser
     {
         $networkSize = $subnetMask instanceof SubnetMask
             ? $subnetMask->prefix()
-            : self::maskToNetworkSize($subnetMask);
+            : SubnetMask::fromString($subnetMask)->prefix();
 
         return new Subnet($ipAddress, $networkSize);
     }
@@ -129,62 +128,6 @@ final class SubnetParser
         }
 
         return self::calculateOptimalNetworkSize($hostCount);
-    }
-
-    /**
-     * Convert a subnet mask to a network size.
-     *
-     * @param string $subnetMask
-     *
-     * @return int
-     */
-    private static function maskToNetworkSize(string $subnetMask): int
-    {
-        $quads = \explode('.', $subnetMask);
-        if (\count($quads) !== 4) {
-            throw new \InvalidArgumentException(
-                "Invalid subnet mask format: '{$subnetMask}'"
-            );
-        }
-
-        $maskInt = 0;
-        foreach ($quads as $quad) {
-            if (!Assert::isDecimal($quad)) {
-                throw new \InvalidArgumentException(
-                    "Invalid subnet mask: octet is not a decimal integer in '{$subnetMask}'"
-                );
-            }
-            $octet = (int) $quad;
-            if ($octet > 255) {
-                throw new \InvalidArgumentException(
-                    "Invalid subnet mask: octet out of range in '{$subnetMask}'"
-                );
-            }
-            $maskInt = ($maskInt << 8) | $octet;
-        }
-
-        if ($maskInt === 0) {
-            return 0;
-        }
-
-        // Validate contiguous mask
-        $inverted = ~$maskInt & 0xFF_FF_FF_FF;
-        if (($inverted & ($inverted + 1)) !== 0) {
-            throw new \InvalidArgumentException(
-                "Invalid subnet mask: non-contiguous mask '{$subnetMask}'"
-            );
-        }
-
-        // Count 1 bits
-        $networkSize = 0;
-        $tempMask = $maskInt;
-        while ($tempMask & 0x80000000) {
-            $networkSize++;
-            $tempMask <<= 1;
-            $tempMask &= 0xFF_FF_FF_FF;
-        }
-
-        return $networkSize;
     }
 
     /**

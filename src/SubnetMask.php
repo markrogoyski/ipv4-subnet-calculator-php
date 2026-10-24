@@ -40,6 +40,37 @@ final class SubnetMask implements Mask
     }
 
     /**
+     * Create a subnet mask from dotted-quad notation.
+     *
+     * @param string $subnetMask Subnet mask in dotted quad notation (e.g., "255.255.255.0")
+     *
+     * @return self
+     *
+     * @throws \InvalidArgumentException If the mask is not a dotted quad or is non-contiguous
+     */
+    public static function fromString(string $subnetMask): self
+    {
+        try {
+            $maskInt = (new IPAddress($subnetMask))->asInteger();
+        } catch (\InvalidArgumentException $e) {
+            throw new \InvalidArgumentException(
+                "Invalid subnet mask format: '{$subnetMask}'",
+                0,
+                $e
+            );
+        }
+
+        $inverted = ~$maskInt & 0xFFFFFFFF;
+        if (($inverted & ($inverted + 1)) !== 0) {
+            throw new \InvalidArgumentException(
+                "Invalid subnet mask: non-contiguous mask '{$subnetMask}'"
+            );
+        }
+
+        return new self(\substr_count(\decbin($maskInt), '1'));
+    }
+
+    /**
      * Get the CIDR prefix length.
      *
      * @return int Prefix (0-32)

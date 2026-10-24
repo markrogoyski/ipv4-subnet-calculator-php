@@ -69,6 +69,96 @@ class SubnetMaskTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForFromString')]
+    public function testFromStringParsesDottedQuads(string $subnetMask, int $expectedPrefix): void
+    {
+        // Given - A valid dotted-quad subnet mask
+
+        // When
+        $mask = SubnetMask::fromString($subnetMask);
+
+        // Then
+        $this->assertSame($expectedPrefix, $mask->prefix());
+        $this->assertSame($subnetMask, $mask->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, int}>
+     */
+    public static function dataProviderForFromString(): array
+    {
+        return [
+            '/0'              => ['0.0.0.0', 0],
+            '/1'              => ['128.0.0.0', 1],
+            '/8'              => ['255.0.0.0', 8],
+            '/12'             => ['255.240.0.0', 12],
+            '/16'             => ['255.255.0.0', 16],
+            '/23'             => ['255.255.254.0', 23],
+            '/24'             => ['255.255.255.0', 24],
+            '/25'             => ['255.255.255.128', 25],
+            '/30'             => ['255.255.255.252', 30],
+            'RFC 3021 /31'    => ['255.255.255.254', 31],
+            'Single host /32' => ['255.255.255.255', 32],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringInvalidFormat')]
+    public function testFromStringThrowsExceptionForInvalidFormat(string $subnetMask): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid subnet mask format: '{$subnetMask}'");
+
+        // When
+        SubnetMask::fromString($subnetMask);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForFromStringInvalidFormat(): array
+    {
+        return [
+            'too few octets'     => ['255.255.255'],
+            'too many octets'    => ['255.255.255.0.0'],
+            'octet > 255'        => ['256.255.255.0'],
+            'negative octet'     => ['255.255.-1.0'],
+            'non-decimal octet'  => ['255.255.ff.0'],
+            'leading zero'       => ['255.255.255.000'],
+            'surrounding spaces' => [' 255.255.255.0 '],
+            'empty string'       => [''],
+            'CIDR notation'      => ['/24'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringNonContiguous')]
+    public function testFromStringThrowsExceptionForNonContiguousMask(string $subnetMask): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid subnet mask: non-contiguous mask '{$subnetMask}'");
+
+        // When
+        SubnetMask::fromString($subnetMask);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForFromStringNonContiguous(): array
+    {
+        return [
+            'trailing 1 bit'      => ['255.255.255.1'],
+            'gap in second octet' => ['255.0.255.0'],
+            'gap in third octet'  => ['255.255.0.255'],
+            'wildcard mask'       => ['0.0.0.255'],
+            'lone low bit'        => ['0.0.0.1'],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('dataProviderForPrefix')]
     public function testPrefixReturnsCorrectValue(int $prefix): void
     {
