@@ -30,7 +30,7 @@ use IPv4\Internal\SubnetReport;
 final class Subnet implements \JsonSerializable, \Stringable
 {
     private readonly IPAddress $ip;
-    private readonly int $subnetMaskBits;
+    private readonly SubnetMask $mask;
 
     /**
      * Create a subnet from an IP address and CIDR prefix.
@@ -54,7 +54,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         }
 
         $this->ip = $ipAddress instanceof IPAddress ? $ipAddress : new IPAddress($ipAddress);
-        $this->subnetMaskBits = (new SubnetMask($networkSize))->asInteger();
+        $this->mask = new SubnetMask($networkSize);
     }
 
     /**
@@ -232,7 +232,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function mask(): SubnetMask
     {
-        return new SubnetMask($this->networkSize);
+        return $this->mask;
     }
 
     /**
@@ -266,7 +266,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function hostPortion(): IPAddress
     {
-        $hostBits = $this->ip->asInteger() & (~$this->subnetMaskBits & 0xFFFFFFFF);
+        $hostBits = $this->ip->asInteger() & (~$this->mask->asInteger() & 0xFFFFFFFF);
 
         return IPAddress::fromInteger($hostBits);
     }
@@ -993,7 +993,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     private function networkAddressInt(): int
     {
-        return $this->ip->asInteger() & $this->subnetMaskBits;
+        return $this->ip->asInteger() & $this->mask->asInteger();
     }
 
     /**
@@ -1003,7 +1003,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     private function broadcastAddressInt(): int
     {
-        return $this->networkAddressInt() | (~$this->subnetMaskBits & 0xFFFFFFFF);
+        return $this->networkAddressInt() | (~$this->mask->asInteger() & 0xFFFFFFFF);
     }
 
     /**
