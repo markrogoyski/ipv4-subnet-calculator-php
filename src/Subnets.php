@@ -112,21 +112,10 @@ final class Subnets
      */
     private static function findSmallestCoveringPrefix(int $min, int $max): int
     {
-        $prefix = 32;
+        // The prefix is the number of leading bits min and max share
+        $differingBits = $min ^ $max;
 
-        while ($prefix > 0) {
-            $blockSize = 1 << (32 - $prefix);
-            $networkEnd = self::alignToPrefix($min, $prefix) + $blockSize - 1;
-
-            if ($networkEnd >= $max) {
-                return $prefix;
-            }
-
-            $prefix--;
-        }
-
-        // /0 covers the entire IPv4 address space
-        return 0;
+        return $differingBits === 0 ? 32 : 32 - \strlen(\decbin($differingBits));
     }
 
     /**
