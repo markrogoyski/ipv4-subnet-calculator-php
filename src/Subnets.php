@@ -35,10 +35,6 @@ final class Subnets
      */
     public static function aggregate(array $subnets): array
     {
-        if (empty($subnets)) {
-            return [];
-        }
-
         Assert::allSubnets($subnets);
 
         $blocks = self::collectBlocks($subnets);
@@ -238,12 +234,10 @@ final class Subnets
      */
     private static function blocksToSubnets(array $blocks): array
     {
-        $result = [];
-        foreach ($blocks as $block) {
-            $result[] = new Subnet(new IPAddress($block->startInt()), $block->prefix());
-        }
-
-        return $result;
+        return \array_map(
+            fn (CidrBlock $block): Subnet => new Subnet(new IPAddress($block->startInt()), $block->prefix()),
+            $blocks
+        );
     }
 
     /**
