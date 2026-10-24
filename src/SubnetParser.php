@@ -124,18 +124,6 @@ final class SubnetParser
             );
         }
 
-        return self::calculateOptimalNetworkSize($hostCount);
-    }
-
-    /**
-     * Calculate optimal network size for host count.
-     *
-     * @param int $hostCount
-     *
-     * @return int
-     */
-    private static function calculateOptimalNetworkSize(int $hostCount): int
-    {
         if ($hostCount === 1) {
             return 32;
         }
@@ -144,9 +132,7 @@ final class SubnetParser
             return 31;
         }
 
-        $totalAddressesNeeded = $hostCount + 2;
-        $bitsNeeded = (int) \ceil(\log($totalAddressesNeeded, 2));
-
-        return 32 - $bitsNeeded;
+        // Host bits needed for hostCount + 2 addresses: ceil(log2(hostCount + 2)) == bit length of (hostCount + 1)
+        return 32 - \strlen(\decbin($hostCount + 1));
     }
 }
