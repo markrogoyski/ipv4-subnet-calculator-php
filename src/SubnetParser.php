@@ -56,12 +56,10 @@ final class SubnetParser
         $end = $endIp instanceof IPAddress ? $endIp : new IPAddress($endIp);
         $startLong = $start->asInteger();
         $endLong = $end->asInteger();
-        $startIp = $start->asQuads();
-        $endIp = $end->asQuads();
 
         if ($startLong > $endLong) {
             throw new \InvalidArgumentException(
-                "Start IP '{$startIp}' is greater than end IP '{$endIp}'"
+                "Start IP '{$start->asQuads()}' is greater than end IP '{$end->asQuads()}'"
             );
         }
 
@@ -74,13 +72,12 @@ final class SubnetParser
             );
         }
 
-        $networkSize = 32 - (int) \log($rangeSize, 2);
+        $networkSize = 33 - \strlen(\decbin($rangeSize));
 
-        // Validate alignment
-        $mask = (new SubnetMask($networkSize))->asInteger();
-        if (($startLong & $mask) !== $startLong) {
+        // Validate alignment: no bits of the start address may be set inside the block
+        if (($startLong & ($rangeSize - 1)) !== 0) {
             throw new \InvalidArgumentException(
-                "Start IP '{$startIp}' is not a valid network address for a /{$networkSize} subnet"
+                "Start IP '{$start->asQuads()}' is not a valid network address for a /{$networkSize} subnet"
             );
         }
 
