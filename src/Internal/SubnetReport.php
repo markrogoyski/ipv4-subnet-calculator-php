@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IPv4\Internal;
 
+use IPv4\IPAddress;
+use IPv4\Mask;
 use IPv4\Subnet;
 
 /**
@@ -26,13 +28,8 @@ final class SubnetReport
     public static function createArray(Subnet $subnet): array
     {
         return [
-            'cidr' => $subnet->networkCidr(),
-            'ip_address' => [
-                'quads'   => $subnet->ipAddress()->asQuads(),
-                'hex'     => $subnet->ipAddress()->asHex(),
-                'binary'  => $subnet->ipAddress()->asBinary(),
-                'integer' => $subnet->ipAddress()->asInteger(),
-            ],
+            'cidr'         => $subnet->networkCidr(),
+            'ip_address'   => self::formats($subnet->ipAddress()),
             'address_type' => $subnet->addressType()->value,
             'network_class' => [
                 'class'          => $subnet->networkClass()->value,
@@ -40,30 +37,10 @@ final class SubnetReport
                 'default_prefix' => $subnet->defaultClassPrefix(),
                 'is_classful'    => $subnet->isClassful(),
             ],
-            'subnet_mask' => [
-                'quads'   => $subnet->mask()->asQuads(),
-                'hex'     => $subnet->mask()->asHex(),
-                'binary'  => $subnet->mask()->asBinary(),
-                'integer' => $subnet->mask()->asInteger(),
-            ],
-            'wildcard_mask' => [
-                'quads'   => $subnet->wildcardMask()->asQuads(),
-                'hex'     => $subnet->wildcardMask()->asHex(),
-                'binary'  => $subnet->wildcardMask()->asBinary(),
-                'integer' => $subnet->wildcardMask()->asInteger(),
-            ],
-            'network_portion' => [
-                'quads'   => $subnet->networkPortion()->asQuads(),
-                'hex'     => $subnet->networkPortion()->asHex(),
-                'binary'  => $subnet->networkPortion()->asBinary(),
-                'integer' => $subnet->networkPortion()->asInteger(),
-            ],
-            'host_portion' => [
-                'quads'   => $subnet->hostPortion()->asQuads(),
-                'hex'     => $subnet->hostPortion()->asHex(),
-                'binary'  => $subnet->hostPortion()->asBinary(),
-                'integer' => $subnet->hostPortion()->asInteger(),
-            ],
+            'subnet_mask'       => self::formats($subnet->mask()),
+            'wildcard_mask'     => self::formats($subnet->wildcardMask()),
+            'network_portion'   => self::formats($subnet->networkPortion()),
+            'host_portion'      => self::formats($subnet->hostPortion()),
             'network_size'      => $subnet->networkSize(),
             'address_count'     => $subnet->addressCount(),
             'host_count'        => $subnet->hostCount(),
@@ -101,12 +78,6 @@ final class SubnetReport
      */
     public static function createPrintable(Subnet $subnet): string
     {
-        $ip = $subnet->ipAddress();
-        $mask = $subnet->mask();
-        $wildcard = $subnet->wildcardMask();
-        $networkPortion = $subnet->networkPortion();
-        $hostPortion = $subnet->hostPortion();
-
         $output = \sprintf(
             "%-18s %15s %8s %32s %10s\n",
             $subnet->networkCidr(),
@@ -125,50 +96,24 @@ final class SubnetReport
             '----------'
         );
 
-        $output .= \sprintf(
-            "%-18s %15s %8s %32s %10d\n",
-            'IP Address:',
-            $ip->asQuads(),
-            $ip->asHex(),
-            $ip->asBinary(),
-            $ip->asInteger()
-        );
+        $rows = [
+            'IP Address:'      => $subnet->ipAddress(),
+            'Subnet Mask:'     => $subnet->mask(),
+            'Wildcard Mask:'   => $subnet->wildcardMask(),
+            'Network Portion:' => $subnet->networkPortion(),
+            'Host Portion:'    => $subnet->hostPortion(),
+        ];
 
-        $output .= \sprintf(
-            "%-18s %15s %8s %32s %10d\n",
-            'Subnet Mask:',
-            $mask->asQuads(),
-            $mask->asHex(),
-            $mask->asBinary(),
-            $mask->asInteger()
-        );
-
-        $output .= \sprintf(
-            "%-18s %15s %8s %32s %10d\n",
-            'Wildcard Mask:',
-            $wildcard->asQuads(),
-            $wildcard->asHex(),
-            $wildcard->asBinary(),
-            $wildcard->asInteger()
-        );
-
-        $output .= \sprintf(
-            "%-18s %15s %8s %32s %10d\n",
-            'Network Portion:',
-            $networkPortion->asQuads(),
-            $networkPortion->asHex(),
-            $networkPortion->asBinary(),
-            $networkPortion->asInteger()
-        );
-
-        $output .= \sprintf(
-            "%-18s %15s %8s %32s %10d\n",
-            'Host Portion:',
-            $hostPortion->asQuads(),
-            $hostPortion->asHex(),
-            $hostPortion->asBinary(),
-            $hostPortion->asInteger()
-        );
+        foreach ($rows as $label => $value) {
+            $output .= \sprintf(
+                "%-18s %15s %8s %32s %10d\n",
+                $label,
+                $value->asQuads(),
+                $value->asHex(),
+                $value->asBinary(),
+                $value->asInteger()
+            );
+        }
 
         $output .= "\n";
 
@@ -192,5 +137,22 @@ final class SubnetReport
         $output .= \sprintf("%-28s %s\n", 'ARPA Domain:', $subnet->arpaDomain());
 
         return $output;
+    }
+
+    /**
+     * Get the quads, hex, binary and integer formats of an address or mask.
+     *
+     * @param IPAddress|Mask $value
+     *
+     * @return array{quads: string, hex: string, binary: string, integer: int}
+     */
+    private static function formats(IPAddress|Mask $value): array
+    {
+        return [
+            'quads'   => $value->asQuads(),
+            'hex'     => $value->asHex(),
+            'binary'  => $value->asBinary(),
+            'integer' => $value->asInteger(),
+        ];
     }
 }
