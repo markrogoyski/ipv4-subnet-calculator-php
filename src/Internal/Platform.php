@@ -11,8 +11,6 @@ namespace IPv4\Internal;
  */
 final class Platform
 {
-    private static bool $platformChecked = false;
-
     /**
      * Ensure the platform supports 64-bit integers.
      *
@@ -20,10 +18,6 @@ final class Platform
      */
     public static function ensure64Bit(): void
     {
-        if (self::$platformChecked) {
-            return;
-        }
-
         // @codeCoverageIgnoreStart
         if (\PHP_INT_SIZE < 8) {
             throw new \RuntimeException(
@@ -33,7 +27,5 @@ final class Platform
             );
         }
         // @codeCoverageIgnoreEnd
-
-        self::$platformChecked = true;
     }
 }
