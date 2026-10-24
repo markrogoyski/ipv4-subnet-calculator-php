@@ -98,22 +98,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isPrivate(): bool
     {
-        // 10.0.0.0/8
-        if ($this->isInRange(0x0A_00_00_00, 0x0A_FF_FF_FF)) {
-            return true;
-        }
-
-        // 172.16.0.0/12
-        if ($this->isInRange(0xAC_10_00_00, 0xAC_1F_FF_FF)) {
-            return true;
-        }
-
-        // 192.168.0.0/16
-        if ($this->isInRange(0xC0_A8_00_00, 0xC0_A8_FF_FF)) {
-            return true;
-        }
-
-        return false;
+        return $this->isInRange(0x0A_00_00_00, 0x0A_FF_FF_FF)     // 10.0.0.0/8
+            || $this->isInRange(0xAC_10_00_00, 0xAC_1F_FF_FF)     // 172.16.0.0/12
+            || $this->isInRange(0xC0_A8_00_00, 0xC0_A8_FF_FF);    // 192.168.0.0/16
     }
 
     /**
@@ -193,22 +180,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isDocumentation(): bool
     {
-        // TEST-NET-1
-        if ($this->isInRange(0xC0_00_02_00, 0xC0_00_02_FF)) {
-            return true;
-        }
-
-        // TEST-NET-2
-        if ($this->isInRange(0xC6_33_64_00, 0xC6_33_64_FF)) {
-            return true;
-        }
-
-        // TEST-NET-3
-        if ($this->isInRange(0xCB_00_71_00, 0xCB_00_71_FF)) {
-            return true;
-        }
-
-        return false;
+        return $this->isInRange(0xC0_00_02_00, 0xC0_00_02_FF)     // TEST-NET-1: 192.0.2.0/24
+            || $this->isInRange(0xC6_33_64_00, 0xC6_33_64_FF)     // TEST-NET-2: 198.51.100.0/24
+            || $this->isInRange(0xCB_00_71_00, 0xCB_00_71_FF);    // TEST-NET-3: 203.0.113.0/24
     }
 
     /**
@@ -307,22 +281,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isIanaReserved(): bool
     {
-        // AS112-v4: 192.31.196.0/24
-        if ($this->isInRange(0xC0_1F_C4_00, 0xC0_1F_C4_FF)) {
-            return true;
-        }
-
-        // AMT: 192.52.193.0/24
-        if ($this->isInRange(0xC0_34_C1_00, 0xC0_34_C1_FF)) {
-            return true;
-        }
-
-        // Direct Delegation AS112: 192.175.48.0/24
-        if ($this->isInRange(0xC0_AF_30_00, 0xC0_AF_30_FF)) {
-            return true;
-        }
-
-        return false;
+        return $this->isInRange(0xC0_1F_C4_00, 0xC0_1F_C4_FF)     // AS112-v4: 192.31.196.0/24
+            || $this->isInRange(0xC0_34_C1_00, 0xC0_34_C1_FF)     // AMT: 192.52.193.0/24
+            || $this->isInRange(0xC0_AF_30_00, 0xC0_AF_30_FF);    // Direct Delegation AS112: 192.175.48.0/24
     }
 
     /**
@@ -332,47 +293,23 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function addressType(): AddressType
     {
-        if ($this->isThisNetwork()) {
-            return AddressType::ThisNetwork;
-        }
-        if ($this->isPrivate()) {
-            return AddressType::Private;
-        }
-        if ($this->isLoopback()) {
-            return AddressType::Loopback;
-        }
-        if ($this->isLinkLocal()) {
-            return AddressType::LinkLocal;
-        }
-        if ($this->isCarrierGradeNat()) {
-            return AddressType::CarrierGradeNat;
-        }
-        if ($this->isDocumentation()) {
-            return AddressType::Documentation;
-        }
-        if ($this->isBenchmarking()) {
-            return AddressType::Benchmarking;
-        }
-        if ($this->isMulticast()) {
-            return AddressType::Multicast;
-        }
-        if ($this->isLimitedBroadcast()) {
-            return AddressType::LimitedBroadcast;
-        }
-        if ($this->isIetfProtocol()) {
-            return AddressType::IetfProtocol;
-        }
-        if ($this->is6to4Relay()) {
-            return AddressType::Deprecated6to4;
-        }
-        if ($this->isReserved()) {
-            return AddressType::Reserved;
-        }
-        if ($this->isIanaReserved()) {
-            return AddressType::IanaReserved;
-        }
-
-        return AddressType::Public;
+        // Order matters: limited broadcast (255.255.255.255) must be checked before reserved (240.0.0.0/4)
+        return match (true) {
+            $this->isThisNetwork()      => AddressType::ThisNetwork,
+            $this->isPrivate()          => AddressType::Private,
+            $this->isLoopback()         => AddressType::Loopback,
+            $this->isLinkLocal()        => AddressType::LinkLocal,
+            $this->isCarrierGradeNat()  => AddressType::CarrierGradeNat,
+            $this->isDocumentation()    => AddressType::Documentation,
+            $this->isBenchmarking()     => AddressType::Benchmarking,
+            $this->isMulticast()        => AddressType::Multicast,
+            $this->isLimitedBroadcast() => AddressType::LimitedBroadcast,
+            $this->isIetfProtocol()     => AddressType::IetfProtocol,
+            $this->is6to4Relay()        => AddressType::Deprecated6to4,
+            $this->isReserved()         => AddressType::Reserved,
+            $this->isIanaReserved()     => AddressType::IanaReserved,
+            default                     => AddressType::Public,
+        };
     }
 
     /**
