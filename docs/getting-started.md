@@ -17,7 +17,7 @@ This guide will help you install and start using the IPv4 Subnet Calculator libr
 Install the library using Composer from the command line:
 
 ```bash
-composer require markrogoyski/ipv4-subnet-calculator:5.*
+composer require 'markrogoyski/ipv4-subnet-calculator:5.*'
 ```
 
 ### Alternative: Manual composer.json
@@ -73,11 +73,11 @@ A runtime check will throw `\RuntimeException` if you attempt to use the library
 If you need support for older PHP versions:
 - **PHP 7.2 through 8.0**: Use [v4.4.0](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0)
   ```bash
-  composer require markrogoyski/ipv4-subnet-calculator:4.*
+  composer require 'markrogoyski/ipv4-subnet-calculator:4.*'
   ```
 - **PHP 5.5 through 7.1**: Use [v3.1](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v3.1.0)
   ```bash
-  composer require markrogoyski/ipv4-subnet-calculator:3.*
+  composer require 'markrogoyski/ipv4-subnet-calculator:3.*'
   ```
 
 ## Quick Start

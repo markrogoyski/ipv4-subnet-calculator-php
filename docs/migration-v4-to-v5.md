@@ -435,7 +435,7 @@ Value objects provide better autocomplete and type hints in modern IDEs.
 If you cannot migrate immediately, v4.x remains available:
 
 ```bash
-composer require markrogoyski/ipv4-subnet-calculator:4.*
+composer require 'markrogoyski/ipv4-subnet-calculator:4.*'
 ```
 
 However, v5.0 is recommended for all new projects.

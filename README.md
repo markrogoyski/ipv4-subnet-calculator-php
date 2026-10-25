@@ -63,7 +63,7 @@ Installation
 ### Using Composer (Command Line)
 
 ```bash
-composer require markrogoyski/ipv4-subnet-calculator:5.*
+composer require 'markrogoyski/ipv4-subnet-calculator:5.*'
 ```
 
 ### Or Add to composer.json

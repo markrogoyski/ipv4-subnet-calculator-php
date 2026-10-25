@@ -545,6 +545,22 @@ class DHCPScopePlanner {
             $currentNetwork = $scope->next()->networkAddress()->asQuads();
         }
 
+        // A network or broadcast address can never be a host, so it cannot serve DNS
+        $unassignable = [$baseSubnet->networkAddress(), $baseSubnet->broadcastAddress()];
+        foreach ($scopes as $scope) {
+            $unassignable[] = $scope['subnet']->networkAddress();
+            $unassignable[] = $scope['subnet']->broadcastAddress();
+        }
+        foreach ($scopes as $dept => $scope) {
+            foreach ($unassignable as $address) {
+                if ($scope['dns']->equals($address)) {
+                    throw new \InvalidArgumentException(
+                        "DNS server {$scope['dns']} for {$dept} is a network or broadcast address"
+                    );
+                }
+            }
+        }
+
         // Advertising an address as DNS does not reserve it, so a DNS server inside
         // any pool (its own department's or another's) could be leased to a client
         foreach ($scopes as $dept => $scope) {
