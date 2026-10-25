@@ -560,23 +560,34 @@ $description = match ($type) {
 
 ### Use Cases
 
-**Security Validation:**
+**Traffic Classification:**
 ```php
-// Behind a proxy or load balancer, REMOTE_ADDR is the proxy's address
+// Tag requests for logging or analytics. Behind a proxy or load balancer, REMOTE_ADDR is the
+// proxy's address, so resolve the client IP from headers set by proxies you trust.
 try {
-    $userIP = new IPv4\IPAddress($_SERVER['REMOTE_ADDR']);
+    $clientIP = new IPv4\IPAddress($_SERVER['REMOTE_ADDR']);
 } catch (\InvalidArgumentException $e) {
     // Not IPv4 (e.g. an IPv6 client)
-    $userIP = null;
+    $clientIP = null;
 }
 
-if ($userIP !== null && $userIP->isPrivate()) {
-    // Internal user
-    $accessLevel = 'full';
-} else {
-    // External or non-IPv4 user
-    $accessLevel = 'limited';
-}
+$origin = ($clientIP !== null && $clientIP->isPrivate()) ? 'internal' : 'external';
+```
+
+**Access Control:**
+```php
+// isPrivate() matches all of RFC 1918, including guest Wi-Fi, VPN pools and container
+// networks, so it is not an authorization check. Allow the specific networks you trust.
+$trustedNetworks = [
+    IPv4\Subnet::fromCidr('10.20.0.0/16'),     // Office LAN
+    IPv4\Subnet::fromCidr('192.168.50.0/24'),  // Admin VPN
+];
+
+// $clientIP as resolved above; null (non-IPv4) is never trusted
+$trusted = $clientIP !== null
+    && array_filter($trustedNetworks, fn($net) => $net->containsIP($clientIP)) !== [];
+
+$accessLevel = $trusted ? 'full' : 'limited';
 ```
 
 **Routing Decisions:**

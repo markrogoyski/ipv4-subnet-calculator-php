@@ -737,9 +737,23 @@ class NetworkConfigValidator {
         $this->errors = [];
         $this->warnings = [];
 
+        // Check the structure first; foreach over a non-array is skipped with only a warning
+        foreach (['subnets', 'requirements'] as $section) {
+            if (isset($config[$section]) && !is_array($config[$section])) {
+                $this->errors[] = "{$section}: Must be a map of network names";
+            }
+        }
+        if (!empty($this->errors)) {
+            return false;
+        }
+
         // Validate subnets
         $subnets = [];
         foreach ($config['subnets'] ?? [] as $name => $cidr) {
+            if (!is_string($cidr)) {
+                $this->errors[] = "{$name}: CIDR must be a string";
+                continue;
+            }
             try {
                 $subnet = IPv4\Subnet::fromCidr($cidr);
                 $subnets[$name] = $subnet;
@@ -765,7 +779,7 @@ class NetworkConfigValidator {
 
         // Every required network must be defined; the loop above only sizes the ones that are
         foreach ($config['requirements'] ?? [] as $name => $required) {
-            if (!isset($config['subnets'][$name])) {
+            if (!array_key_exists($name, $config['subnets'] ?? [])) {
                 $this->errors[] = "{$name}: Required network is not defined";
             }
         }
