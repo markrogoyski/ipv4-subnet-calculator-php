@@ -90,7 +90,7 @@ $testNet1   = IPv4\Subnet::fromCidr('192.0.2.0/24'); // TEST-NET-1
 $usableSpace = $allocation->exclude($testNet1);
 // Returns optimal CIDR blocks for all addresses except 192.0.2.0/24
 
-echo "Usable space: " . count($usableSpace) . " CIDR blocks\n";
+echo "Usable space: " . \count($usableSpace) . " CIDR blocks\n";
 foreach ($usableSpace as $block) {
     echo "  {$block->cidr()}\n";
 }
@@ -142,7 +142,7 @@ class IPAMPool {
             if ($block->contains($allocation)) {
                 // Exclude allocation from this block
                 $remaining = $block->exclude($allocation);
-                $newAvailable = array_merge($newAvailable, $remaining);
+                $newAvailable = \array_merge($newAvailable, $remaining);
                 $found = true;
             } else {
                 // Keep block unchanged
@@ -263,7 +263,7 @@ $subnets = [
 $aggregated = IPv4\Subnets::aggregate($subnets);
 // Returns: [10.0.0.0/22]
 
-echo "Aggregated " . count($subnets) . " /24s into: {$aggregated[0]->cidr()}\n";
+echo "Aggregated " . \count($subnets) . " /24s into: {$aggregated[0]->cidr()}\n";
 ```
 
 #### Example 3: Non-contiguous Subnets Remain Separate
@@ -350,7 +350,7 @@ $summary = IPv4\Subnets::aggregate($offices);
 // Advertise this single route instead of 4 individual routes
 
 echo "BGP Advertisement: {$summary[0]->cidr()}\n";
-echo "Reduces routing table by " . (count($offices) - count($summary)) . " entries\n";
+echo "Reduces routing table by " . (\count($offices) - \count($summary)) . " entries\n";
 ```
 
 #### Multiple Data Centers
@@ -407,9 +407,9 @@ $routes = [
 
 $optimized = IPv4\Subnets::aggregate($routes);
 
-echo "Original routes: " . count($routes) . "\n";
-echo "Optimized routes: " . count($optimized) . "\n";
-echo "Reduction: " . (count($routes) - count($optimized)) . " routes\n\n";
+echo "Original routes: " . \count($routes) . "\n";
+echo "Optimized routes: " . \count($optimized) . "\n";
+echo "Reduction: " . (\count($routes) - \count($optimized)) . " routes\n\n";
 
 echo "Optimized routing table:\n";
 foreach ($optimized as $route) {
@@ -469,13 +469,13 @@ $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 $percentage = $subnet->usableHostPercentage();  // 99.21875 (254 usable of 256 total)
 
-echo 'Usable hosts: ' . number_format($percentage, 2) . "%\n";  // Usable hosts: 99.22%
+echo 'Usable hosts: ' . \number_format($percentage, 2) . "%\n";  // Usable hosts: 99.22%
 
 // Different subnet sizes have different efficiency
 $sizes = [24, 25, 26, 27, 28, 29, 30];
 foreach ($sizes as $size) {
     $s = IPv4\Subnet::fromCidr("192.168.1.0/{$size}");
-    echo "/{$size}: " . number_format($s->usableHostPercentage(), 2) . "% usable\n";
+    echo "/{$size}: " . \number_format($s->usableHostPercentage(), 2) . "% usable\n";
 }
 ```
 
@@ -519,19 +519,19 @@ $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');  // 254 usable hosts
 
 // Good fit - 78.74% utilization
 $utilization = $subnet->utilizationFor(200);
-echo "200 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 78.74%
+echo "200 hosts in /24: " . \number_format($utilization, 2) . "% utilization\n";  // 78.74%
 
 // Perfect fit - 100% utilization
 $utilization = $subnet->utilizationFor(254);
-echo "254 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 100.00%
+echo "254 hosts in /24: " . \number_format($utilization, 2) . "% utilization\n";  // 100.00%
 
 // Oversized subnet - wasting addresses
 $utilization = $subnet->utilizationFor(50);
-echo "50 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";   // 19.69% (inefficient)
+echo "50 hosts in /24: " . \number_format($utilization, 2) . "% utilization\n";   // 19.69% (inefficient)
 
 // Insufficient capacity - more than 100%
 $utilization = $subnet->utilizationFor(300);
-echo "300 hosts in /24: " . number_format($utilization, 2) . "% utilization\n";  // 118.11% (too small!)
+echo "300 hosts in /24: " . \number_format($utilization, 2) . "% utilization\n";  // 118.11% (too small!)
 ```
 
 ### Calculate Wasted Addresses
@@ -586,8 +586,8 @@ foreach ($sizes as $size) {
     $wasted = $subnet->wastedAddressesFor($requiredHosts);
     $usablePercent = $subnet->usableHostPercentage();
 
-    echo "/{$size}: {$usableHosts} usable, " . number_format($utilization, 2) . "% utilized, {$wasted} wasted, "
-        . number_format($usablePercent, 2) . "% efficiency\n";
+    echo "/{$size}: {$usableHosts} usable, " . \number_format($utilization, 2) . "% utilized, {$wasted} wasted, "
+        . \number_format($usablePercent, 2) . "% efficiency\n";
 
     // Track best fit (highest utilization that meets requirements)
     if ($utilization > $bestUtilization && $utilization <= 100) {
@@ -596,7 +596,7 @@ foreach ($sizes as $size) {
     }
 }
 
-echo "\nRecommendation: /{$bestSubnet} provides the best fit (" . number_format($bestUtilization, 2) . "% utilization)\n";
+echo "\nRecommendation: /{$bestSubnet} provides the best fit (" . \number_format($bestUtilization, 2) . "% utilization)\n";
 
 /*
 Output:

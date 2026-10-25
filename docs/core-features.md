@@ -46,7 +46,7 @@ echo $subnet1->networkCidr();  // "192.168.1.0/24"
 echo $subnet2->networkCidr();  // "192.168.1.0/24"
 
 // Both are equal
-var_dump($subnet1->equals($subnet2));  // true
+\var_dump($subnet1->equals($subnet2));  // true
 ```
 
 ### IP Address
@@ -248,10 +248,10 @@ Use PHP's built-in `count()` function directly on IPRange objects:
 $subnet = IPv4\Subnet::fromCidr('192.168.1.0/24');
 
 // Count all IPs in the range
-$totalIPs = count($subnet->addressRange());  // 256
+$totalIPs = \count($subnet->addressRange());  // 256
 
 // Count only usable hosts
-$usableHosts = count($subnet->hostRange());  // 254
+$usableHosts = \count($subnet->hostRange());  // 254
 
 echo "Total IPs: {$totalIPs}\n";
 echo "Usable hosts: {$usableHosts}\n";
@@ -264,11 +264,11 @@ $subnet = IPv4\Subnet::fromCidr('10.0.0.0/28');
 
 $range = $subnet->hostRange();
 
-echo "Processing " . count($range) . " hosts:\n";
+echo "Processing " . \count($range) . " hosts:\n";
 
 $index = 1;
 foreach ($range as $ip) {
-    echo "[{$index}/" . count($range) . "] Processing {$ip}\n";
+    echo "[{$index}/" . \count($range) . "] Processing {$ip}\n";
     $index++;
 }
 ```
@@ -299,7 +299,7 @@ $end = new IPAddress('10.0.0.10');
 $range = new IPRange($start, $end);
 
 // Count IPs in the range
-echo "Range contains: " . count($range) . " IPs\n";  // 10
+echo "Range contains: " . \count($range) . " IPs\n";  // 10
 
 // Iterate the range
 foreach ($range as $ip) {
@@ -585,7 +585,7 @@ $trustedNetworks = [
 
 // $clientIP as resolved above; null (non-IPv4) is never trusted
 $trusted = $clientIP !== null
-    && array_filter($trustedNetworks, fn($net) => $net->containsIP($clientIP)) !== [];
+    && \array_filter($trustedNetworks, fn($net) => $net->containsIP($clientIP)) !== [];
 
 $accessLevel = $trusted ? 'full' : 'limited';
 ```
@@ -794,7 +794,7 @@ echo "Available for expansion: {$nextNetwork->cidr()}\n";
 
 // Plan for future growth
 $futureNetworks = $currentNetwork->adjacent(5);
-echo "Future expansion space: " . count($futureNetworks) . " /24 subnets available\n";
+echo "Future expansion space: " . \count($futureNetworks) . " /24 subnets available\n";
 ```
 
 **Subnet Scanning:**

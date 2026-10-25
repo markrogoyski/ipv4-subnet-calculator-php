@@ -75,7 +75,7 @@ echo $report['ip_address']['quads'];              // '192.168.112.203'
 echo $report['subnet_mask']['binary'];            // '11111111111111111111111000000000'
 echo $report['host_count'];                       // 510
 echo $report['network_class']['class'];           // 'C'
-var_dump($report['network_class']['is_classful']); // bool(false)
+\var_dump($report['network_class']['is_classful']); // bool(false)
 ```
 
 **Complete Array Structure:**
@@ -163,7 +163,7 @@ $summary = [
     'type' => $report['address_type'],
 ];
 
-print_r($summary);
+\print_r($summary);
 ```
 
 ## JSON Report
@@ -175,7 +175,7 @@ $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 $json = $subnet->toJson();
 
 // Parse JSON
-$data = json_decode($json, true);
+$data = \json_decode($json, true);
 echo $data['host_count'];  // 510
 ```
 
@@ -243,12 +243,12 @@ echo $data['host_count'];  // 510
 ```php
 // API endpoint that returns subnet information
 function getSubnetInfo($cidr) {
-    header('Content-Type: application/json');
+    \header('Content-Type: application/json');
 
     // Missing or array-valued (?cidr[]=...) query parameters are not strings
-    if (!is_string($cidr)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'cidr query parameter is required']);
+    if (!\is_string($cidr)) {
+        \http_response_code(400);
+        echo \json_encode(['error' => 'cidr query parameter is required']);
         return;
     }
 
@@ -256,8 +256,8 @@ function getSubnetInfo($cidr) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
         echo $subnet->toJson();
     } catch (\Exception $e) {
-        http_response_code(400);
-        echo json_encode(['error' => $e->getMessage()]);
+        \http_response_code(400);
+        echo \json_encode(['error' => $e->getMessage()]);
     }
 }
 
@@ -274,7 +274,7 @@ $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 $stringReport = $subnet->toPrintable();
 
 // Store in variable, log to file, etc.
-file_put_contents('subnet-report.txt', $stringReport);
+\file_put_contents('subnet-report.txt', $stringReport);
 echo $stringReport;
 ```
 
@@ -313,11 +313,11 @@ ARPA Domain:                 203.112.168.192.in-addr.arpa
 $subnet = IPv4\Subnet::fromCidr('10.0.0.0/8');
 $report = $subnet->toPrintable();
 
-$logEntry = date('Y-m-d H:i:s') . " - Subnet Analysis\n";
-$logEntry .= str_repeat('=', 80) . "\n";
+$logEntry = \date('Y-m-d H:i:s') . " - Subnet Analysis\n";
+$logEntry .= \str_repeat('=', 80) . "\n";
 $logEntry .= $report . "\n\n";
 
-file_put_contents('/var/log/subnet-analysis.log', $logEntry, FILE_APPEND);
+\file_put_contents('/var/log/subnet-analysis.log', $logEntry, FILE_APPEND);
 ```
 
 ## Standard Interfaces
@@ -348,10 +348,10 @@ The Subnet class implements `JsonSerializable`, enabling direct JSON encoding:
 $subnet = IPv4\Subnet::fromCidr('192.168.112.203/23');
 
 // Same data as toJson(), compact and with escaped slashes ("192.168.112.0\/23")
-$json = json_encode($subnet);
+$json = \json_encode($subnet);
 
 // Equivalent to toJson()
-$prettyJson = json_encode($subnet, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+$prettyJson = \json_encode($subnet, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 echo $prettyJson;
 ```
 
@@ -383,13 +383,13 @@ try {
 
 ```php
 // REST API endpoint
-header('Content-Type: application/json');
+\header('Content-Type: application/json');
 
 // Missing or array-valued (?cidr[]=...) query parameters are not strings
 $cidr = $_GET['cidr'] ?? null;
-if (!is_string($cidr)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'cidr query parameter is required']);
+if (!\is_string($cidr)) {
+    \http_response_code(400);
+    echo \json_encode(['error' => 'cidr query parameter is required']);
     exit;
 }
 
@@ -398,8 +398,8 @@ try {
 
     echo $subnet->toJson();
 } catch (\Exception $e) {
-    http_response_code(400);
-    echo json_encode([
+    \http_response_code(400);
+    echo \json_encode([
         'error' => $e->getMessage(),
         'cidr' => $cidr
     ]);
@@ -423,9 +423,9 @@ foreach ($subnets as $cidr) {
 }
 
 // Export to JSON file
-file_put_contents(
+\file_put_contents(
     'subnet-analysis.json',
-    json_encode($reports, JSON_PRETTY_PRINT)
+    \json_encode($reports, JSON_PRETTY_PRINT)
 );
 ```
 
@@ -434,8 +434,8 @@ file_put_contents(
 ```php
 function generateNetworkDocumentation(array $subnets, $outputFile) {
     $doc = "# Network Documentation\n\n";
-    $doc .= "Generated: " . date('Y-m-d H:i:s') . "\n\n";
-    $doc .= str_repeat('=', 80) . "\n\n";
+    $doc .= "Generated: " . \date('Y-m-d H:i:s') . "\n\n";
+    $doc .= \str_repeat('=', 80) . "\n\n";
 
     foreach ($subnets as $name => $cidr) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
@@ -448,10 +448,10 @@ function generateNetworkDocumentation(array $subnets, $outputFile) {
         $doc .= "**Type:** {$report['address_type']}\n";
         $doc .= "**Usable Hosts:** {$report['host_count']}\n";
         $doc .= "**Range:** {$report['network_address']} - {$report['broadcast_address']}\n\n";
-        $doc .= str_repeat('-', 80) . "\n\n";
+        $doc .= \str_repeat('-', 80) . "\n\n";
     }
 
-    file_put_contents($outputFile, $doc);
+    \file_put_contents($outputFile, $doc);
 }
 
 // Usage
@@ -485,7 +485,7 @@ function storeSubnetAnalysis($pdo, $cidr, $description) {
         $report['network_portion']['quads'],
         $report['broadcast_address'],
         $report['host_count'],
-        json_encode($report)
+        \json_encode($report)
     ]);
 }
 
@@ -504,12 +504,12 @@ function emailSubnetReport($email, $cidr) {
     $subject = "Subnet Analysis Report: {$cidr}";
     $message = "Subnet analysis for {$cidr}\n\n";
     $message .= $report;
-    $message .= "\n\nGenerated at: " . date('Y-m-d H:i:s');
+    $message .= "\n\nGenerated at: " . \date('Y-m-d H:i:s');
 
     $headers = "From: network-admin@example.com\r\n";
     $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
 
-    mail($email, $subject, $message, $headers);
+    \mail($email, $subject, $message, $headers);
 }
 
 // Usage
@@ -524,20 +524,20 @@ function compareSubnets($cidr1, $cidr2) {
     $subnet2 = IPv4\Subnet::fromCidr($cidr2);
 
     echo "Comparison Report\n";
-    echo str_repeat('=', 80) . "\n\n";
+    echo \str_repeat('=', 80) . "\n\n";
 
     echo "Subnet 1: {$cidr1}\n";
-    echo str_repeat('-', 80) . "\n";
+    echo \str_repeat('-', 80) . "\n";
     echo $subnet1->toPrintable();
     echo "\n\n";
 
     echo "Subnet 2: {$cidr2}\n";
-    echo str_repeat('-', 80) . "\n";
+    echo \str_repeat('-', 80) . "\n";
     echo $subnet2->toPrintable();
     echo "\n\n";
 
     echo "Relationship:\n";
-    echo str_repeat('-', 80) . "\n";
+    echo \str_repeat('-', 80) . "\n";
 
     if ($subnet1->overlaps($subnet2)) {
         echo "⚠ Subnets OVERLAP - potential conflict\n";

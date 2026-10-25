@@ -35,14 +35,14 @@ $offices = [
 ];
 
 echo "Corporate IP Allocation Plan\n";
-echo str_repeat('=', 80) . "\n\n";
+echo \str_repeat('=', 80) . "\n\n";
 echo "Available: {$corporateBlock->cidr()}\n";
 echo "Total IPs: {$corporateBlock->addressCount()}\n\n";
 
 // Allocate largest offices first (VLSM) so each subnet starts on a boundary
 // aligned to its size. Allocating a larger subnet after a smaller one
 // would round its network address backward into space already in use.
-arsort($offices);
+\arsort($offices);
 
 $currentNetwork = $corporateBlock->networkAddress()->asQuads();
 $allocations = [];
@@ -72,7 +72,7 @@ foreach ($offices as $office => $requiredHosts) {
 }
 
 // Calculate remaining space
-$allocated = array_values($allocations);
+$allocated = \array_values($allocations);
 $remaining = $corporateBlock->excludeAll($allocated);
 
 echo "Remaining unallocated space:\n";
@@ -131,7 +131,7 @@ class SimpleIPAM {
         foreach ($this->availableBlocks as $block) {
             if ($block->contains($allocation)) {
                 $remaining = $block->exclude($allocation);
-                $newAvailable = array_merge($newAvailable, $remaining);
+                $newAvailable = \array_merge($newAvailable, $remaining);
             } else {
                 $newAvailable[] = $block;
             }
@@ -164,12 +164,12 @@ class SimpleIPAM {
 
     public function getUtilizationReport() {
         $report = "IPAM Pool: {$this->name}\n";
-        $report .= str_repeat('=', 80) . "\n\n";
+        $report .= \str_repeat('=', 80) . "\n\n";
 
         $report .= "Allocations:\n";
-        $report .= str_repeat('-', 80) . "\n";
+        $report .= \str_repeat('-', 80) . "\n";
         foreach ($this->allocations as $name => $subnet) {
-            $report .= sprintf("  %-30s %s (%d IPs)\n",
+            $report .= \sprintf("  %-30s %s (%d IPs)\n",
                 $name,
                 $subnet->cidr(),
                 $subnet->addressCount()
@@ -177,10 +177,10 @@ class SimpleIPAM {
         }
 
         $report .= "\nAvailable Blocks:\n";
-        $report .= str_repeat('-', 80) . "\n";
+        $report .= \str_repeat('-', 80) . "\n";
         $totalAvailable = 0;
         foreach ($this->availableBlocks as $block) {
-            $report .= sprintf("  %s (%d IPs)\n",
+            $report .= \sprintf("  %s (%d IPs)\n",
                 $block->cidr(),
                 $block->addressCount()
             );
@@ -235,8 +235,8 @@ class FirewallRuleValidator {
     public function validateRules() {
         $conflicts = [];
 
-        for ($i = 0; $i < count($this->rules); $i++) {
-            for ($j = $i + 1; $j < count($this->rules); $j++) {
+        for ($i = 0; $i < \count($this->rules); $i++) {
+            for ($j = $i + 1; $j < \count($this->rules); $j++) {
                 $rule1 = $this->rules[$i];
                 $rule2 = $this->rules[$j];
 
@@ -265,7 +265,7 @@ class FirewallRuleValidator {
 
     public function printValidationReport() {
         echo "Firewall Rule Validation Report\n";
-        echo str_repeat('=', 80) . "\n\n";
+        echo \str_repeat('=', 80) . "\n\n";
 
         $conflicts = $this->validateRules();
 
@@ -274,7 +274,7 @@ class FirewallRuleValidator {
             return;
         }
 
-        echo "⚠ CONFLICTS DETECTED: " . count($conflicts) . "\n\n";
+        echo "⚠ CONFLICTS DETECTED: " . \count($conflicts) . "\n\n";
 
         foreach ($conflicts as $i => $conflict) {
             echo "Conflict #" . ($i + 1) . ":\n";
@@ -339,7 +339,7 @@ class AccessController {
         $subnet = IPv4\Subnet::fromCidr($ipAddress . '/32');
 
         echo "Access Report for {$ipAddress}\n";
-        echo str_repeat('=', 80) . "\n";
+        echo \str_repeat('=', 80) . "\n";
         echo "IP Type: {$subnet->addressType()->value}\n";  // Use ->value for string
         echo "Private: " . ($subnet->isPrivate() ? 'Yes' : 'No') . "\n";
         echo "Public: " . ($subnet->isPublic() ? 'Yes' : 'No') . "\n";
@@ -393,7 +393,7 @@ class BGPRouteOptimizer {
     private $regions = [];
 
     public function addRegionalRoutes($region, array $cidrs) {
-        $subnets = array_map(function($cidr) {
+        $subnets = \array_map(function($cidr) {
             return IPv4\Subnet::fromCidr($cidr);
         }, $cidrs);
 
@@ -413,39 +413,39 @@ class BGPRouteOptimizer {
 
     public function printOptimizationReport() {
         echo "BGP Route Optimization Report\n";
-        echo str_repeat('=', 80) . "\n\n";
+        echo \str_repeat('=', 80) . "\n\n";
 
         $totalOriginal = 0;
         $totalOptimized = 0;
 
         foreach ($this->regions as $region => $subnets) {
             echo "Region: {$region}\n";
-            echo str_repeat('-', 80) . "\n";
+            echo \str_repeat('-', 80) . "\n";
 
-            echo "Original routes (" . count($subnets) . "):\n";
+            echo "Original routes (" . \count($subnets) . "):\n";
             foreach ($subnets as $subnet) {
                 echo "  {$subnet->cidr()}\n";
             }
 
             $aggregated = IPv4\Subnets::aggregate($subnets);
-            echo "\nOptimized routes (" . count($aggregated) . "):\n";
+            echo "\nOptimized routes (" . \count($aggregated) . "):\n";
             foreach ($aggregated as $subnet) {
                 echo "  {$subnet->cidr()}\n";
             }
 
-            $reduction = count($subnets) - count($aggregated);
+            $reduction = \count($subnets) - \count($aggregated);
             echo "\nReduction: {$reduction} routes\n\n";
 
-            $totalOriginal += count($subnets);
-            $totalOptimized += count($aggregated);
+            $totalOriginal += \count($subnets);
+            $totalOptimized += \count($aggregated);
         }
 
         $totalReduction = $totalOriginal - $totalOptimized;
         $percentReduction = $totalOriginal > 0
-            ? round(($totalReduction / $totalOriginal) * 100, 2)
+            ? \round(($totalReduction / $totalOriginal) * 100, 2)
             : 0.0;
 
-        echo str_repeat('=', 80) . "\n";
+        echo \str_repeat('=', 80) . "\n";
         echo "Total Summary:\n";
         echo "  Original routes: {$totalOriginal}\n";
         echo "  Optimized routes: {$totalOptimized}\n";
@@ -505,7 +505,7 @@ class DHCPScopePlanner {
         // Allocate largest scopes first (VLSM) so each scope starts on a boundary
         // aligned to its size. Allocating a larger scope after a smaller one
         // would round its network address backward into space already in use.
-        uasort($departments, fn($a, $b) => $b['hosts'] <=> $a['hosts']);
+        \uasort($departments, fn($a, $b) => $b['hosts'] <=> $a['hosts']);
 
         $currentNetwork = $baseSubnet->networkAddress()->asQuads();
 
@@ -536,8 +536,8 @@ class DHCPScopePlanner {
             $scopes[$dept] = [
                 'subnet' => $scope,
                 'required_hosts' => $requiredHosts,
-                'scope_start' => long2ip($poolStart),
-                'scope_end' => long2ip($poolEnd),
+                'scope_start' => \long2ip($poolStart),
+                'scope_end' => \long2ip($poolEnd),
                 'gateway' => $scope->maxHost(),
                 'dns' => $dns,
             ];
@@ -550,7 +550,7 @@ class DHCPScopePlanner {
         foreach ($scopes as $dept => $scope) {
             foreach ($scopes as $poolDept => $pool) {
                 $dns = $scope['dns']->asInteger();
-                if ($dns >= ip2long($pool['scope_start']) && $dns <= ip2long($pool['scope_end'])) {
+                if ($dns >= \ip2long($pool['scope_start']) && $dns <= \ip2long($pool['scope_end'])) {
                     throw new \InvalidArgumentException(
                         "DNS server {$scope['dns']} for {$dept} is inside the DHCP pool for {$poolDept}"
                     );
@@ -565,7 +565,7 @@ class DHCPScopePlanner {
 
     private function printReport(IPv4\Subnet $baseSubnet, array $scopes) {
         echo "DHCP Scope Planning Report\n";
-        echo str_repeat('=', 80) . "\n";
+        echo \str_repeat('=', 80) . "\n";
         echo "Base Network: {$baseSubnet->networkCidr()}\n";
         echo "Available IPs: {$baseSubnet->addressCount()}\n\n";
 
@@ -592,7 +592,7 @@ class DHCPScopePlanner {
 
     private function exportISCDHCPConfig(array $scopes) {
         $config = "# ISC DHCP Server Configuration\n";
-        $config .= "# Generated: " . date('Y-m-d H:i:s') . "\n\n";
+        $config .= "# Generated: " . \date('Y-m-d H:i:s') . "\n\n";
 
         foreach ($scopes as $name => $scope) {
             $subnet = $scope['subnet'];
@@ -620,9 +620,9 @@ $departments = [
 
 $scopes = $planner->planScopes('10.0.0.0/22', $departments);
 
-echo "\n" . str_repeat('=', 80) . "\n";
+echo "\n" . \str_repeat('=', 80) . "\n";
 echo "Generated DHCP Configuration:\n";
-echo str_repeat('=', 80) . "\n\n";
+echo \str_repeat('=', 80) . "\n\n";
 echo $planner->exportDHCPConfig($scopes, 'isc-dhcp');
 ```
 
@@ -645,19 +645,19 @@ class ReverseDNSZoneGenerator {
     public function generateZone($cidr, $nameservers, $serial, $hostnames = []) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
 
-        if (!in_array($subnet->networkSize(), [8, 16, 24], true)) {
+        if (!\in_array($subnet->networkSize(), [8, 16, 24], true)) {
             throw new InvalidArgumentException(
                 "Reverse zones must be /8, /16 or /24; {$cidr} needs RFC 2317 classless delegation"
             );
         }
 
         // SOA serials are unsigned 32-bit values (RFC 1982)
-        if (!is_int($serial) || $serial < 0 || $serial > 0xFFFFFFFF) {
+        if (!\is_int($serial) || $serial < 0 || $serial > 0xFFFFFFFF) {
             throw new InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
         }
 
         echo "Reverse DNS Zone Configuration\n";
-        echo str_repeat('=', 80) . "\n";
+        echo \str_repeat('=', 80) . "\n";
         echo "Subnet: {$cidr}\n";
         echo "Network: {$subnet->networkAddress()->asQuads()}\n";
         echo "Broadcast: {$subnet->broadcastAddress()->asQuads()}\n\n";
@@ -671,16 +671,16 @@ class ReverseDNSZoneGenerator {
     private function generateZoneFile($subnet, $nameservers, $serial, $hostnames) {
         $zone = "; Reverse DNS Zone\n";
         $zone .= "; Network: {$subnet->cidr()}\n";
-        $zone .= "; Generated: " . date('Y-m-d H:i:s') . "\n\n";
+        $zone .= "; Generated: " . \date('Y-m-d H:i:s') . "\n\n";
 
         // Zone origin: the network octets in reverse, e.g. 192.168.1.0/24 => 1.168.192.in-addr.arpa
-        $networkOctets = array_slice(explode('.', $subnet->networkAddress()->asQuads()), 0, intdiv($subnet->networkSize(), 8));
-        $origin = implode('.', array_reverse($networkOctets)) . '.in-addr.arpa';
+        $networkOctets = \array_slice(\explode('.', $subnet->networkAddress()->asQuads()), 0, \intdiv($subnet->networkSize(), 8));
+        $origin = \implode('.', \array_reverse($networkOctets)) . '.in-addr.arpa';
 
         $zone .= "\$ORIGIN {$origin}.\n";
         $zone .= "\$TTL 86400\n";
         $zone .= "@    IN    SOA    {$this->absolute($nameservers[0])} hostmaster.example.com. (\n";
-        $zone .= "            " . str_pad((string) $serial, 18) . "; Serial\n";
+        $zone .= "            " . \str_pad((string) $serial, 18) . "; Serial\n";
         $zone .= "            3600              ; Refresh\n";
         $zone .= "            1800              ; Retry\n";
         $zone .= "            604800            ; Expire\n";
@@ -706,7 +706,7 @@ class ReverseDNSZoneGenerator {
 
     // Accept names with or without the trailing dot (RFC 1035 §5.1) and emit them absolute
     private function absolute($name) {
-        return rtrim($name, '.') . '.';
+        return \rtrim($name, '.') . '.';
     }
 }
 
@@ -755,7 +755,7 @@ class NetworkConfigValidator {
 
         // Check the structure first; foreach over a non-array is skipped with only a warning
         foreach (['subnets', 'requirements'] as $section) {
-            if (array_key_exists($section, $config) && !is_array($config[$section])) {
+            if (\array_key_exists($section, $config) && !\is_array($config[$section])) {
                 $this->errors[] = "{$section}: Must be a map of network names";
             }
         }
@@ -766,7 +766,7 @@ class NetworkConfigValidator {
         // Validate subnets
         $subnets = [];
         foreach ($config['subnets'] ?? [] as $name => $cidr) {
-            if (!is_string($cidr)) {
+            if (!\is_string($cidr)) {
                 $this->errors[] = "{$name}: CIDR must be a string";
                 continue;
             }
@@ -774,13 +774,13 @@ class NetworkConfigValidator {
                 $subnet = IPv4\Subnet::fromCidr($cidr);
                 $subnets[$name] = $subnet;
 
-                // Check if subnet is properly sized. array_key_exists() rather than isset(),
+                // Check if subnet is properly sized. \array_key_exists() rather than isset(),
                 // so a null requirement is reported instead of silently skipped.
-                if (array_key_exists($name, $config['requirements'] ?? [])) {
+                if (\array_key_exists($name, $config['requirements'] ?? [])) {
                     $required = $config['requirements'][$name];
                     $available = $subnet->hostCount();
 
-                    if (!is_int($required) || $required < 1) {
+                    if (!\is_int($required) || $required < 1) {
                         $this->errors[] = "{$name}: Host requirement must be a positive integer";
                     } elseif ($available < $required) {
                         $this->errors[] = "{$name}: Insufficient capacity. Required: {$required}, Available: {$available}";
@@ -795,17 +795,17 @@ class NetworkConfigValidator {
 
         // Every required network must be defined; the loop above only sizes the ones that are
         foreach ($config['requirements'] ?? [] as $name => $required) {
-            if (!array_key_exists($name, $config['subnets'] ?? [])) {
+            if (!\array_key_exists($name, $config['subnets'] ?? [])) {
                 $this->errors[] = "{$name}: Required network is not defined";
             }
         }
 
         // Check for overlaps
-        $subnetList = array_values($subnets);
-        for ($i = 0; $i < count($subnetList); $i++) {
-            for ($j = $i + 1; $j < count($subnetList); $j++) {
+        $subnetList = \array_values($subnets);
+        for ($i = 0; $i < \count($subnetList); $i++) {
+            for ($j = $i + 1; $j < \count($subnetList); $j++) {
                 if ($subnetList[$i]->overlaps($subnetList[$j])) {
-                    $names = array_keys($subnets);
+                    $names = \array_keys($subnets);
                     $this->errors[] = "Overlap detected: {$names[$i]} and {$names[$j]}";
                 }
             }
@@ -813,18 +813,18 @@ class NetworkConfigValidator {
 
         // Validate address types against the whole block. isPrivate() and isPublic() classify
         // only the input IP, so they would miss a block that straddles an RFC 1918 boundary.
-        $rfc1918 = array_map(
+        $rfc1918 = \array_map(
             fn($cidr) => IPv4\Subnet::fromCidr($cidr),
             ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']
         );
         foreach ($subnets as $name => $subnet) {
-            $touchesPrivate = array_filter($rfc1918, fn($block) => $subnet->overlaps($block)) !== [];
-            $entirelyPrivate = array_filter($rfc1918, fn($block) => $subnet->isContainedIn($block)) !== [];
+            $touchesPrivate = \array_filter($rfc1918, fn($block) => $subnet->overlaps($block)) !== [];
+            $entirelyPrivate = \array_filter($rfc1918, fn($block) => $subnet->isContainedIn($block)) !== [];
 
-            if (strpos($name, 'public') !== false && $touchesPrivate) {
+            if (\strpos($name, 'public') !== false && $touchesPrivate) {
                 $this->warnings[] = "{$name}: Named 'public' but includes private address space";
             }
-            if (strpos($name, 'private') !== false && !$entirelyPrivate) {
+            if (\strpos($name, 'private') !== false && !$entirelyPrivate) {
                 $this->warnings[] = "{$name}: Named 'private' but is not entirely within private address space";
             }
         }
@@ -834,11 +834,11 @@ class NetworkConfigValidator {
 
     public function getReport() {
         $report = "Network Configuration Validation Report\n";
-        $report .= str_repeat('=', 80) . "\n\n";
+        $report .= \str_repeat('=', 80) . "\n\n";
 
         if (!empty($this->errors)) {
-            $report .= "ERRORS (" . count($this->errors) . "):\n";
-            $report .= str_repeat('-', 80) . "\n";
+            $report .= "ERRORS (" . \count($this->errors) . "):\n";
+            $report .= \str_repeat('-', 80) . "\n";
             foreach ($this->errors as $error) {
                 $report .= "  ✗ {$error}\n";
             }
@@ -846,8 +846,8 @@ class NetworkConfigValidator {
         }
 
         if (!empty($this->warnings)) {
-            $report .= "WARNINGS (" . count($this->warnings) . "):\n";
-            $report .= str_repeat('-', 80) . "\n";
+            $report .= "WARNINGS (" . \count($this->warnings) . "):\n";
+            $report .= \str_repeat('-', 80) . "\n";
             foreach ($this->warnings as $warning) {
                 $report .= "  ⚠ {$warning}\n";
             }
@@ -901,7 +901,7 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
     $proposed = IPv4\Subnet::fromCidr($proposedCidr);
 
     echo "Network Change Impact Analysis\n";
-    echo str_repeat('=', 80) . "\n\n";
+    echo \str_repeat('=', 80) . "\n\n";
 
     echo "Current Network: {$currentCidr}\n";
     echo "Proposed Network: {$proposedCidr}\n\n";
@@ -915,7 +915,7 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
     echo "  Range: {$proposed->minHost()} - {$proposed->maxHost()}\n\n";
 
     echo "Impact Analysis:\n";
-    echo str_repeat('-', 80) . "\n";
+    echo \str_repeat('-', 80) . "\n";
 
     // Capacity change
     $capacityChange = $proposed->hostCount() - $current->hostCount();
@@ -956,7 +956,7 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
     }
 
     echo "\nRecommendations:\n";
-    echo str_repeat('-', 80) . "\n";
+    echo \str_repeat('-', 80) . "\n";
 
     if (!$current->overlaps($proposed)) {
         echo "  • Complete network renumbering required\n";
@@ -981,11 +981,11 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
 
 // Usage
 analyzeNetworkChange('192.168.1.0/24', '192.168.1.0/23');  // Expansion
-echo "\n" . str_repeat('=', 80) . "\n\n";
+echo "\n" . \str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/24', '192.168.1.0/25');  // Contraction
-echo "\n" . str_repeat('=', 80) . "\n\n";
+echo "\n" . \str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/24', '192.168.2.0/24');  // Complete change
-echo "\n" . str_repeat('=', 80) . "\n\n";
+echo "\n" . \str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/31', '192.168.1.0/30');  // Expansion that consumes a host
 ```
 

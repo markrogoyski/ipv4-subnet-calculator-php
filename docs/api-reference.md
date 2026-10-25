@@ -861,7 +861,7 @@ Implement JsonSerializable interface. Encodes as dotted decimal format (same as 
 
 **Example:**
 ```php
-json_encode($subnet->networkAddress());  // "192.168.1.0"
+\json_encode($subnet->networkAddress());  // "192.168.1.0"
 ```
 
 #### Classification Methods
@@ -1053,8 +1053,8 @@ Returns the number of IPs in the range. Because IPRange implements `Countable`, 
 // Using the method
 $count = $range->count();  // 256
 
-// Using PHP's count() function (recommended)
-$count = count($range);  // 256
+// Using PHP's \count() function (recommended)
+$count = \count($range);  // 256
 ```
 
 ##### contains()
@@ -1109,7 +1109,7 @@ Implement JsonSerializable interface. Encodes only the start and end addresses, 
 
 **Example:**
 ```php
-json_encode($subnet->hostRange());  // {"start":"192.168.1.1","end":"192.168.1.254"}
+\json_encode($subnet->hostRange());  // {"start":"192.168.1.1","end":"192.168.1.254"}
 ```
 
 ---
