@@ -128,8 +128,7 @@ final class SubnetReport
         $output .= \sprintf("%-28s %d\n", 'Number of IP Addresses:', $subnet->addressCount());
         $output .= \sprintf("%-28s %d\n", 'Number of Addressable Hosts:', $subnet->hostCount());
 
-        $range = $subnet->networkAddress()->asQuads() . ' - ' . $subnet->broadcastAddress()->asQuads();
-        $output .= \sprintf("%-28s %s\n", 'IP Address Range:', $range);
+        $output .= \sprintf("%-28s %s\n", 'IP Address Range:', (string) $subnet->addressRange());
 
         $output .= \sprintf("%-28s %s\n", 'Broadcast Address:', $subnet->broadcastAddress()->asQuads());
         $output .= \sprintf("%-28s %s\n", 'Min Host:', $subnet->minHost()->asQuads());
