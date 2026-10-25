@@ -838,22 +838,13 @@ final class Subnet implements \JsonSerializable, \Stringable
             }
         }
 
-        $subnets = [];
-        $current = $this;
+        $networkInt = $this->networkAddressInt();
+        $step = $count > 0 ? $addressCount : -$addressCount;
 
-        if ($count > 0) {
-            for ($i = 0; $i < $count; $i++) {
-                $current = $current->next();
-                $subnets[] = $current;
-            }
-        } else {
-            for ($i = 0; $i > $count; $i--) {
-                $current = $current->previous();
-                $subnets[] = $current;
-            }
-        }
-
-        return $subnets;
+        return \array_map(
+            fn (int $i): self => new self(new IPAddress($networkInt + ($i * $step)), $this->networkSize),
+            \range(1, \abs($count))
+        );
     }
 
     /* ==================== *
@@ -871,7 +862,11 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function containsIP(string|IPAddress $ip): bool
     {
-        return $this->addressRange()->contains($ip);
+        if (\is_string($ip)) {
+            $ip = new IPAddress($ip);
+        }
+
+        return ($ip->asInteger() & $this->mask->asInteger()) === $this->networkAddressInt();
     }
 
     /* ==================== *
