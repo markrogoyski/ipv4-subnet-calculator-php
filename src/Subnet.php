@@ -68,7 +68,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public static function fromCidr(string $cidr): self
     {
-        if (\strpos($cidr, '/') === false) {
+        if (!\str_contains($cidr, '/')) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: missing '/' in '{$cidr}'"
             );
@@ -84,16 +84,16 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         [$ipAddress, $prefix] = $parts;
 
-        $isNegative = \strpos($prefix, '-') === 0 && Assert::isDecimal(\substr($prefix, 1));
+        $digits = \str_starts_with($prefix, '-') ? \substr($prefix, 1) : $prefix;
 
-        if (!$isNegative && !Assert::isDecimal($prefix)) {
+        if (!Assert::isDecimal($digits)) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be an integer in '{$cidr}'"
             );
         }
 
         // Range-check here so an oversized prefix, which (int) clamps to PHP_INT_MAX, is reported as typed
-        if ($isNegative || (int) $prefix > 32) {
+        if ($digits !== $prefix || (int) $digits > 32) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'"
             );

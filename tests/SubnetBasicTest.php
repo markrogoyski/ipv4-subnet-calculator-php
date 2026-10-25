@@ -406,6 +406,37 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
      * @param string $cidr
      */
     #[Test]
+    #[DataProvider('dataProviderForMalformedSignedPrefix')]
+    public function testFromCidrThrowsExceptionWhenSignedPrefixIsNotAnInteger(string $cidr): void
+    {
+        // Given - A CIDR string whose prefix has a minus sign but no valid unsigned integer after it
+
+        // Then - It is reported as malformed rather than out of range
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('prefix must be an integer');
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public static function dataProviderForMalformedSignedPrefix(): array
+    {
+        return [
+            'bare minus'         => ['192.168.1.0/-'],
+            'double minus'       => ['192.168.1.0/--5'],
+            'zero-padded minus'  => ['192.168.1.0/-05'],
+            'minus then letters' => ['192.168.1.0/-abc'],
+            'plus sign'          => ['192.168.1.0/+24'],
+        ];
+    }
+
+    /**
+     * @param string $cidr
+     */
+    #[Test]
     #[DataProvider('dataProviderForOversizedPrefix')]
     public function testFromCidrThrowsExceptionReportingInputWhenPrefixIsOutOfRange(string $cidr): void
     {
@@ -429,6 +460,7 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
             '/100'               => ['192.168.1.0/100'],
             '/-1'                => ['192.168.1.0/-1'],
             '/-24'               => ['192.168.1.0/-24'],
+            '/-0'                => ['192.168.1.0/-0'],
             'beyond PHP_INT_MAX' => ['192.168.1.0/99999999999999999999'],
         ];
     }
