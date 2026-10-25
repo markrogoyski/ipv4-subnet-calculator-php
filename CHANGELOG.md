@@ -35,7 +35,7 @@
 - **PHP version constraint**: Composer requires `^8.1` instead of `>=8.1.0`, so untested PHP 9 is no longer admitted
 
 ### Documentation
-- **Examples and reference**: Corrected allocation examples, report output, migration guidance and API contracts; clarified `isPublic()` semantics
+- **Examples and reference**: Corrected allocation examples, report output, migration guidance and API contracts; clarified `isPublic()` semantics; restricted the reverse-DNS zone example to /8, /16 and /24 zones, since longer prefixes need RFC 2317 classless delegation
 
 ## v5.0.0 - 2026-02-28
 

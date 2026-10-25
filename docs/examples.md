@@ -618,12 +618,20 @@ echo $planner->exportDHCPConfig($scopes, 'isc-dhcp');
 
 Generate reverse DNS zone configurations.
 
+Reverse zones are delegated on octet boundaries, so this generator accepts /8, /16 and /24 networks. Classless delegation of longer prefixes (RFC 2317) needs a child zone with its own naming and CNAME records in the parent zone, which this example does not cover.
+
 ```php
 <?php
 
 class ReverseDNSZoneGenerator {
     public function generateZone($cidr, $nameservers, $hostnames = []) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
+
+        if (!in_array($subnet->networkSize(), [8, 16, 24], true)) {
+            throw new InvalidArgumentException(
+                "Reverse zones must be /8, /16 or /24; {$cidr} needs RFC 2317 classless delegation"
+            );
+        }
 
         echo "Reverse DNS Zone Configuration\n";
         echo str_repeat('=', 80) . "\n";
@@ -642,6 +650,11 @@ class ReverseDNSZoneGenerator {
         $zone .= "; Network: {$subnet->cidr()}\n";
         $zone .= "; Generated: " . date('Y-m-d H:i:s') . "\n\n";
 
+        // Zone origin: the network octets in reverse, e.g. 192.168.1.0/24 => 1.168.192.in-addr.arpa
+        $networkOctets = array_slice(explode('.', $subnet->networkAddress()->asQuads()), 0, intdiv($subnet->networkSize(), 8));
+        $origin = implode('.', array_reverse($networkOctets)) . '.in-addr.arpa';
+
+        $zone .= "\$ORIGIN {$origin}.\n";
         $zone .= "\$TTL 86400\n";
         $zone .= "@    IN    SOA    {$nameservers[0]}. hostmaster.example.com. (\n";
         $zone .= "            " . date('Ymd') . "01    ; Serial\n";
@@ -656,8 +669,8 @@ class ReverseDNSZoneGenerator {
         }
         $zone .= "\n";
 
-        // PTR records use absolute owner names (trailing dot), which are
-        // correct for any prefix length, not just /24 zones
+        // PTR records use absolute owner names (trailing dot); every address in an
+        // octet-aligned network falls within the zone origin
         foreach ($hostnames as $ip => $hostname) {
             if ($subnet->containsIP($ip)) {
                 $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
