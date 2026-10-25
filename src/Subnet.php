@@ -778,7 +778,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        return new self(new IPAddress($nextStart), $this->networkSize);
+        return new self(IPAddress::fromInteger($nextStart), $this->networkSize);
     }
 
     /**
@@ -801,7 +801,7 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         $previousStart = $currentStart - $addressCount;
 
-        return new self(new IPAddress($previousStart), $this->networkSize);
+        return new self(IPAddress::fromInteger($previousStart), $this->networkSize);
     }
 
     /**
@@ -842,7 +842,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         $step = $count > 0 ? $addressCount : -$addressCount;
 
         return \array_map(
-            fn (int $i): self => new self(new IPAddress($networkInt + ($i * $step)), $this->networkSize),
+            fn (int $i): self => new self(IPAddress::fromInteger($networkInt + ($i * $step)), $this->networkSize),
             \range(1, \abs($count))
         );
     }
@@ -977,7 +977,7 @@ final class Subnet implements \JsonSerializable, \Stringable
         $numSubnets = 1 << ($newPrefix - $this->networkSize);
 
         for ($i = 0; $i < $numSubnets; $i++) {
-            yield new self(new IPAddress($networkInt + ($i * $addressCount)), $newPrefix);
+            yield new self(IPAddress::fromInteger($networkInt + ($i * $addressCount)), $newPrefix);
         }
     }
 
@@ -1024,7 +1024,7 @@ final class Subnet implements \JsonSerializable, \Stringable
                 $prefix--;
             }
 
-            $subnets[] = new self(new IPAddress($start), $prefix);
+            $subnets[] = new self(IPAddress::fromInteger($start), $prefix);
             $start += 1 << (32 - $prefix);
         }
 

@@ -72,7 +72,7 @@ final class Subnets
         $prefix = self::findSmallestCoveringPrefix($span['min'], $span['max']);
         $start = self::alignToPrefix($span['min'], $prefix);
 
-        return new Subnet(new IPAddress($start), $prefix);
+        return new Subnet(IPAddress::fromInteger($start), $prefix);
     }
 
     /**
@@ -235,7 +235,7 @@ final class Subnets
     private static function blocksToSubnets(array $blocks): array
     {
         return \array_map(
-            fn (CidrBlock $block): Subnet => new Subnet(new IPAddress($block->startInt()), $block->prefix()),
+            fn (CidrBlock $block): Subnet => new Subnet(IPAddress::fromInteger($block->startInt()), $block->prefix()),
             $blocks
         );
     }
