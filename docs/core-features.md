@@ -609,7 +609,7 @@ separately if you need to route to them.
 
 **Network Configuration Validation:**
 ```php
-$staticIP = IPv4\Subnet::fromCidr($configuredIP . '/32');
+$staticIP = new IPv4\IPAddress($configuredIP);
 
 // isReserved() (240.0.0.0/4) also covers 255.255.255.255; isThisNetwork() covers 0.0.0.0/8
 if ($staticIP->isThisNetwork() || $staticIP->isLoopback() || $staticIP->isMulticast() || $staticIP->isReserved()) {

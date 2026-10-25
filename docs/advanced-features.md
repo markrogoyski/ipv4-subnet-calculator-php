@@ -135,29 +135,17 @@ class IPAMPool {
 
     public function allocate($cidr) {
         $allocation = IPv4\Subnet::fromCidr($cidr);
-        $newAvailable = [];
-        $found = false;
-
-        foreach ($this->availableBlocks as $block) {
+        foreach ($this->availableBlocks as $index => $block) {
             if ($block->contains($allocation)) {
-                // Exclude allocation from this block
-                $remaining = $block->exclude($allocation);
-                $newAvailable = \array_merge($newAvailable, $remaining);
-                $found = true;
-            } else {
-                // Keep block unchanged
-                $newAvailable[] = $block;
+                // Replace the containing free block with what remains of it.
+                \array_splice($this->availableBlocks, $index, 1, $block->exclude($allocation));
+                return $allocation;
             }
         }
 
         // Reject requests that are already allocated, outside the pool,
         // or larger than any single free block
-        if (!$found) {
-            throw new \RuntimeException("{$allocation->networkCidr()} is not available");
-        }
-
-        $this->availableBlocks = $newAvailable;
-        return $allocation;
+        throw new \RuntimeException("{$allocation->networkCidr()} is not available");
     }
 
     public function getAvailableBlocks() {

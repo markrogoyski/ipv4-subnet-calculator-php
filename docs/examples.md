@@ -2,6 +2,12 @@
 
 Practical examples demonstrating how to use the IPv4 Subnet Calculator library in real-world scenarios.
 
+Run each example separately after loading Composer's autoloader:
+
+```php
+require_once __DIR__ . '/vendor/autoload.php';
+```
+
 ## Table of Contents
 - [Network Planning and IPAM](#network-planning-and-ipam)
 - [Firewall and Security](#firewall-and-security)
@@ -20,8 +26,6 @@ Allocate subnets to different office locations from a corporate address block.
 
 ```php
 <?php
-require_once(__DIR__ . '/vendor/autoload.php');
-
 // Corporate allocation: 10.0.0.0/16
 $corporateBlock = IPv4\Subnet::fromCidr('10.0.0.0/16');
 
@@ -49,8 +53,7 @@ $allocations = [];
 
 foreach ($offices as $office => $requiredHosts) {
     // Find optimal subnet size
-    $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts);
-    $subnet = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
+    $subnet = IPv4\SubnetParser::fromHostCount($currentNetwork, $requiredHosts);
 
     // Verify subnet fits within corporate block
     if (!$corporateBlock->contains($subnet)) {
@@ -64,7 +67,7 @@ foreach ($offices as $office => $requiredHosts) {
     echo "  Required hosts: {$requiredHosts}\n";
     echo "  Allocated: {$subnet->cidr()}\n";
     echo "  Usable hosts: {$subnet->hostCount()}\n";
-    echo "  Range: {$subnet->minHost()} - {$subnet->maxHost()}\n";
+    echo "  Range: {$subnet->hostRange()}\n";
     echo "  Utilization: {$subnet->utilizationFor($requiredHosts)}%\n\n";
 
     // Move to next available network
@@ -72,8 +75,7 @@ foreach ($offices as $office => $requiredHosts) {
 }
 
 // Calculate remaining space
-$allocated = \array_values($allocations);
-$remaining = $corporateBlock->excludeAll($allocated);
+$remaining = $corporateBlock->excludeAll(\array_values($allocations));
 
 echo "Remaining unallocated space:\n";
 $totalRemaining = 0;
@@ -113,34 +115,16 @@ class SimpleIPAM {
 
         $allocation = IPv4\Subnet::fromCidr($cidr);
 
-        // Check if requested subnet is available
-        $found = false;
-        foreach ($this->availableBlocks as $block) {
+        foreach ($this->availableBlocks as $index => $block) {
             if ($block->contains($allocation)) {
-                $found = true;
-                break;
+                // Replace the containing free block with what remains of it.
+                \array_splice($this->availableBlocks, $index, 1, $block->exclude($allocation));
+                $this->allocations[$name] = $allocation;
+                return $allocation;
             }
         }
 
-        if (!$found) {
-            throw new \Exception("Requested subnet {$cidr} is not available in pool");
-        }
-
-        // Update available blocks by excluding allocation
-        $newAvailable = [];
-        foreach ($this->availableBlocks as $block) {
-            if ($block->contains($allocation)) {
-                $remaining = $block->exclude($allocation);
-                $newAvailable = \array_merge($newAvailable, $remaining);
-            } else {
-                $newAvailable[] = $block;
-            }
-        }
-
-        $this->availableBlocks = $newAvailable;
-        $this->allocations[$name] = $allocation;
-
-        return $allocation;
+        throw new \Exception("Requested subnet {$cidr} is not available in pool");
     }
 
     public function findAvailableSubnet($requiredHosts) {
@@ -148,14 +132,8 @@ class SimpleIPAM {
 
         foreach ($this->availableBlocks as $block) {
             if ($block->networkSize() <= $optimalPrefix) {
-                // This block is large enough
-                $subnet = IPv4\Subnet::fromCidr(
-                    $block->networkAddress()->asQuads() . '/' . $optimalPrefix
-                );
-
-                if ($block->contains($subnet)) {
-                    return $subnet->cidr();
-                }
+                // A smaller subnet starting at this block's network address always fits.
+                return (new IPv4\Subnet($block->networkAddress(), $optimalPrefix))->cidr();
             }
         }
 
@@ -214,7 +192,8 @@ echo $ipam->getUtilizationReport();
 
 ### Firewall Rule Validation
 
-Validate that firewall rules don't have conflicting or overlapping entries.
+Find overlapping address ranges and flag differing actions for review. Whether an overlap
+is a conflict depends on the firewall's rule order and matching behavior.
 
 ```php
 <?php
@@ -254,13 +233,10 @@ class FirewallRuleValidator {
     }
 
     private function getConflictType($rule1, $rule2) {
-        if ($rule1['subnet']->contains($rule2['subnet'])) {
-            return 'rule1_contains_rule2';
-        } elseif ($rule2['subnet']->contains($rule1['subnet'])) {
-            return 'rule2_contains_rule1';
-        } else {
-            return 'partial_overlap';
-        }
+        // Called only for overlapping CIDR blocks: one must contain the other.
+        return $rule1['subnet']->contains($rule2['subnet'])
+            ? 'rule1_contains_rule2'
+            : 'rule2_contains_rule1';
     }
 
     public function printValidationReport() {
@@ -270,20 +246,20 @@ class FirewallRuleValidator {
         $conflicts = $this->validateRules();
 
         if (empty($conflicts)) {
-            echo "✓ No conflicts detected. All rules are valid.\n";
+            echo "✓ No overlapping address ranges detected.\n";
             return;
         }
 
-        echo "⚠ CONFLICTS DETECTED: " . \count($conflicts) . "\n\n";
+        echo "⚠ Overlapping rule pairs: " . \count($conflicts) . "\n\n";
 
         foreach ($conflicts as $i => $conflict) {
-            echo "Conflict #" . ($i + 1) . ":\n";
+            echo "Overlap #" . ($i + 1) . ":\n";
             echo "  Rule 1: {$conflict['rule1']['name']} ({$conflict['rule1']['cidr']}) - {$conflict['rule1']['action']}\n";
             echo "  Rule 2: {$conflict['rule2']['name']} ({$conflict['rule2']['cidr']}) - {$conflict['rule2']['action']}\n";
             echo "  Type: {$conflict['type']}\n";
 
             if ($conflict['rule1']['action'] !== $conflict['rule2']['action']) {
-                echo "  ⚠ WARNING: Conflicting actions ({$conflict['rule1']['action']} vs {$conflict['rule2']['action']})\n";
+                echo "  ⚠ WARNING: Differing actions ({$conflict['rule1']['action']} vs {$conflict['rule2']['action']})\n";
             }
 
             echo "\n";
@@ -297,7 +273,7 @@ $validator = new FirewallRuleValidator();
 // Add firewall rules
 $validator->addRule('Allow Internal', '10.0.0.0/8', 'allow');
 $validator->addRule('Allow Office A', '10.1.0.0/16', 'allow');  // Contained in Internal
-$validator->addRule('Block Office A Guest', '10.1.100.0/24', 'deny');  // Conflicts!
+$validator->addRule('Block Office A Guest', '10.1.100.0/24', 'deny');  // Overlaps with differing action
 $validator->addRule('Allow External Partners', '203.0.113.0/24', 'allow');
 $validator->addRule('Allow Public Web', '0.0.0.0/0', 'allow');  // Contains everything!
 
@@ -313,69 +289,31 @@ container networks.
 ```php
 <?php
 
-class AccessController {
-    public function checkAccess($ipAddress, $resource) {
-        // Unknown resources trust no networks
-        foreach ($this->getAccessPolicy($resource) as $cidr) {
-            if (IPv4\Subnet::fromCidr($cidr)->containsIP($ipAddress)) {
-                return true;
-            }
-        }
+function canAccess($ipAddress, $resource) {
+    $policies = [
+        'admin-panel'  => ['192.168.50.0/24', '127.0.0.0/8'],  // Admin VPN, localhost
+        'internal-api' => ['10.20.0.0/16', '192.168.50.0/24'], // Office LAN, Admin VPN
+        'public-api'   => ['0.0.0.0/0'],                       // Everyone
+    ];
 
-        return false;
-    }
-
-    private function getAccessPolicy($resource) {
-        $policies = [
-            'admin-panel'  => ['192.168.50.0/24', '127.0.0.0/8'],  // Admin VPN, localhost
-            'internal-api' => ['10.20.0.0/16', '192.168.50.0/24'], // Office LAN, Admin VPN
-            'public-api'   => ['0.0.0.0/0'],                       // Everyone
-        ];
-
-        return $policies[$resource] ?? [];
-    }
-
-    public function generateAccessReport($ipAddress) {
-        $subnet = IPv4\Subnet::fromCidr($ipAddress . '/32');
-
-        echo "Access Report for {$ipAddress}\n";
-        echo \str_repeat('=', 80) . "\n";
-        echo "IP Type: {$subnet->addressType()->value}\n";  // Use ->value for string
-        echo "Private: " . ($subnet->isPrivate() ? 'Yes' : 'No') . "\n";
-        echo "Public: " . ($subnet->isPublic() ? 'Yes' : 'No') . "\n";
-        echo "Loopback: " . ($subnet->isLoopback() ? 'Yes' : 'No') . "\n\n";
-
-        echo "Access Permissions:\n";
-        $resources = ['admin-panel', 'public-api', 'internal-api'];
-        foreach ($resources as $resource) {
-            $access = $this->checkAccess($ipAddress, $resource);
-            $status = $access ? '✓ ALLOWED' : '✗ DENIED';
-            echo "  {$resource}: {$status}\n";
+    // Unknown resources trust no networks.
+    foreach ($policies[$resource] ?? [] as $cidr) {
+        if (IPv4\Subnet::fromCidr($cidr)->containsIP($ipAddress)) {
+            return true;
         }
     }
+
+    return false;
 }
 
-// Usage
-$ac = new AccessController();
-
-echo "Office User:\n";
-$ac->generateAccessReport('10.20.5.17');
-echo "\n";
-
-echo "Admin VPN User:\n";
-$ac->generateAccessReport('192.168.50.10');
-echo "\n";
-
-echo "Container (private, but untrusted):\n";
-$ac->generateAccessReport('172.17.0.2');
-echo "\n";
-
-echo "External User:\n";
-$ac->generateAccessReport('8.8.8.8');
-echo "\n";
-
-echo "Localhost:\n";
-$ac->generateAccessReport('127.0.0.1');
+foreach (['10.20.5.17', '192.168.50.10', '172.17.0.2', '8.8.8.8', '127.0.0.1'] as $ip) {
+    echo "{$ip}:\n";
+    foreach (['admin-panel', 'internal-api', 'public-api'] as $resource) {
+        $status = canAccess($ip, $resource) ? 'ALLOWED' : 'DENIED';
+        echo "  {$resource}: {$status}\n";
+    }
+}
+// 172.17.0.2 is private, but has access only to the public API.
 ```
 
 ---
@@ -384,101 +322,31 @@ $ac->generateAccessReport('127.0.0.1');
 
 ### Multi-Region Route Aggregation
 
-Aggregate multiple regional subnets for BGP advertisement.
+Aggregate routes within each region, grouping only routes with the same routing policy.
+`aggregate()` preserves the exact address coverage; `summarize()` can include gaps.
 
 ```php
 <?php
 
-class BGPRouteOptimizer {
-    private $regions = [];
+$regions = [
+    'North America' => ['10.1.0.0/24', '10.1.1.0/24', '10.1.2.0/24', '10.1.3.0/24'],
+    'Europe'        => ['10.2.0.0/24', '10.2.1.0/24', '10.2.4.0/24', '10.2.5.0/24'],
+    'Asia'          => ['10.3.0.0/24', '10.3.1.0/24'],
+];
 
-    public function addRegionalRoutes($region, array $cidrs) {
-        $subnets = \array_map(function($cidr) {
-            return IPv4\Subnet::fromCidr($cidr);
-        }, $cidrs);
+foreach ($regions as $region => $cidrs) {
+    $subnets = \array_map(fn($cidr) => IPv4\Subnet::fromCidr($cidr), $cidrs);
+    $aggregated = IPv4\Subnets::aggregate($subnets);
 
-        $this->regions[$region] = $subnets;
-    }
-
-    public function optimizeRoutes() {
-        $optimized = [];
-
-        foreach ($this->regions as $region => $subnets) {
-            $aggregated = IPv4\Subnets::aggregate($subnets);
-            $optimized[$region] = $aggregated;
-        }
-
-        return $optimized;
-    }
-
-    public function printOptimizationReport() {
-        echo "BGP Route Optimization Report\n";
-        echo \str_repeat('=', 80) . "\n\n";
-
-        $totalOriginal = 0;
-        $totalOptimized = 0;
-
-        foreach ($this->regions as $region => $subnets) {
-            echo "Region: {$region}\n";
-            echo \str_repeat('-', 80) . "\n";
-
-            echo "Original routes (" . \count($subnets) . "):\n";
-            foreach ($subnets as $subnet) {
-                echo "  {$subnet->cidr()}\n";
-            }
-
-            $aggregated = IPv4\Subnets::aggregate($subnets);
-            echo "\nOptimized routes (" . \count($aggregated) . "):\n";
-            foreach ($aggregated as $subnet) {
-                echo "  {$subnet->cidr()}\n";
-            }
-
-            $reduction = \count($subnets) - \count($aggregated);
-            echo "\nReduction: {$reduction} routes\n\n";
-
-            $totalOriginal += \count($subnets);
-            $totalOptimized += \count($aggregated);
-        }
-
-        $totalReduction = $totalOriginal - $totalOptimized;
-        $percentReduction = $totalOriginal > 0
-            ? \round(($totalReduction / $totalOriginal) * 100, 2)
-            : 0.0;
-
-        echo \str_repeat('=', 80) . "\n";
-        echo "Total Summary:\n";
-        echo "  Original routes: {$totalOriginal}\n";
-        echo "  Optimized routes: {$totalOptimized}\n";
-        echo "  Reduction: {$totalReduction} routes ({$percentReduction}%)\n";
+    echo "{$region}: " . \count($subnets) . " routes -> " . \count($aggregated) . "\n";
+    foreach ($aggregated as $subnet) {
+        echo "  {$subnet->networkCidr()}\n";
     }
 }
-
-// Usage
-$bgp = new BGPRouteOptimizer();
-
-// North America routes
-$bgp->addRegionalRoutes('North America', [
-    '10.1.0.0/24',
-    '10.1.1.0/24',
-    '10.1.2.0/24',
-    '10.1.3.0/24',
-]);
-
-// Europe routes
-$bgp->addRegionalRoutes('Europe', [
-    '10.2.0.0/24',
-    '10.2.1.0/24',
-    '10.2.4.0/24',  // Gap - cannot aggregate with above
-    '10.2.5.0/24',
-]);
-
-// Asia routes
-$bgp->addRegionalRoutes('Asia', [
-    '10.3.0.0/24',
-    '10.3.1.0/24',
-]);
-
-$bgp->printOptimizationReport();
+// Result summary:
+// North America: 10.1.0.0/22
+// Europe: 10.2.0.0/23 and 10.2.4.0/23 (the gap stays unadvertised)
+// Asia: 10.3.0.0/23
 ```
 
 ---
@@ -487,7 +355,7 @@ $bgp->printOptimizationReport();
 
 ### Optimal DHCP Scope Calculation
 
-Calculate optimal DHCP scopes for different departments.
+Calculate optimal DHCP scopes for different departments. Each `hosts` value must be a positive PHP integer.
 
 ```php
 <?php
@@ -507,16 +375,18 @@ class DHCPScopePlanner {
         // would round its network address backward into space already in use.
         \uasort($departments, fn($a, $b) => $b['hosts'] <=> $a['hosts']);
 
-        $currentNetwork = $baseSubnet->networkAddress()->asQuads();
+        $currentNetwork = $baseSubnet->networkAddress();
 
         foreach ($departments as $dept => $requirements) {
             $requiredHosts = $requirements['hosts'];
+            if (!\is_int($requiredHosts) || $requiredHosts < 1) {
+                throw new \InvalidArgumentException("{$dept}: Host requirement must be a positive integer");
+            }
 
             // Size the scope so the DHCP pool still holds every required host
             // after the static and gateway reservations are taken out
             $reserved = self::STATIC_RESERVED + self::GATEWAY_RESERVED;
-            $optimalPrefix = IPv4\SubnetParser::optimalPrefixForHosts($requiredHosts + $reserved);
-            $scope = IPv4\Subnet::fromCidr("{$currentNetwork}/{$optimalPrefix}");
+            $scope = IPv4\SubnetParser::fromHostCount($currentNetwork, $requiredHosts + $reserved);
 
             // Verify scope fits within base network
             if (!$baseSubnet->contains($scope)) {
@@ -524,49 +394,41 @@ class DHCPScopePlanner {
             }
 
             // Calculate DHCP pool (reserve first 10 IPs for static, last IP for gateway)
-            $poolStart = $scope->minHost()->asInteger() + self::STATIC_RESERVED;
-            $poolEnd = $scope->maxHost()->asInteger() - self::GATEWAY_RESERVED;
-
-            if ($poolEnd - $poolStart + 1 < $requiredHosts) {
-                throw new \RuntimeException("DHCP pool for {$dept} cannot hold {$requiredHosts} hosts");
-            }
+            $pool = new IPv4\IPRange(
+                IPv4\IPAddress::fromInteger($scope->minHost()->asInteger() + self::STATIC_RESERVED),
+                IPv4\IPAddress::fromInteger($scope->maxHost()->asInteger() - self::GATEWAY_RESERVED)
+            );
 
             $dns = new IPv4\IPAddress($requirements['dns'] ?? $scope->minHost()->asQuads());
 
             $scopes[$dept] = [
                 'subnet' => $scope,
                 'required_hosts' => $requiredHosts,
-                'scope_start' => \long2ip($poolStart),
-                'scope_end' => \long2ip($poolEnd),
+                'pool' => $pool,
                 'gateway' => $scope->maxHost(),
                 'dns' => $dns,
             ];
 
-            $currentNetwork = $scope->next()->networkAddress()->asQuads();
+            $currentNetwork = $scope->next()->networkAddress();
         }
 
-        // A network or broadcast address can never be a host, so it cannot serve DNS
-        $unassignable = [$baseSubnet->networkAddress(), $baseSubnet->broadcastAddress()];
+        $unassignable = [(string) $baseSubnet->networkAddress(), (string) $baseSubnet->broadcastAddress()];
         foreach ($scopes as $scope) {
-            $unassignable[] = $scope['subnet']->networkAddress();
-            $unassignable[] = $scope['subnet']->broadcastAddress();
-        }
-        foreach ($scopes as $dept => $scope) {
-            foreach ($unassignable as $address) {
-                if ($scope['dns']->equals($address)) {
-                    throw new \InvalidArgumentException(
-                        "DNS server {$scope['dns']} for {$dept} is a network or broadcast address"
-                    );
-                }
-            }
+            $unassignable[] = (string) $scope['subnet']->networkAddress();
+            $unassignable[] = (string) $scope['subnet']->broadcastAddress();
         }
 
-        // Advertising an address as DNS does not reserve it, so a DNS server inside
-        // any pool (its own department's or another's) could be leased to a client
         foreach ($scopes as $dept => $scope) {
+            // DNS cannot use a network or broadcast address in this plan.
+            if (\in_array((string) $scope['dns'], $unassignable, true)) {
+                throw new \InvalidArgumentException(
+                    "DNS server {$scope['dns']} for {$dept} is a network or broadcast address"
+                );
+            }
+            // Advertising an address as DNS does not reserve it, so a DNS server inside
+            // any pool (its own department's or another's) could be leased to a client.
             foreach ($scopes as $poolDept => $pool) {
-                $dns = $scope['dns']->asInteger();
-                if ($dns >= \ip2long($pool['scope_start']) && $dns <= \ip2long($pool['scope_end'])) {
+                if ($pool['pool']->contains($scope['dns'])) {
                     throw new \InvalidArgumentException(
                         "DNS server {$scope['dns']} for {$dept} is inside the DHCP pool for {$poolDept}"
                     );
@@ -593,28 +455,21 @@ class DHCPScopePlanner {
             echo "  Subnet mask: {$subnet->mask()}\n";
             echo "  Usable hosts: {$subnet->hostCount()}\n";
             echo "  Utilization: {$subnet->utilizationFor($scope['required_hosts'])}%\n";
-            echo "  DHCP Pool: {$scope['scope_start']} - {$scope['scope_end']}\n";
+            echo "  DHCP Pool: {$scope['pool']}\n";
             echo "  Gateway: {$scope['gateway']}\n";
             echo "  DNS: {$scope['dns']}\n\n";
         }
     }
 
-    public function exportDHCPConfig(array $scopes, $serverType = 'isc-dhcp') {
-        if ($serverType === 'isc-dhcp') {
-            return $this->exportISCDHCPConfig($scopes);
-        }
-        return '';
-    }
-
-    private function exportISCDHCPConfig(array $scopes) {
+    public function exportDHCPConfig(array $scopes) {
         $config = "# ISC DHCP Server Configuration\n";
         $config .= "# Generated: " . \date('Y-m-d H:i:s') . "\n\n";
 
         foreach ($scopes as $name => $scope) {
             $subnet = $scope['subnet'];
             $config .= "# {$name}\n";
-            $config .= "subnet {$subnet->networkAddress()->asQuads()} netmask {$subnet->mask()} {\n";
-            $config .= "    range {$scope['scope_start']} {$scope['scope_end']};\n";
+            $config .= "subnet {$subnet->networkAddress()} netmask {$subnet->mask()} {\n";
+            $config .= "    range {$scope['pool']->start()} {$scope['pool']->end()};\n";
             $config .= "    option routers {$scope['gateway']};\n";
             $config .= "    option domain-name-servers {$scope['dns']};\n";
             $config .= "    option subnet-mask {$subnet->mask()};\n";
@@ -639,7 +494,7 @@ $scopes = $planner->planScopes('10.0.0.0/22', $departments);
 echo "\n" . \str_repeat('=', 80) . "\n";
 echo "Generated DHCP Configuration:\n";
 echo \str_repeat('=', 80) . "\n\n";
-echo $planner->exportDHCPConfig($scopes, 'isc-dhcp');
+echo $planner->exportDHCPConfig($scopes);
 ```
 
 ---
@@ -672,19 +527,6 @@ class ReverseDNSZoneGenerator {
             throw new InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
         }
 
-        echo "Reverse DNS Zone Configuration\n";
-        echo \str_repeat('=', 80) . "\n";
-        echo "Subnet: {$cidr}\n";
-        echo "Network: {$subnet->networkAddress()->asQuads()}\n";
-        echo "Broadcast: {$subnet->broadcastAddress()->asQuads()}\n\n";
-
-        // Generate zone file
-        $zone = $this->generateZoneFile($subnet, $nameservers, $serial, $hostnames);
-
-        return $zone;
-    }
-
-    private function generateZoneFile($subnet, $nameservers, $serial, $hostnames) {
         $zone = "; Reverse DNS Zone\n";
         $zone .= "; Network: {$subnet->cidr()}\n";
         $zone .= "; Generated: " . \date('Y-m-d H:i:s') . "\n\n";
@@ -779,7 +621,7 @@ class NetworkConfigValidator {
             return false;
         }
 
-        // Validate subnets
+        // Parse each subnet and compare it with those already parsed.
         $subnets = [];
         foreach ($config['subnets'] ?? [] as $name => $cidr) {
             if (!\is_string($cidr)) {
@@ -788,42 +630,38 @@ class NetworkConfigValidator {
             }
             try {
                 $subnet = IPv4\Subnet::fromCidr($cidr);
-                $subnets[$name] = $subnet;
-
-                // Check if subnet is properly sized. \array_key_exists() rather than isset(),
-                // so a null requirement is reported instead of silently skipped.
-                if (\array_key_exists($name, $config['requirements'] ?? [])) {
-                    $required = $config['requirements'][$name];
-                    $available = $subnet->hostCount();
-
-                    if (!\is_int($required) || $required < 1) {
-                        $this->errors[] = "{$name}: Host requirement must be a positive integer";
-                    } elseif ($available < $required) {
-                        $this->errors[] = "{$name}: Insufficient capacity. Required: {$required}, Available: {$available}";
-                    } elseif ($available > $required * 2) {
-                        $this->warnings[] = "{$name}: Subnet may be oversized. Required: {$required}, Available: {$available}";
-                    }
-                }
-            } catch (\Exception $e) {
+            } catch (\InvalidArgumentException $e) {
                 $this->errors[] = "{$name}: Invalid CIDR notation - {$e->getMessage()}";
+                continue;
             }
+
+            foreach ($subnets as $otherName => $other) {
+                if ($subnet->overlaps($other)) {
+                    $this->errors[] = "Overlap detected: {$otherName} and {$name}";
+                }
+            }
+            $subnets[$name] = $subnet;
         }
 
-        // Every required network must be defined; the loop above only sizes the ones that are
+        // Iterate requirements directly so missing networks and null requirements are checked too.
         foreach ($config['requirements'] ?? [] as $name => $required) {
             if (!\array_key_exists($name, $config['subnets'] ?? [])) {
                 $this->errors[] = "{$name}: Required network is not defined";
+                continue;
             }
-        }
+            if (!\is_int($required) || $required < 1) {
+                $this->errors[] = "{$name}: Host requirement must be a positive integer";
+                continue;
+            }
+            if (!isset($subnets[$name])) {
+                continue;  // Invalid CIDR already reported above.
+            }
 
-        // Check for overlaps
-        $subnetList = \array_values($subnets);
-        for ($i = 0; $i < \count($subnetList); $i++) {
-            for ($j = $i + 1; $j < \count($subnetList); $j++) {
-                if ($subnetList[$i]->overlaps($subnetList[$j])) {
-                    $names = \array_keys($subnets);
-                    $this->errors[] = "Overlap detected: {$names[$i]} and {$names[$j]}";
-                }
+            $available = $subnets[$name]->hostCount();
+            if ($available < $required) {
+                $this->errors[] = "{$name}: Insufficient capacity. Required: {$required}, Available: {$available}";
+            } elseif ($available > $required * 2) {
+                $this->warnings[] = "{$name}: Subnet may be oversized. Required: {$required}, Available: {$available}";
             }
         }
 
@@ -837,10 +675,10 @@ class NetworkConfigValidator {
             $touchesPrivate = \array_filter($rfc1918, fn($block) => $subnet->overlaps($block)) !== [];
             $entirelyPrivate = \array_filter($rfc1918, fn($block) => $subnet->isContainedIn($block)) !== [];
 
-            if (\strpos($name, 'public') !== false && $touchesPrivate) {
+            if (\str_contains($name, 'public') && $touchesPrivate) {
                 $this->warnings[] = "{$name}: Named 'public' but includes private address space";
             }
-            if (\strpos($name, 'private') !== false && !$entirelyPrivate) {
+            if (\str_contains($name, 'private') && !$entirelyPrivate) {
                 $this->warnings[] = "{$name}: Named 'private' but is not entirely within private address space";
             }
         }
@@ -916,87 +754,36 @@ function analyzeNetworkChange($currentCidr, $proposedCidr) {
     $current = IPv4\Subnet::fromCidr($currentCidr);
     $proposed = IPv4\Subnet::fromCidr($proposedCidr);
 
-    echo "Network Change Impact Analysis\n";
-    echo \str_repeat('=', 80) . "\n\n";
-
-    echo "Current Network: {$currentCidr}\n";
-    echo "Proposed Network: {$proposedCidr}\n\n";
-
-    echo "Current State:\n";
-    echo "  Usable hosts: {$current->hostCount()}\n";
-    echo "  Range: {$current->minHost()} - {$current->maxHost()}\n\n";
-
-    echo "Proposed State:\n";
-    echo "  Usable hosts: {$proposed->hostCount()}\n";
-    echo "  Range: {$proposed->minHost()} - {$proposed->maxHost()}\n\n";
-
-    echo "Impact Analysis:\n";
-    echo \str_repeat('-', 80) . "\n";
-
-    // Capacity change
+    echo "Current: {$current->networkCidr()} ({$current->hostCount()} hosts)\n";
+    echo "Proposed: {$proposed->networkCidr()} ({$proposed->hostCount()} hosts)\n";
+    echo "Current host range: {$current->hostRange()}\n";
+    echo "Proposed host range: {$proposed->hostRange()}\n";
     $capacityChange = $proposed->hostCount() - $current->hostCount();
-    if ($capacityChange > 0) {
-        echo "  ✓ Capacity increase: +{$capacityChange} hosts\n";
-    } elseif ($capacityChange < 0) {
-        echo "  ⚠ Capacity decrease: {$capacityChange} hosts\n";
+    echo \sprintf("Capacity change: %+d hosts\n", $capacityChange);
+
+    if ($current->equals($proposed)) {
+        echo "No subnet change.\n";
+    } elseif (!$current->overlaps($proposed)) {
+        echo "No overlap: all hosts need new addresses. Update DHCP, static IPs, firewall rules and DNS.\n";
+    } elseif ($proposed->contains($current)) {
+        // Checking the endpoints covers the entire contiguous host range.
+        // Expanding a /31 or /32 can turn a host into the new network or broadcast address.
+        $proposedHosts = $proposed->hostRange();
+        $hostsPreserved = $proposedHosts->contains($current->minHost())
+            && $proposedHosts->contains($current->maxHost());
+
+        echo "Expansion: review the DHCP scope.\n";
+        echo $hostsPreserved
+            ? "All current host addresses remain usable.\n"
+            : "Move hosts off the new network or broadcast address.\n";
     } else {
-        echo "  - No capacity change\n";
-    }
-
-    // Hosts are preserved only if every current host is still a usable host in the proposed network.
-    // Expanding a /31 or /32 can turn a usable host into the new network or broadcast address.
-    $proposedHosts = $proposed->hostRange();
-    $hostsPreserved = $proposedHosts->contains($current->minHost())
-        && $proposedHosts->contains($current->maxHost());
-
-    // Address compatibility
-    if ($current->overlaps($proposed)) {
-        if ($proposed->contains($current)) {
-            echo "  ✓ Proposed network contains current network (expansion)\n";
-            if ($hostsPreserved) {
-                echo "  ✓ Existing IPs will remain valid\n";
-            } else {
-                echo "  ⚠ Some existing host IPs become the new network or broadcast address\n";
-            }
-        } elseif ($current->contains($proposed)) {
-            echo "  ⚠ Proposed network is smaller than current (contraction)\n";
-            echo "  ⚠ Some existing IPs may become invalid\n";
-        } else {
-            echo "  ⚠ Partial overlap with current network\n";
-            echo "  ⚠ Some IPs will remain valid, others will not\n";
-        }
-    } else {
-        echo "  ✗ No overlap with current network\n";
-        echo "  ✗ ALL existing IPs will become invalid\n";
-        echo "  ✗ Complete renumbering required\n";
-    }
-
-    echo "\nRecommendations:\n";
-    echo \str_repeat('-', 80) . "\n";
-
-    if (!$current->overlaps($proposed)) {
-        echo "  • Complete network renumbering required\n";
-        echo "  • Plan maintenance window\n";
-        echo "  • Update all static IP configurations\n";
-        echo "  • Update firewall rules\n";
-        echo "  • Update DNS records\n";
-    } elseif (!$proposed->contains($current)) {
-        echo "  • Partial renumbering required\n";
-        echo "  • Audit existing IP allocations\n";
-        echo "  • Migrate hosts outside new range\n";
-    } elseif (!$hostsPreserved) {
-        echo "  • Expansion, but some hosts must be renumbered\n";
-        echo "  • Move hosts off the new network and broadcast addresses\n";
-        echo "  • Update DHCP scope if applicable\n";
-    } else {
-        echo "  • Low-risk change (expansion)\n";
-        echo "  • Update DHCP scope if applicable\n";
-        echo "  • No immediate host changes required\n";
+        // Overlapping CIDR blocks are nested, so this must be a contraction.
+        echo "Contraction: audit allocations and move hosts that fall outside the proposed host range.\n";
     }
 }
 
 // Usage
-analyzeNetworkChange('192.168.1.0/24', '192.168.1.0/23');  // Expansion
+analyzeNetworkChange('192.168.1.0/24', '192.168.0.0/23');  // Expansion
 echo "\n" . \str_repeat('=', 80) . "\n\n";
 analyzeNetworkChange('192.168.1.0/24', '192.168.1.0/25');  // Contraction
 echo "\n" . \str_repeat('=', 80) . "\n\n";
