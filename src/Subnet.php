@@ -6,7 +6,6 @@ namespace IPv4;
 
 use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
-use IPv4\Internal\Platform;
 use IPv4\Internal\SubnetReport;
 
 /**
@@ -39,14 +38,11 @@ final class Subnet implements \JsonSerializable, \Stringable
      * @param int              $networkSize CIDR prefix (0-32)
      *
      * @throws \InvalidArgumentException If IP address or network size is invalid
-     * @throws \RuntimeException If running on 32-bit PHP
      */
     public function __construct(
         string|IPAddress $ipAddress,
         private readonly int $networkSize,
     ) {
-        Platform::ensure64Bit();
-
         if ($networkSize < 0 || $networkSize > 32) {
             throw new \InvalidArgumentException(
                 "Network size must be between 0 and 32, got {$networkSize}"

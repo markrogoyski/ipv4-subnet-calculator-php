@@ -87,9 +87,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isPrivate(): bool
     {
-        return $this->isInRange(0x0A_00_00_00, 0x0A_FF_FF_FF)     // 10.0.0.0/8
-            || $this->isInRange(0xAC_10_00_00, 0xAC_1F_FF_FF)     // 172.16.0.0/12
-            || $this->isInRange(0xC0_A8_00_00, 0xC0_A8_FF_FF);    // 192.168.0.0/16
+        return $this->isInBlock(0x0A_00_00_00, 8)      // 10.0.0.0/8
+            || $this->isInBlock(0xAC_10_00_00, 12)     // 172.16.0.0/12
+            || $this->isInBlock(0xC0_A8_00_00, 16);    // 192.168.0.0/16
     }
 
     /**
@@ -114,7 +114,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isLoopback(): bool
     {
-        return $this->isInRange(0x7F_00_00_00, 0x7F_FF_FF_FF);
+        return $this->isInBlock(0x7F_00_00_00, 8);
     }
 
     /**
@@ -128,7 +128,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isLinkLocal(): bool
     {
-        return $this->isInRange(0xA9_FE_00_00, 0xA9_FE_FF_FF);
+        return $this->isInBlock(0xA9_FE_00_00, 16);
     }
 
     /**
@@ -140,7 +140,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isMulticast(): bool
     {
-        return $this->isInRange(0xE0_00_00_00, 0xEF_FF_FF_FF);
+        return $this->isInBlock(0xE0_00_00_00, 4);
     }
 
     /**
@@ -152,7 +152,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isCarrierGradeNat(): bool
     {
-        return $this->isInRange(0x64_40_00_00, 0x64_7F_FF_FF);
+        return $this->isInBlock(0x64_40_00_00, 10);
     }
 
     /**
@@ -169,9 +169,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isDocumentation(): bool
     {
-        return $this->isInRange(0xC0_00_02_00, 0xC0_00_02_FF)     // TEST-NET-1: 192.0.2.0/24
-            || $this->isInRange(0xC6_33_64_00, 0xC6_33_64_FF)     // TEST-NET-2: 198.51.100.0/24
-            || $this->isInRange(0xCB_00_71_00, 0xCB_00_71_FF);    // TEST-NET-3: 203.0.113.0/24
+        return $this->isInBlock(0xC0_00_02_00, 24)     // TEST-NET-1: 192.0.2.0/24
+            || $this->isInBlock(0xC6_33_64_00, 24)     // TEST-NET-2: 198.51.100.0/24
+            || $this->isInBlock(0xCB_00_71_00, 24);    // TEST-NET-3: 203.0.113.0/24
     }
 
     /**
@@ -183,7 +183,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isBenchmarking(): bool
     {
-        return $this->isInRange(0xC6_12_00_00, 0xC6_13_FF_FF);
+        return $this->isInBlock(0xC6_12_00_00, 15);
     }
 
     /**
@@ -197,7 +197,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isReserved(): bool
     {
-        return $this->isInRange(0xF0_00_00_00, 0xFF_FF_FF_FF);
+        return $this->isInBlock(0xF0_00_00_00, 4);
     }
 
     /**
@@ -221,7 +221,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isThisNetwork(): bool
     {
-        return $this->isInRange(0x00_00_00_00, 0x00_FF_FF_FF);
+        return $this->isInBlock(0x00_00_00_00, 8);
     }
 
     /**
@@ -236,7 +236,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isIetfProtocol(): bool
     {
-        return $this->isInRange(0xC0_00_00_00, 0xC0_00_00_FF);
+        return $this->isInBlock(0xC0_00_00_00, 24);
     }
 
     /**
@@ -251,7 +251,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function is6to4Relay(): bool
     {
-        return $this->isInRange(0xC0_58_63_00, 0xC0_58_63_FF);
+        return $this->isInBlock(0xC0_58_63_00, 24);
     }
 
     /**
@@ -270,9 +270,9 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function isIanaReserved(): bool
     {
-        return $this->isInRange(0xC0_1F_C4_00, 0xC0_1F_C4_FF)     // AS112-v4: 192.31.196.0/24
-            || $this->isInRange(0xC0_34_C1_00, 0xC0_34_C1_FF)     // AMT: 192.52.193.0/24
-            || $this->isInRange(0xC0_AF_30_00, 0xC0_AF_30_FF);    // Direct Delegation AS112: 192.175.48.0/24
+        return $this->isInBlock(0xC0_1F_C4_00, 24)     // AS112-v4: 192.31.196.0/24
+            || $this->isInBlock(0xC0_34_C1_00, 24)     // AMT: 192.52.193.0/24
+            || $this->isInBlock(0xC0_AF_30_00, 24);    // Direct Delegation AS112: 192.175.48.0/24
     }
 
     /**
@@ -356,15 +356,17 @@ final class IPAddress implements \JsonSerializable, \Stringable
     }
 
     /**
-     * Check if the IP is within a given range (inclusive).
+     * Check if the IP is within a given CIDR block.
      *
-     * @param int $start Start of range as integer
-     * @param int $end   End of range as integer
+     * @param int $network Network address of the block as integer
+     * @param int $prefix  CIDR prefix of the block (1-32)
      *
      * @return bool
      */
-    private function isInRange(int $start, int $end): bool
+    private function isInBlock(int $network, int $prefix): bool
     {
-        return $this->intValue >= $start && $this->intValue <= $end;
+        $hostBits = 32 - $prefix;
+
+        return ($this->intValue >> $hostBits) === ($network >> $hostBits);
     }
 }
