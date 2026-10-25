@@ -257,7 +257,7 @@ function getSubnetInfo($cidr) {
         echo $subnet->toJson();
     } catch (\Exception $e) {
         \http_response_code(400);
-        echo \json_encode(['error' => $e->getMessage()]);
+        echo \json_encode(['error' => $e->getMessage()], \JSON_INVALID_UTF8_SUBSTITUTE);
     }
 }
 
@@ -402,7 +402,7 @@ try {
     echo \json_encode([
         'error' => $e->getMessage(),
         'cidr' => $cidr
-    ]);
+    ], \JSON_INVALID_UTF8_SUBSTITUTE);
 }
 ```
 
