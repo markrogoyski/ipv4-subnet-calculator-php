@@ -620,17 +620,24 @@ Generate reverse DNS zone configurations.
 
 Reverse zones are delegated on octet boundaries, so this generator accepts /8, /16 and /24 networks. Classless delegation of longer prefixes (RFC 2317) needs a child zone with its own naming and CNAME records in the parent zone, which this example does not cover.
 
+Secondary servers compare the SOA serial to decide whether to transfer the zone (RFC 1034 §4.3.5), so every revision must carry a newer serial than the last. Serials are compared with RFC 1982 serial arithmetic: a serial is newer only if it is ahead of the previous one by 1 to 2³¹−1, modulo 2³². A jump of 2³¹ or more makes the zone look older, so a larger number is not always a newer serial. The generator takes the serial as an argument rather than deriving it from the date: store the serial of each zone you publish and pass its successor, `($previousSerial + 1) & 0xFFFFFFFF`, when you regenerate.
+
 ```php
 <?php
 
 class ReverseDNSZoneGenerator {
-    public function generateZone($cidr, $nameservers, $hostnames = []) {
+    public function generateZone($cidr, $nameservers, $serial, $hostnames = []) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
 
         if (!in_array($subnet->networkSize(), [8, 16, 24], true)) {
             throw new InvalidArgumentException(
                 "Reverse zones must be /8, /16 or /24; {$cidr} needs RFC 2317 classless delegation"
             );
+        }
+
+        // SOA serials are unsigned 32-bit values (RFC 1982)
+        if (!is_int($serial) || $serial < 0 || $serial > 0xFFFFFFFF) {
+            throw new InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
         }
 
         echo "Reverse DNS Zone Configuration\n";
@@ -640,12 +647,12 @@ class ReverseDNSZoneGenerator {
         echo "Broadcast: {$subnet->broadcastAddress()->asQuads()}\n\n";
 
         // Generate zone file
-        $zone = $this->generateZoneFile($subnet, $nameservers, $hostnames);
+        $zone = $this->generateZoneFile($subnet, $nameservers, $serial, $hostnames);
 
         return $zone;
     }
 
-    private function generateZoneFile($subnet, $nameservers, $hostnames) {
+    private function generateZoneFile($subnet, $nameservers, $serial, $hostnames) {
         $zone = "; Reverse DNS Zone\n";
         $zone .= "; Network: {$subnet->cidr()}\n";
         $zone .= "; Generated: " . date('Y-m-d H:i:s') . "\n\n";
@@ -657,7 +664,7 @@ class ReverseDNSZoneGenerator {
         $zone .= "\$ORIGIN {$origin}.\n";
         $zone .= "\$TTL 86400\n";
         $zone .= "@    IN    SOA    {$nameservers[0]}. hostmaster.example.com. (\n";
-        $zone .= "            " . date('Ymd') . "01    ; Serial\n";
+        $zone .= "            " . str_pad((string) $serial, 18) . "; Serial\n";
         $zone .= "            3600              ; Refresh\n";
         $zone .= "            1800              ; Retry\n";
         $zone .= "            604800            ; Expire\n";
@@ -693,9 +700,13 @@ $hostnames = [
     '192.168.1.100' => 'web1.example.com',
 ];
 
+// Serial of the previously published zone, read from wherever you store it
+$previousSerial = 2026102401;
+
 $zone = $generator->generateZone(
     '192.168.1.0/24',
     ['ns1.example.com', 'ns2.example.com'],
+    ($previousSerial + 1) & 0xFFFFFFFF,  // Successor wraps 4294967295 to 0 (RFC 1982)
     $hostnames
 );
 
@@ -723,7 +734,7 @@ class NetworkConfigValidator {
 
         // Validate subnets
         $subnets = [];
-        foreach ($config['subnets'] as $name => $cidr) {
+        foreach ($config['subnets'] ?? [] as $name => $cidr) {
             try {
                 $subnet = IPv4\Subnet::fromCidr($cidr);
                 $subnets[$name] = $subnet;
@@ -741,6 +752,13 @@ class NetworkConfigValidator {
                 }
             } catch (\Exception $e) {
                 $this->errors[] = "{$name}: Invalid CIDR notation - {$e->getMessage()}";
+            }
+        }
+
+        // Every required network must be defined; the loop above only sizes the ones that are
+        foreach ($config['requirements'] ?? [] as $name => $required) {
+            if (!isset($config['subnets'][$name])) {
+                $this->errors[] = "{$name}: Required network is not defined";
             }
         }
 
