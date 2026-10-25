@@ -103,17 +103,12 @@ final class SubnetMask implements Mask
     }
 
     /**
-     * Get the four octets as integers.
+     * Get as 32-bit integer.
      *
-     * @return int[]
+     * @return int e.g., 4294967040
      */
-    protected function octets(): array
+    public function asInteger(): int
     {
-        return [
-            ($this->maskBits >> 24) & 0xFF,
-            ($this->maskBits >> 16) & 0xFF,
-            ($this->maskBits >> 8) & 0xFF,
-            $this->maskBits & 0xFF,
-        ];
+        return $this->maskBits;
     }
 }

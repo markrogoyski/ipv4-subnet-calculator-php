@@ -17,9 +17,6 @@ final class IPAddress implements \JsonSerializable, \Stringable
 {
     use Formattable;
 
-    /** @var int[] Four octets as integers */
-    private readonly array $octetValues;
-
     /** @var int IP address as 32-bit integer */
     private readonly int $intValue;
 
@@ -46,23 +43,15 @@ final class IPAddress implements \JsonSerializable, \Stringable
             }
 
             $this->intValue = $ipAddress;
-            $this->octetValues = [
-                ($ipAddress >> 24) & 0xFF,
-                ($ipAddress >> 16) & 0xFF,
-                ($ipAddress >> 8) & 0xFF,
-                $ipAddress & 0xFF,
-            ];
 
             return;
         }
 
-        if (!\filter_var($ipAddress, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4)) {
+        if (\filter_var($ipAddress, \FILTER_VALIDATE_IP, \FILTER_FLAG_IPV4) === false) {
             throw new \InvalidArgumentException(
                 "Invalid IPv4 address: '{$ipAddress}'"
             );
         }
-
-        $this->octetValues = \array_map(\intval(...), \explode('.', $ipAddress));
 
         $this->intValue = (int) \ip2long($ipAddress);
     }
@@ -321,7 +310,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function networkClass(): NetworkClass
     {
-        $firstOctet = $this->octetValues[0];
+        $firstOctet = $this->intValue >> 24;
 
         return match (true) {
             $firstOctet <= 127 => NetworkClass::A,
@@ -341,7 +330,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function arpaDomain(): string
     {
-        return \implode('.', \array_reverse($this->octetValues)) . '.in-addr.arpa';
+        return \implode('.', \array_reverse($this->octets())) . '.in-addr.arpa';
     }
 
     /**
@@ -357,20 +346,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
     }
 
     /**
-     * Get the four octets as integers.
-     *
-     * @return int[]
-     */
-    protected function octets(): array
-    {
-        return $this->octetValues;
-    }
-
-    /**
      * Get the IP address as a 32-bit unsigned integer.
-     *
-     * Overrides the Formattable default to return the value stored at construction
-     * rather than rebuilding it from the octets.
      *
      * @return int
      */

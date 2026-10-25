@@ -10,17 +10,17 @@ namespace IPv4;
  * Provides methods to represent a 32-bit value (IP address or mask) in multiple
  * formats: dotted quads, array, hexadecimal, binary, and integer.
  *
- * Classes using this trait must implement the octets() method to provide
- * the four octets as integers.
+ * Classes using this trait must implement the asInteger() method to provide
+ * the 32-bit value; the other formats are derived from it.
  */
 trait Formattable
 {
     /**
-     * Get the four octets as integers.
+     * Get as 32-bit integer.
      *
-     * @return int[] Four octets (0-255 each)
+     * @return int e.g., 3232235876
      */
-    abstract protected function octets(): array;
+    abstract public function asInteger(): int;
 
     /**
      * Get as dotted quad notation.
@@ -69,15 +69,20 @@ trait Formattable
     }
 
     /**
-     * Get as 32-bit integer.
+     * Get the four octets as integers.
      *
-     * @return int e.g., 3232235876
+     * @return int[] Four octets (0-255 each)
      */
-    public function asInteger(): int
+    protected function octets(): array
     {
-        $octets = $this->octets();
+        $value = $this->asInteger();
 
-        return ($octets[0] << 24) | ($octets[1] << 16) | ($octets[2] << 8) | $octets[3];
+        return [
+            ($value >> 24) & 0xFF,
+            ($value >> 16) & 0xFF,
+            ($value >> 8) & 0xFF,
+            $value & 0xFF,
+        ];
     }
 
     /**
