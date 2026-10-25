@@ -9,6 +9,7 @@
 ### New Features
 - **`SubnetMask::fromString()`**: Creates a subnet mask from dotted-quad notation, rejecting malformed and non-contiguous masks
 - **`Subnet::splitIterator()`**: Yields subnets lazily without building an array; validates prefixes on call
+- **`Subnet::adjacentIterator()`**: Yields adjacent subnets lazily without building an array; checks bounds on call
 - **`IPAddress` constructor**: Accepts an unsigned 32-bit integer as well as a dotted-quad string
 - **`Subnet` constructor**: Accepts an `IPAddress` as well as a dotted-quad string
 - **`SubnetParser`**: `fromMask()`, `fromRange()` and `fromHostCount()` accept `IPAddress` objects as well as dotted-quad strings, and `fromMask()` also accepts a `SubnetMask`

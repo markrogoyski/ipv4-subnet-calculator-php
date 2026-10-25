@@ -572,6 +572,12 @@ $forward = $subnet->adjacent(3);   // Next 3 subnets
 $backward = $subnet->adjacent(-3); // Previous 3 subnets
 ```
 
+#### adjacentIterator()
+```php
+adjacentIterator(int $count): \Generator<int, Subnet>
+```
+Lazy version of `adjacent()` that yields one subnet at a time. Use for large counts. Throws on call if the requested subnets exceed the IPv4 range.
+
 ### Membership
 
 #### containsIP()

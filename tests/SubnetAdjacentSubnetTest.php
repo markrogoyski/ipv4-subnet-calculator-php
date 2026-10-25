@@ -716,6 +716,103 @@ class SubnetAdjacentSubnetTest extends TestCase
         ];
     }
 
+    /* ************************* *
+     * adjacentIterator() Tests
+     * ************************* */
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsForward')]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsBackward')]
+    public function adjacentIteratorYieldsSameSubnetsAsAdjacent(
+        string $currentIp,
+        int $networkSize,
+        int $count,
+        array $expectedNetworkPortions
+    ): void {
+        // Given
+        $subnet = new Subnet($currentIp, $networkSize);
+
+        // When
+        $adjacentSubnets = \iterator_to_array($subnet->adjacentIterator($count), false);
+
+        // Then
+        $this->assertSame(
+            $expectedNetworkPortions,
+            \array_map(static fn (Subnet $subnet): string => $subnet->networkPortion()->asQuads(), $adjacentSubnets)
+        );
+        $this->assertSame(
+            \array_fill(0, \count($expectedNetworkPortions), $networkSize),
+            \array_map(static fn (Subnet $subnet): int => $subnet->networkSize(), $adjacentSubnets)
+        );
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsImpossibleForwardCount')]
+    public function adjacentIteratorThrowsOnCallForImpossibleForwardCountWithoutIterating(
+        string $ip,
+        int $networkSize,
+        int $count
+    ): void {
+        // Given
+        $subnet = new Subnet($ip, $networkSize);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Next subnet would exceed valid IPv4 address range');
+
+        // When - the generator is never advanced
+        $subnet->adjacentIterator($count);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForGetAdjacentSubnetsImpossibleBackwardCount')]
+    public function adjacentIteratorThrowsOnCallForImpossibleBackwardCountWithoutIterating(
+        string $ip,
+        int $networkSize,
+        int $count
+    ): void {
+        // Given
+        $subnet = new Subnet($ip, $networkSize);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Previous subnet would be below valid IPv4 address range');
+
+        // When - the generator is never advanced
+        $subnet->adjacentIterator($count);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForAdjacentIteratorIsLazyForEntireAddressSpace')]
+    public function adjacentIteratorIsLazyForEntireAddressSpace(string $ip, int $count, array $expectedFirst): void
+    {
+        // Given - a /32 at one end of the address space, with 4.3 billion neighbors if materialized
+        $subnet = new Subnet($ip, 32);
+
+        // When
+        $first = [];
+        foreach ($subnet->adjacentIterator($count) as $adjacent) {
+            $first[] = $adjacent->cidr();
+            if (\count($first) === 3) {
+                break;
+            }
+        }
+
+        // Then
+        $this->assertSame($expectedFirst, $first);
+    }
+
+    /**
+     * @return array<string, array{string, int, array<string>}>
+     */
+    public static function dataProviderForAdjacentIteratorIsLazyForEntireAddressSpace(): array
+    {
+        return [
+            'forward from first address' => ['0.0.0.0', 4_294_967_295, ['0.0.0.1/32', '0.0.0.2/32', '0.0.0.3/32']],
+            'backward from last address' => ['255.255.255.255', -4_294_967_295, ['255.255.255.254/32', '255.255.255.253/32', '255.255.255.252/32']],
+        ];
+    }
+
     /* ***************************** *
      * Integration/Chaining Tests
      * ***************************** */

@@ -803,6 +803,8 @@ final class Subnet implements \JsonSerializable, \Stringable
     /**
      * Get multiple adjacent subnets.
      *
+     * Returns |count| subnets; use adjacentIterator() for large counts.
+     *
      * @param int $count Number of subnets (positive = forward, negative = backward)
      *
      * @return self[]
@@ -811,12 +813,22 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function adjacent(int $count): array
     {
-        if ($count === 0) {
-            return [];
-        }
+        return \iterator_to_array($this->adjacentIterator($count), false);
+    }
 
-        // Check bounds before allocating anything, so an impossible count fails fast
-        // instead of exhausting memory on the way to the boundary.
+    /**
+     * Lazily get multiple adjacent subnets, one at a time.
+     *
+     * @param int $count Number of subnets (positive = forward, negative = backward)
+     *
+     * @return \Generator<int, self>
+     *
+     * @throws \RuntimeException If the requested subnets exceed the IPv4 range (thrown on call, not on first iteration)
+     */
+    public function adjacentIterator(int $count): \Generator
+    {
+        // Check bounds before generating anything, so an impossible count fails fast
+        // instead of on the way to the boundary.
         $addressCount = $this->addressCount();
         if ($count > 0) {
             $available = \intdiv(IPv4::MAX_ADDRESS - $this->broadcastAddressInt(), $addressCount);
@@ -825,7 +837,7 @@ final class Subnet implements \JsonSerializable, \Stringable
                     'Next subnet would exceed valid IPv4 address range'
                 );
             }
-        } else {
+        } elseif ($count < 0) {
             $available = \intdiv($this->networkAddressInt(), $addressCount);
             if ($count < -$available) {
                 throw new \RuntimeException(
@@ -834,13 +846,7 @@ final class Subnet implements \JsonSerializable, \Stringable
             }
         }
 
-        $networkInt = $this->networkAddressInt();
-        $step = $count > 0 ? $addressCount : -$addressCount;
-
-        return \array_map(
-            fn (int $i): self => new self(IPAddress::fromInteger($networkInt + ($i * $step)), $this->networkSize),
-            \range(1, \abs($count))
-        );
+        return $this->generateAdjacent($count);
     }
 
     /* ==================== *
@@ -974,6 +980,24 @@ final class Subnet implements \JsonSerializable, \Stringable
 
         for ($i = 0; $i < $numSubnets; $i++) {
             yield new self(IPAddress::fromInteger($networkInt + ($i * $addressCount)), $newPrefix);
+        }
+    }
+
+    /**
+     * Generate the adjacent subnets for a count whose bounds have already been checked.
+     *
+     * @param int $count Number of subnets (positive = forward, negative = backward)
+     *
+     * @return \Generator<int, self>
+     */
+    private function generateAdjacent(int $count): \Generator
+    {
+        $networkInt = $this->networkAddressInt();
+        $step = $count > 0 ? $this->addressCount() : -$this->addressCount();
+        $numSubnets = \abs($count);
+
+        for ($i = 1; $i <= $numSubnets; $i++) {
+            yield new self(IPAddress::fromInteger($networkInt + ($i * $step)), $this->networkSize);
         }
     }
 

@@ -731,6 +731,14 @@ foreach ($nextSubnets as $next) {
 }
 ```
 
+For large counts, use `adjacentIterator()`, which yields subnets one at a time instead of building the array:
+
+```php
+foreach (IPv4\Subnet::fromCidr('10.0.0.0/32')->adjacentIterator(1_000_000) as $host) {
+    echo $host->cidr() . "\n";  // 10.0.0.1/32 through 10.15.66.64/32, one in memory at a time
+}
+```
+
 ### Chaining Navigation
 
 Combine navigation methods for complex operations:
