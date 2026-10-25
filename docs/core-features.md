@@ -611,7 +611,8 @@ separately if you need to route to them.
 ```php
 $staticIP = IPv4\Subnet::fromCidr($configuredIP . '/32');
 
-if ($staticIP->isLoopback() || $staticIP->isMulticast() || $staticIP->isReserved()) {
+// isReserved() (240.0.0.0/4) also covers 255.255.255.255; isThisNetwork() covers 0.0.0.0/8
+if ($staticIP->isThisNetwork() || $staticIP->isLoopback() || $staticIP->isMulticast() || $staticIP->isReserved()) {
     throw new \Exception("Invalid static IP: Cannot use special-purpose address");
 }
 ```

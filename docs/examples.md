@@ -304,27 +304,22 @@ $validator->addRule('Allow Public Web', '0.0.0.0/0', 'allow');  // Contains ever
 $validator->printValidationReport();
 ```
 
-### Access Control by IP Type
+### Access Control by Trusted Network
 
-Implement access control based on IP address classification.
+Authorize requests against the specific networks each resource trusts. Address classification
+is not authorization: `isPrivate()` matches all of RFC 1918, including guest Wi-Fi, VPN pools and
+container networks.
 
 ```php
 <?php
 
 class AccessController {
     public function checkAccess($ipAddress, $resource) {
-        $subnet = IPv4\Subnet::fromCidr($ipAddress . '/32');
-
-        // Define access policies
-        $policy = $this->getAccessPolicy($resource);
-
-        // Check IP type
-        if ($subnet->isPrivate()) {
-            return in_array('private', $policy['allowed_types']);
-        } elseif ($subnet->isPublic()) {
-            return in_array('public', $policy['allowed_types']);
-        } elseif ($subnet->isLoopback()) {
-            return in_array('loopback', $policy['allowed_types']);
+        // Unknown resources trust no networks
+        foreach ($this->getAccessPolicy($resource) as $cidr) {
+            if (IPv4\Subnet::fromCidr($cidr)->containsIP($ipAddress)) {
+                return true;
+            }
         }
 
         return false;
@@ -332,18 +327,12 @@ class AccessController {
 
     private function getAccessPolicy($resource) {
         $policies = [
-            'admin-panel' => [
-                'allowed_types' => ['private', 'loopback'],
-            ],
-            'public-api' => [
-                'allowed_types' => ['public', 'private'],
-            ],
-            'internal-api' => [
-                'allowed_types' => ['private'],
-            ],
+            'admin-panel'  => ['192.168.50.0/24', '127.0.0.0/8'],  // Admin VPN, localhost
+            'internal-api' => ['10.20.0.0/16', '192.168.50.0/24'], // Office LAN, Admin VPN
+            'public-api'   => ['0.0.0.0/0'],                       // Everyone
         ];
 
-        return $policies[$resource] ?? ['allowed_types' => []];
+        return $policies[$resource] ?? [];
     }
 
     public function generateAccessReport($ipAddress) {
@@ -369,8 +358,16 @@ class AccessController {
 // Usage
 $ac = new AccessController();
 
-echo "Internal User:\n";
-$ac->generateAccessReport('192.168.1.100');
+echo "Office User:\n";
+$ac->generateAccessReport('10.20.5.17');
+echo "\n";
+
+echo "Admin VPN User:\n";
+$ac->generateAccessReport('192.168.50.10');
+echo "\n";
+
+echo "Container (private, but untrusted):\n";
+$ac->generateAccessReport('172.17.0.2');
 echo "\n";
 
 echo "External User:\n";
@@ -500,14 +497,10 @@ class DHCPScopePlanner {
     private const STATIC_RESERVED = 10;
     private const GATEWAY_RESERVED = 1;
 
+    // Throws rather than returning a partial plan, so a failed plan can never be exported
     public function planScopes($baseNetwork, array $departments) {
         $baseSubnet = IPv4\Subnet::fromCidr($baseNetwork);
         $scopes = [];
-
-        echo "DHCP Scope Planning Report\n";
-        echo str_repeat('=', 80) . "\n";
-        echo "Base Network: {$baseNetwork}\n";
-        echo "Available IPs: {$baseSubnet->addressCount()}\n\n";
 
         // Allocate largest scopes first (VLSM) so each scope starts on a boundary
         // aligned to its size. Allocating a larger scope after a smaller one
@@ -527,44 +520,67 @@ class DHCPScopePlanner {
 
             // Verify scope fits within base network
             if (!$baseSubnet->contains($scope)) {
-                echo "ERROR: Insufficient space for {$dept}\n";
-                break;
+                throw new \RuntimeException("Insufficient space in {$baseNetwork} for {$dept}");
             }
-
-            $usableHosts = $scope->hostCount();
-            $utilization = $scope->utilizationFor($requiredHosts);
 
             // Calculate DHCP pool (reserve first 10 IPs for static, last IP for gateway)
             $poolStart = $scope->minHost()->asInteger() + self::STATIC_RESERVED;
             $poolEnd = $scope->maxHost()->asInteger() - self::GATEWAY_RESERVED;
 
             if ($poolEnd - $poolStart + 1 < $requiredHosts) {
-                echo "ERROR: DHCP pool for {$dept} cannot hold {$requiredHosts} hosts\n";
-                break;
+                throw new \RuntimeException("DHCP pool for {$dept} cannot hold {$requiredHosts} hosts");
             }
+
+            $dns = new IPv4\IPAddress($requirements['dns'] ?? $scope->minHost()->asQuads());
 
             $scopes[$dept] = [
                 'subnet' => $scope,
+                'required_hosts' => $requiredHosts,
                 'scope_start' => long2ip($poolStart),
                 'scope_end' => long2ip($poolEnd),
                 'gateway' => $scope->maxHost(),
-                'dns' => $requirements['dns'] ?? $scope->minHost(),
+                'dns' => $dns,
             ];
-
-            echo "{$dept}:\n";
-            echo "  Required hosts: {$requiredHosts}\n";
-            echo "  Subnet: {$scope->networkCidr()}\n";
-            echo "  Subnet mask: {$scope->mask()}\n";
-            echo "  Usable hosts: {$usableHosts}\n";
-            echo "  Utilization: {$utilization}%\n";
-            echo "  DHCP Pool: {$scopes[$dept]['scope_start']} - {$scopes[$dept]['scope_end']}\n";
-            echo "  Gateway: {$scopes[$dept]['gateway']}\n";
-            echo "  DNS: {$scopes[$dept]['dns']}\n\n";
 
             $currentNetwork = $scope->next()->networkAddress()->asQuads();
         }
 
+        // Advertising an address as DNS does not reserve it, so a DNS server inside
+        // any pool (its own department's or another's) could be leased to a client
+        foreach ($scopes as $dept => $scope) {
+            foreach ($scopes as $poolDept => $pool) {
+                $dns = $scope['dns']->asInteger();
+                if ($dns >= ip2long($pool['scope_start']) && $dns <= ip2long($pool['scope_end'])) {
+                    throw new \InvalidArgumentException(
+                        "DNS server {$scope['dns']} for {$dept} is inside the DHCP pool for {$poolDept}"
+                    );
+                }
+            }
+        }
+
+        $this->printReport($baseSubnet, $scopes);
+
         return $scopes;
+    }
+
+    private function printReport(IPv4\Subnet $baseSubnet, array $scopes) {
+        echo "DHCP Scope Planning Report\n";
+        echo str_repeat('=', 80) . "\n";
+        echo "Base Network: {$baseSubnet->networkCidr()}\n";
+        echo "Available IPs: {$baseSubnet->addressCount()}\n\n";
+
+        foreach ($scopes as $dept => $scope) {
+            $subnet = $scope['subnet'];
+            echo "{$dept}:\n";
+            echo "  Required hosts: {$scope['required_hosts']}\n";
+            echo "  Subnet: {$subnet->networkCidr()}\n";
+            echo "  Subnet mask: {$subnet->mask()}\n";
+            echo "  Usable hosts: {$subnet->hostCount()}\n";
+            echo "  Utilization: {$subnet->utilizationFor($scope['required_hosts'])}%\n";
+            echo "  DHCP Pool: {$scope['scope_start']} - {$scope['scope_end']}\n";
+            echo "  Gateway: {$scope['gateway']}\n";
+            echo "  DNS: {$scope['dns']}\n\n";
+        }
     }
 
     public function exportDHCPConfig(array $scopes, $serverType = 'isc-dhcp') {
@@ -739,7 +755,7 @@ class NetworkConfigValidator {
 
         // Check the structure first; foreach over a non-array is skipped with only a warning
         foreach (['subnets', 'requirements'] as $section) {
-            if (isset($config[$section]) && !is_array($config[$section])) {
+            if (array_key_exists($section, $config) && !is_array($config[$section])) {
                 $this->errors[] = "{$section}: Must be a map of network names";
             }
         }
