@@ -644,6 +644,8 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             // 6to4 relay range 192.88.99.0/24
             ['192.88.99.0/24', true],
             ['192.88.99.1/32', true],      // Anycast address
+            ['192.88.99.2/32', false],     // 6a44 relay anycast, not 6to4
+            ['192.88.99.3/32', true],
             ['192.88.99.100/32', true],
             ['192.88.99.255/32', true],
 
@@ -704,6 +706,11 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['192.175.48.0/24', true],
             ['192.175.48.1/32', true],
             ['192.175.48.255/32', true],
+
+            // 6a44 relay anycast: 192.88.99.2/32 (RFC 6751)
+            ['192.88.99.2/32', true],
+            ['192.88.99.1/32', false],     // 6to4 relay
+            ['192.88.99.3/32', false],     // 6to4 relay
 
             // Boundaries
             ['192.31.195.255/32', false],  // Just before AS112-v4
@@ -788,6 +795,7 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             // Deprecated 6to4
             ['192.88.99.1/32', AddressType::Deprecated6to4],
             ['192.88.99.255/32', AddressType::Deprecated6to4],
+            ['192.88.99.3/32', AddressType::Deprecated6to4],
 
             // Reserved (excluding limited broadcast)
             ['240.0.0.1/32', AddressType::Reserved],
@@ -797,6 +805,7 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['192.31.196.1/32', AddressType::IanaReserved],
             ['192.52.193.1/32', AddressType::IanaReserved],
             ['192.175.48.1/32', AddressType::IanaReserved],
+            ['192.88.99.2/32', AddressType::IanaReserved],  // 6a44 relay anycast within 6to4 range
 
             // "This" network
             ['0.0.0.0/32', AddressType::ThisNetwork],
@@ -872,6 +881,7 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
             ['0.0.0.1/32', 'This network'],
             ['192.0.0.1/32', 'IETF protocol'],
             ['192.88.99.1/32', '6to4 relay'],
+            ['192.88.99.2/32', '6a44 relay anycast'],
             ['192.31.196.1/32', 'IANA reserved AS112-v4'],
             ['192.52.193.1/32', 'IANA reserved AMT'],
             ['192.175.48.1/32', 'IANA reserved Direct Delegation AS112'],

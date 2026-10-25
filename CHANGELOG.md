@@ -17,6 +17,7 @@
 - **`Subnet::arpaDomain()`**: Returns the input IP's reverse DNS domain instead of the network address's
 - **`Subnets::summarize()`**: Handles single-element arrays with any key
 - **`Subnet::adjacent()`**: Rejects counts exceeding IPv4 bounds before allocating subnets
+- **`192.88.99.2` classification**: The 6a44 relay anycast address (RFC 6751) is classified as `AddressType::IanaReserved` instead of `Deprecated6to4`; `is6to4Relay()` returns `false` and `isIanaReserved()` returns `true` for it
 - **`IPAddress::fromInteger()`**: Throws `\InvalidArgumentException` for integers outside `0` to `4294967295` instead of wrapping
 - **`Subnet::excludeAll()`**: Validates all elements up front, throwing `\InvalidArgumentException` with the offending index for non-`Subnet` values
 - **Prefix and mask validation**: Rejects leading zeros in `Subnet::fromCidr()` prefixes and `SubnetParser::fromMask()` octets

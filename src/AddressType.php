@@ -94,7 +94,7 @@ enum AddressType: string
 
     /**
      * 6to4 Relay Anycast (RFC 3068, deprecated by RFC 7526).
-     * Range: 192.88.99.0/24
+     * Range: 192.88.99.0/24, excluding 192.88.99.2 (see IanaReserved)
      */
     case Deprecated6to4 = 'deprecated-6to4';
 
@@ -102,7 +102,8 @@ enum AddressType: string
      * IANA Special-Purpose Address Registry assignments.
      * Ranges: 192.31.196.0/24 (AS112-v4, RFC 7535),
      *         192.52.193.0/24 (AMT, RFC 7450),
-     *         192.175.48.0/24 (Direct Delegation AS112, RFC 7534)
+     *         192.175.48.0/24 (Direct Delegation AS112, RFC 7534),
+     *         192.88.99.2/32 (6a44 relay anycast, RFC 6751)
      */
     case IanaReserved = 'iana-reserved';
 }

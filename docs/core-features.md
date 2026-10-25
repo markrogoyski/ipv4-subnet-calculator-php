@@ -551,10 +551,10 @@ $description = match ($type) {
 | `isDocumentation()` | 192.0.2.0/24<br>198.51.100.0/24<br>203.0.113.0/24 | RFC 5737 | TEST-NET-1/2/3 documentation |
 | `isBenchmarking()` | 198.18.0.0/15 | RFC 2544 | Benchmarking addresses |
 | `isIetfProtocol()` | 192.0.0.0/24 | RFC 5735, RFC 6890 | IETF protocol assignments (DS-Lite, NAT64, etc.) |
-| `is6to4Relay()` | 192.88.99.0/24 | RFC 3068, RFC 7526 | 6to4 relay anycast (deprecated) |
+| `is6to4Relay()` | 192.88.99.0/24<br>(except 192.88.99.2) | RFC 3068, RFC 7526 | 6to4 relay anycast (deprecated) |
 | `isReserved()` | 240.0.0.0/4 | RFC 1112 | Reserved for future use |
 | `isLimitedBroadcast()` | 255.255.255.255/32 | RFC 919 | Limited broadcast address |
-| `isIanaReserved()` | 192.31.196.0/24<br>192.52.193.0/24<br>192.175.48.0/24 | RFC 7535, RFC 7450, RFC 7534 | IANA Special-Purpose assignments |
+| `isIanaReserved()` | 192.31.196.0/24<br>192.52.193.0/24<br>192.175.48.0/24<br>192.88.99.2/32 | RFC 7535, RFC 7450, RFC 7534, RFC 6751 | IANA Special-Purpose assignments |
 | `isThisNetwork()` | 0.0.0.0/8 | RFC 1122 | "This" network addresses |
 | `isPublic()` | All others | - | Public addresses |
 

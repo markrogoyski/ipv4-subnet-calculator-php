@@ -729,6 +729,8 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
         return [
             '192.88.99.0 start' => ['192.88.99.0', true],
             '192.88.99.1 anycast' => ['192.88.99.1', true],
+            '192.88.99.2 6a44 relay excluded' => ['192.88.99.2', false],
+            '192.88.99.3' => ['192.88.99.3', true],
             '192.88.99.100' => ['192.88.99.100', true],
             '192.88.99.255 end' => ['192.88.99.255', true],
             '192.88.98.255' => ['192.88.98.255', false],
@@ -769,6 +771,10 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             '192.175.48.0 start Direct Delegation' => ['192.175.48.0', true],
             '192.175.48.50' => ['192.175.48.50', true],
             '192.175.48.255 end Direct Delegation' => ['192.175.48.255', true],
+            // 6a44 relay anycast: 192.88.99.2/32 (RFC 6751)
+            '192.88.99.2 6a44 relay' => ['192.88.99.2', true],
+            '192.88.99.1 6to4 relay' => ['192.88.99.1', false],
+            '192.88.99.3 6to4 relay' => ['192.88.99.3', false],
             // Outside ranges
             '192.31.195.255' => ['192.31.195.255', false],
             '192.31.197.0' => ['192.31.197.0', false],
@@ -813,6 +819,8 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'limited broadcast' => ['255.255.255.255', AddressType::LimitedBroadcast],
             'IETF protocol' => ['192.0.0.1', AddressType::IetfProtocol],
             'deprecated 6to4' => ['192.88.99.1', AddressType::Deprecated6to4],
+            'deprecated 6to4 after 6a44 relay' => ['192.88.99.3', AddressType::Deprecated6to4],
+            'IANA reserved 6a44 relay' => ['192.88.99.2', AddressType::IanaReserved],
             'reserved' => ['240.0.0.1', AddressType::Reserved],
             'IANA reserved AS112-v4' => ['192.31.196.1', AddressType::IanaReserved],
             'IANA reserved AMT' => ['192.52.193.1', AddressType::IanaReserved],
@@ -883,6 +891,7 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'after AMT'                     => ['192.52.194.0'],
             'before 6to4 relay'             => ['192.88.98.255'],
             '6to4 relay first'              => ['192.88.99.0'],
+            '6a44 relay anycast'            => ['192.88.99.2'],
             '6to4 relay last'               => ['192.88.99.255'],
             'after 6to4 relay'              => ['192.88.100.0'],
             'before 192.168/16'             => ['192.167.255.255'],

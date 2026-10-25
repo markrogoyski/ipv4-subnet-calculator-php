@@ -243,6 +243,8 @@ final class IPAddress implements \JsonSerializable, \Stringable
      * Check if the IP address is in the deprecated 6to4 relay range (192.88.99.0/24).
      *
      * This range was used for 6to4 anycast relay but has been deprecated.
+     * Excludes 192.88.99.2, the 6a44 relay anycast address, which IANA lists
+     * separately with no termination date (see isIanaReserved()).
      *
      * @link https://datatracker.ietf.org/doc/html/rfc3068
      * @link https://datatracker.ietf.org/doc/html/rfc7526
@@ -251,7 +253,8 @@ final class IPAddress implements \JsonSerializable, \Stringable
      */
     public function is6to4Relay(): bool
     {
-        return $this->isInBlock(0xC0_58_63_00, 24);
+        return $this->isInBlock(0xC0_58_63_00, 24)     // 6to4 Relay Anycast: 192.88.99.0/24
+            && !$this->isInBlock(0xC0_58_63_02, 32);   // except 6a44 relay anycast: 192.88.99.2/32
     }
 
     /**
@@ -261,10 +264,12 @@ final class IPAddress implements \JsonSerializable, \Stringable
      *   - 192.31.196.0/24  (AS112-v4, RFC 7535)
      *   - 192.52.193.0/24  (AMT, RFC 7450)
      *   - 192.175.48.0/24  (Direct Delegation AS112, RFC 7534)
+     *   - 192.88.99.2/32   (6a44 relay anycast, RFC 6751)
      *
      * @link https://datatracker.ietf.org/doc/html/rfc7535
      * @link https://datatracker.ietf.org/doc/html/rfc7450
      * @link https://datatracker.ietf.org/doc/html/rfc7534
+     * @link https://datatracker.ietf.org/doc/html/rfc6751
      *
      * @return bool
      */
@@ -272,7 +277,8 @@ final class IPAddress implements \JsonSerializable, \Stringable
     {
         return $this->isInBlock(0xC0_1F_C4_00, 24)     // AS112-v4: 192.31.196.0/24
             || $this->isInBlock(0xC0_34_C1_00, 24)     // AMT: 192.52.193.0/24
-            || $this->isInBlock(0xC0_AF_30_00, 24);    // Direct Delegation AS112: 192.175.48.0/24
+            || $this->isInBlock(0xC0_AF_30_00, 24)     // Direct Delegation AS112: 192.175.48.0/24
+            || $this->isInBlock(0xC0_58_63_02, 32);    // 6a44 relay anycast: 192.88.99.2/32
     }
 
     /**

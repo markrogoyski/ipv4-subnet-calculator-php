@@ -367,7 +367,7 @@ is6to4Relay(): bool
 ```
 Check if the IP is in the deprecated 6to4 relay anycast range (192.88.99.0/24).
 
-This range is deprecated as of RFC 7526.
+This range is deprecated as of RFC 7526. The 6a44 relay anycast address 192.88.99.2 is excluded; it is classified by `isIanaReserved()`.
 
 **Links:** RFC 3068, RFC 7526
 
@@ -377,9 +377,9 @@ isIanaReserved(): bool
 ```
 Check if the IP is in an IANA Special-Purpose Address Registry range.
 
-Covers three /24 blocks: 192.31.196.0/24 (AS112-v4), 192.52.193.0/24 (AMT), 192.175.48.0/24 (Direct Delegation AS112).
+Covers three /24 blocks: 192.31.196.0/24 (AS112-v4), 192.52.193.0/24 (AMT), 192.175.48.0/24 (Direct Delegation AS112), plus the 6a44 relay anycast address 192.88.99.2/32.
 
-**Links:** RFC 7535, RFC 7450, RFC 7534
+**Links:** RFC 7535, RFC 7450, RFC 7534, RFC 6751
 
 #### isReserved()
 ```php
