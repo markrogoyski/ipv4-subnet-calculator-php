@@ -1,6 +1,6 @@
 # IPv4 SubnetCalculator Change Log
 
-## Unreleased
+## v5.1.0 - 2026-10-25
 
 ### Breaking Changes
 - **`Mask` interface**: Now extends `JsonSerializable`; custom implementations must provide `jsonSerialize()`
