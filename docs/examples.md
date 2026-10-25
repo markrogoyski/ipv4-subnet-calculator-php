@@ -663,7 +663,7 @@ class ReverseDNSZoneGenerator {
 
         $zone .= "\$ORIGIN {$origin}.\n";
         $zone .= "\$TTL 86400\n";
-        $zone .= "@    IN    SOA    {$nameservers[0]}. hostmaster.example.com. (\n";
+        $zone .= "@    IN    SOA    {$this->absolute($nameservers[0])} hostmaster.example.com. (\n";
         $zone .= "            " . str_pad((string) $serial, 18) . "; Serial\n";
         $zone .= "            3600              ; Refresh\n";
         $zone .= "            1800              ; Retry\n";
@@ -672,7 +672,7 @@ class ReverseDNSZoneGenerator {
 
         // Nameservers
         foreach ($nameservers as $ns) {
-            $zone .= "    IN    NS    {$ns}.\n";
+            $zone .= "    IN    NS    {$this->absolute($ns)}\n";
         }
         $zone .= "\n";
 
@@ -681,11 +681,16 @@ class ReverseDNSZoneGenerator {
         foreach ($hostnames as $ip => $hostname) {
             if ($subnet->containsIP($ip)) {
                 $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
-                $zone .= "{$ptrRecord}.    IN    PTR    {$hostname}.\n";
+                $zone .= "{$ptrRecord}.    IN    PTR    {$this->absolute($hostname)}\n";
             }
         }
 
         return $zone;
+    }
+
+    // Accept names with or without the trailing dot (RFC 1035 §5.1) and emit them absolute
+    private function absolute($name) {
+        return rtrim($name, '.') . '.';
     }
 }
 
@@ -739,12 +744,15 @@ class NetworkConfigValidator {
                 $subnet = IPv4\Subnet::fromCidr($cidr);
                 $subnets[$name] = $subnet;
 
-                // Check if subnet is properly sized
-                if (isset($config['requirements'][$name])) {
+                // Check if subnet is properly sized. array_key_exists() rather than isset(),
+                // so a null requirement is reported instead of silently skipped.
+                if (array_key_exists($name, $config['requirements'] ?? [])) {
                     $required = $config['requirements'][$name];
                     $available = $subnet->hostCount();
 
-                    if ($available < $required) {
+                    if (!is_int($required) || $required < 1) {
+                        $this->errors[] = "{$name}: Host requirement must be a positive integer";
+                    } elseif ($available < $required) {
                         $this->errors[] = "{$name}: Insufficient capacity. Required: {$required}, Available: {$available}";
                     } elseif ($available > $required * 2) {
                         $this->warnings[] = "{$name}: Subnet may be oversized. Required: {$required}, Available: {$available}";
