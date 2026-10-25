@@ -827,8 +827,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function adjacentIterator(int $count): \Generator
     {
-        // Check bounds before generating anything, so an impossible count fails fast
-        // instead of on the way to the boundary.
+        // Check bounds before generating anything, so an impossible count fails fast instead of on the way to the boundary.
         $addressCount = $this->addressCount();
         if ($count > 0) {
             $available = \intdiv(IPv4::MAX_ADDRESS - $this->broadcastAddressInt(), $addressCount);
