@@ -6,6 +6,7 @@ namespace IPv4;
 
 use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
+use IPv4\Internal\RangeDecomposer;
 use IPv4\Internal\SubnetReport;
 
 /**
@@ -739,12 +740,12 @@ final class Subnet implements \JsonSerializable, \Stringable
         $cursor = $start;
         foreach ($ranges as [$rangeStart, $rangeEnd]) {
             if ($rangeStart > $cursor) {
-                \array_push($remaining, ...self::rangeToSubnets($cursor, $rangeStart - 1));
+                \array_push($remaining, ...RangeDecomposer::toSubnets($cursor, $rangeStart - 1));
             }
             $cursor = \max($cursor, $rangeEnd + 1);
         }
         if ($cursor <= $end) {
-            \array_push($remaining, ...self::rangeToSubnets($cursor, $end));
+            \array_push($remaining, ...RangeDecomposer::toSubnets($cursor, $end));
         }
 
         return $remaining;
@@ -1018,35 +1019,5 @@ final class Subnet implements \JsonSerializable, \Stringable
     private function broadcastAddressInt(): int
     {
         return $this->networkAddressInt() | (~$this->mask->asInteger() & 0xFFFFFFFF);
-    }
-
-    /**
-     * Cover an address range with the fewest aligned CIDR blocks.
-     *
-     * Each block is the largest one aligned at the current address that stays within the range.
-     *
-     * @param int $start First address of the range
-     * @param int $end   Last address of the range
-     *
-     * @return self[] Blocks in ascending address order
-     */
-    private static function rangeToSubnets(int $start, int $end): array
-    {
-        $subnets = [];
-        while ($start <= $end) {
-            $prefix = 32;
-            while ($prefix > 0) {
-                $parentSize = 1 << (33 - $prefix);
-                if ($start % $parentSize !== 0 || $start + $parentSize - 1 > $end) {
-                    break;
-                }
-                $prefix--;
-            }
-
-            $subnets[] = new self(IPAddress::fromInteger($start), $prefix);
-            $start += 1 << (32 - $prefix);
-        }
-
-        return $subnets;
     }
 }

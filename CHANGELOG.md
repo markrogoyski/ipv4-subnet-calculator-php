@@ -1,5 +1,10 @@
 # IPv4 SubnetCalculator Change Log
 
+## Unreleased
+
+### New Features
+- **`IPRange::toSubnets()`**: Converts any inclusive IPv4 range to the smallest exact CIDR cover, returning canonical, disjoint subnets in ascending network order without enumerating addresses; shares the existing exclusion algorithm
+
 ## v5.1.0 - 2026-10-25
 
 ### Breaking Changes

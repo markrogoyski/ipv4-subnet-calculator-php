@@ -1,9 +1,10 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, exact range conversion, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
+- [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
 - [Network Class Information (Legacy)](#network-class-information-legacy)
@@ -212,6 +213,31 @@ $result = $subnet->exclude($middle);
 // Returns 8 optimally-sized CIDR blocks representing addresses 10.0.0.0-99 and 10.0.0.101-255
 // Result: 10.0.0.0/26, 10.0.0.64/27, 10.0.0.96/30, 10.0.0.101/32, 10.0.0.102/31,
 //         10.0.0.104/29, 10.0.0.112/28, 10.0.0.128/25
+```
+
+## Exact Range-to-CIDR Conversion
+
+`IPRange::toSubnets()` converts any inclusive range to its smallest exact CIDR cover. Results are canonical, disjoint, and sorted by ascending network address. Even two adjacent addresses may need separate `/32` blocks when they are not aligned to a `/31`:
+
+```php
+$range = new IPv4\IPRange(new IPv4\IPAddress('192.0.2.1'), new IPv4\IPAddress('192.0.2.2'));
+$subnets = $range->toSubnets();
+// 192.0.2.1/32, 192.0.2.2/32
+```
+
+Choose the operation according to the required coverage:
+
+| Operation | Input | Result |
+|---|---|---|
+| `IPRange::toSubnets()` | Any inclusive address range | Fewest CIDRs with exactly that coverage |
+| `SubnetParser::fromRange()` | One aligned CIDR range | One subnet; rejects other ranges |
+| `Subnets::summarize()` | A nonempty array of subnets | One enclosing CIDR, potentially including extra addresses |
+
+The decomposition uses integer alignment checks without enumerating addresses. Work is proportional to the number of output blocks times the fixed 32-bit width, and memory is proportional to the output block count. The entire IPv4 address space returns a single block:
+
+```php
+$all = new IPv4\IPRange(new IPv4\IPAddress('0.0.0.0'), new IPv4\IPAddress('255.255.255.255'));
+echo $all->toSubnets()[0]->cidr(); // 0.0.0.0/0
 ```
 
 ## CIDR Aggregation and Supernetting

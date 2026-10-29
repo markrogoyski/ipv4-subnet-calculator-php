@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace IPv4;
 
+use IPv4\Internal\RangeDecomposer;
+
 /**
  * Immutable value object representing a range of IPv4 addresses.
  *
  * Provides iteration over all IPs in the range, containment checking,
- * and count information. Used for both full address ranges (network to broadcast)
+ * count information, and exact CIDR decomposition. Used for full address ranges (network to broadcast)
  * and host ranges (usable addresses only).
  *
  * Implements IteratorAggregate for foreach support and Countable for count().
@@ -128,6 +130,20 @@ final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable
     public function toArray(): array
     {
         return \iterator_to_array($this->getIterator(), false);
+    }
+
+    /**
+     * Return the smallest exact CIDR cover of this inclusive range.
+     *
+     * Blocks are canonical, disjoint, and sorted by ascending network address,
+     * with no gaps or addresses outside the range. Does not enumerate addresses;
+     * work is proportional to the output block count times the fixed 32-bit width.
+     *
+     * @return list<Subnet>
+     */
+    public function toSubnets(): array
+    {
+        return RangeDecomposer::toSubnets($this->startInt, $this->endInt);
     }
 
     /**

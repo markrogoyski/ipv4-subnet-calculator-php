@@ -190,6 +190,29 @@ echo $ipam->getUtilizationReport();
 
 ## Firewall and Security
 
+### Convert an Allowed Range to CIDRs
+
+For a firewall that accepts CIDR entries, convert an inclusive address range without permitting extra addresses:
+
+```php
+$allowed = new IPv4\IPRange(
+    new IPv4\IPAddress('192.0.2.1'),
+    new IPv4\IPAddress('192.0.2.6')
+);
+$allowedCidrs = \array_map(
+    static fn (IPv4\Subnet $subnet): string => $subnet->cidr(),
+    $allowed->toSubnets()
+);
+
+echo \implode("\n", $allowedCidrs) . "\n";
+// 192.0.2.1/32
+// 192.0.2.2/31
+// 192.0.2.4/31
+// 192.0.2.6/32
+```
+
+Each address in the range is covered once. Using `Subnets::summarize()` on these blocks would produce `192.0.2.0/29`, which also includes `.0` and `.7`.
+
 ### Firewall Rule Validation
 
 Find overlapping address ranges and flag differing actions for review. Whether an overlap

@@ -312,6 +312,20 @@ $isInRange = $range->contains('10.0.0.5');  // true
 
 **Performance Note:** For large subnets (e.g., /16 or larger), iterating all IPs may consume significant memory and time. IPRange uses a generator for memory efficiency, but iteration itself will still process millions of addresses.
 
+#### Convert a Range to CIDR Blocks
+
+Use `toSubnets()` to get the fewest CIDR blocks covering exactly the range, sorted by network address:
+
+```php
+$range = new IPv4\IPRange(new IPv4\IPAddress('10.0.0.1'), new IPv4\IPAddress('10.0.0.10'));
+foreach ($range->toSubnets() as $subnet) {
+    echo $subnet->cidr() . "\n";
+}
+// 10.0.0.1/32, 10.0.0.2/31, 10.0.0.4/30, 10.0.0.8/31, 10.0.0.10/32
+```
+
+The endpoints are inclusive, and no addresses outside them are included. This works for arbitrary ranges, including `hostRange()` results, without iterating over individual addresses. See [Exact Range-to-CIDR Conversion](advanced-features.md#exact-range-to-cidr-conversion) for how this differs from parsing and summarization.
+
 ### Check if IP is in Subnet
 
 Determine whether a specific IP address belongs to the subnet:

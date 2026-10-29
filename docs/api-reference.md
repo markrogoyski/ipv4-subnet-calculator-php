@@ -679,6 +679,8 @@ Create subnet from IP range (must be valid CIDR block). Each endpoint may be a s
 
 Throws `\InvalidArgumentException` if the range does not represent a valid CIDR block.
 
+For an arbitrary inclusive range that may require several blocks, use [`IPRange::toSubnets()`](#tosubnets).
+
 **Example:**
 ```php
 $subnet = SubnetParser::fromRange('192.168.1.0', '192.168.1.255');
@@ -1092,6 +1094,22 @@ $iterator = $range->getIterator();
 toArray(): IPAddress[]
 ```
 Convert to array of IPAddress objects. **Caution:** Memory-intensive for large ranges.
+
+##### toSubnets()
+```php
+toSubnets(): array // list<Subnet>
+```
+Return the smallest exact CIDR cover of the inclusive range. The numerically indexed list contains canonical, disjoint subnets sorted by ascending network address, with no gaps or addresses outside the range.
+
+Unlike `Subnets::summarize()`, this never adds addresses. `SubnetParser::fromRange()` still requires a range that represents exactly one aligned CIDR block.
+
+```php
+$range = new IPRange(new IPAddress('192.0.2.1'), new IPAddress('192.0.2.6'));
+$cidrs = \array_map(static fn (Subnet $subnet): string => $subnet->cidr(), $range->toSubnets());
+// ['192.0.2.1/32', '192.0.2.2/31', '192.0.2.4/31', '192.0.2.6/32']
+```
+
+A singleton returns one `/32`; the full range `0.0.0.0`–`255.255.255.255` returns one `0.0.0.0/0`. Addresses are not enumerated: work is proportional to the output block count times the fixed 32-bit width, and memory is proportional to the output block count.
 
 ##### __toString()
 ```php

@@ -6,6 +6,7 @@ namespace IPv4\Tests;
 
 use IPv4\IPAddress;
 use IPv4\IPRange;
+use IPv4\Subnet;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -398,6 +399,140 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
             'small range' => ['10.0.0.0', '10.0.0.9', 10],
             '/28 subnet' => ['192.168.1.0', '192.168.1.15', 16],
         ];
+    }
+
+    /**
+     * @param list<string> $expectedCidrs
+     */
+    #[Test]
+    #[DataProvider('dataProviderForToSubnets')]
+    public function testToSubnetsReturnsMinimalExactCidrCover(
+        string $startIp,
+        string $endIp,
+        array $expectedCidrs
+    ): void {
+        // Given
+        $range = new IPRange(new IPAddress($startIp), new IPAddress($endIp));
+
+        // When
+        $subnets = $range->toSubnets();
+
+        // Then
+        $this->assertSame($expectedCidrs, \array_map(static fn (Subnet $subnet): string => $subnet->cidr(), $subnets));
+        $this->assertExactMinimalCover($range, $subnets);
+    }
+
+    /**
+     * @return array<string, array{string, string, list<string>}>
+     */
+    public static function dataProviderForToSubnets(): array
+    {
+        return [
+            'single address /32'                        => ['192.0.2.7', '192.0.2.7', ['192.0.2.7/32']],
+            'first address /32'                         => ['0.0.0.0', '0.0.0.0', ['0.0.0.0/32']],
+            'last address /32'                          => ['255.255.255.255', '255.255.255.255', ['255.255.255.255/32']],
+            'entire address space /0'                   => ['0.0.0.0', '255.255.255.255', ['0.0.0.0/0']],
+            'aligned /31'                               => ['192.0.2.6', '192.0.2.7', ['192.0.2.6/31']],
+            'aligned /24'                               => ['192.0.2.0', '192.0.2.255', ['192.0.2.0/24']],
+            'unaligned two addresses'                   => ['192.0.2.1', '192.0.2.2', ['192.0.2.1/32', '192.0.2.2/32']],
+            'unaligned six addresses'                   => [
+                '192.0.2.1', '192.0.2.6',
+                ['192.0.2.1/32', '192.0.2.2/31', '192.0.2.4/31', '192.0.2.6/32'],
+            ],
+            'crossing an octet'                         => [
+                '192.0.2.254', '192.0.3.1',
+                ['192.0.2.254/31', '192.0.3.0/31'],
+            ],
+            'crossing two octets'                       => [
+                '10.0.255.255', '10.1.0.0',
+                ['10.0.255.255/32', '10.1.0.0/32'],
+            ],
+            'crossing the signed 32-bit boundary'       => [
+                '127.255.255.254', '128.0.0.1',
+                ['127.255.255.254/31', '128.0.0.0/31'],
+            ],
+            'unaligned start ending at maximum address' => [
+                '255.255.255.249', '255.255.255.255',
+                ['255.255.255.249/32', '255.255.255.250/31', '255.255.255.252/30'],
+            ],
+            'zero start with unaligned end'             => [
+                '0.0.0.0', '0.0.0.6',
+                ['0.0.0.0/30', '0.0.0.4/31', '0.0.0.6/32'],
+            ],
+            'upper half of address space'               => ['128.0.0.0', '255.255.255.255', ['128.0.0.0/1']],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForBoundedRanges')]
+    public function testToSubnetsMatchesIndependentlyEnumeratedAddresses(int $start, int $end): void
+    {
+        // Given
+        $range = new IPRange(IPAddress::fromInteger($start), IPAddress::fromInteger($end));
+        $expectedAddresses = \range($start, $end);
+
+        // When
+        $subnets = $range->toSubnets();
+
+        // Then
+        $this->assertExactMinimalCover($range, $subnets);
+        $actualAddresses = [];
+        foreach ($subnets as $subnet) {
+            foreach ($subnet->addressRange() as $ip) {
+                $actualAddresses[] = $ip->asInteger();
+            }
+        }
+        $this->assertSame($expectedAddresses, $actualAddresses);
+    }
+
+    /**
+     * Every nonempty subrange of four eight-address windows, including IPv4 boundaries.
+     *
+     * @return \Generator<string, array{int, int}>
+     */
+    public static function dataProviderForBoundedRanges(): \Generator
+    {
+        foreach ([0, 0xC00001FC, 0x7FFFFFFC, 0xFFFFFFF8] as $base) {
+            for ($start = $base; $start < $base + 8; $start++) {
+                for ($end = $start; $end < $base + 8; $end++) {
+                    yield "{$start}-{$end}" => [$start, $end];
+                }
+            }
+        }
+    }
+
+    /**
+     * @param list<Subnet> $subnets
+     */
+    private function assertExactMinimalCover(IPRange $range, array $subnets): void
+    {
+        $this->assertNotEmpty($subnets);
+        $this->assertSame(\range(0, \count($subnets) - 1), \array_keys($subnets));
+        $cursor = $range->start()->asInteger();
+        $addressCount = 0;
+        $previous = null;
+
+        foreach ($subnets as $subnet) {
+            $this->assertSame($subnet->networkCidr(), $subnet->cidr(), 'Each subnet must be canonical.');
+            $this->assertSame($cursor, $subnet->networkAddress()->asInteger(), 'Blocks must be sorted without gaps or overlap.');
+            $this->assertLessThanOrEqual($range->end()->asInteger(), $subnet->broadcastAddress()->asInteger());
+
+            if ($previous !== null && $previous->networkSize() === $subnet->networkSize()) {
+                $parentSize = 2 * $subnet->addressCount();
+                $this->assertNotSame(
+                    \intdiv($previous->networkAddress()->asInteger(), $parentSize),
+                    \intdiv($subnet->networkAddress()->asInteger(), $parentSize),
+                    'No adjacent output blocks may be mergeable siblings.'
+                );
+            }
+
+            $cursor = $subnet->broadcastAddress()->asInteger() + 1;
+            $addressCount += $subnet->addressCount();
+            $previous = $subnet;
+        }
+
+        $this->assertSame($range->end()->asInteger() + 1, $cursor);
+        $this->assertSame($range->count(), $addressCount);
     }
 
     #[Test]
