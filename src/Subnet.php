@@ -99,6 +99,26 @@ final class Subnet implements \JsonSerializable, \Stringable
         return new self($ipAddress, (int) $prefix);
     }
 
+    /**
+     * Create a subnet from CIDR notation, rejecting input addresses with host bits set.
+     *
+     * @param string $cidr Network CIDR notation (e.g., "192.168.1.0/24")
+     *
+     * @return self
+     *
+     * @throws \InvalidArgumentException If CIDR format is invalid or the input address is not aligned
+     */
+    public static function fromNetworkCidr(string $cidr): self
+    {
+        $subnet = self::fromCidr($cidr);
+
+        if (!$subnet->isNetworkAddress()) {
+            throw new \InvalidArgumentException("Invalid network CIDR: host bits are set in '{$cidr}'");
+        }
+
+        return $subnet;
+    }
+
     /* ==================== *
      * CORE IDENTITY
      * ==================== */
@@ -111,6 +131,16 @@ final class Subnet implements \JsonSerializable, \Stringable
     public function ipAddress(): IPAddress
     {
         return $this->ip;
+    }
+
+    /**
+     * Check whether the original input IP is the subnet's network address.
+     *
+     * @return bool
+     */
+    public function isNetworkAddress(): bool
+    {
+        return $this->ip->asInteger() === $this->networkAddressInt();
     }
 
     /**
@@ -713,6 +743,41 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Check whether two disjoint subnet intervals touch, regardless of prefix length.
+     *
+     * Adjacency is symmetric and does not imply the blocks can aggregate.
+     *
+     * @param self $other
+     *
+     * @return bool
+     */
+    public function isAdjacent(self $other): bool
+    {
+        return $this->broadcastAddressInt() + 1 === $other->networkAddressInt()
+            || $other->broadcastAddressInt() + 1 === $this->networkAddressInt();
+    }
+
+    /**
+     * Return the canonical narrower block shared by two subnets, or null when disjoint.
+     *
+     * Equal networks also produce a result whose input IP is the network address.
+     *
+     * @param self $other
+     *
+     * @return self|null
+     */
+    public function intersection(self $other): ?self
+    {
+        if (!$this->overlaps($other)) {
+            return null;
+        }
+
+        $narrower = $this->networkSize >= $other->networkSize ? $this : $other;
+
+        return new self($narrower->networkAddress(), $narrower->networkSize);
+    }
+
+    /**
      * Exclude a subnet from this subnet.
      *
      * @param self $exclude Subnet to exclude
@@ -907,6 +972,20 @@ final class Subnet implements \JsonSerializable, \Stringable
     {
         return $this->networkAddressInt() === $other->networkAddressInt()
             && $this->networkSize === $other->networkSize;
+    }
+
+    /**
+     * Compare by network address, then ascending prefix (broader networks first at equal starts).
+     *
+     * @param self $other
+     *
+     * @return int -1, 0 or 1; zero agrees with equals(), regardless of input host bits
+     */
+    public function compare(self $other): int
+    {
+        $networkOrder = $this->networkAddressInt() <=> $other->networkAddressInt();
+
+        return $networkOrder !== 0 ? $networkOrder : $this->networkSize <=> $other->networkSize;
     }
 
     /* ==================== *

@@ -149,6 +149,128 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($expected, $reverseEquals);
     }
 
+    #[Test]
+    #[DataProvider('dataProviderForComparison')]
+    public function testCompareOrdersNetworkThenPrefix(string $leftCidr, string $rightCidr, int $expected): void
+    {
+        // Given
+        $left = Subnet::fromCidr($leftCidr);
+        $right = Subnet::fromCidr($rightCidr);
+
+        // When
+        $comparison = $left->compare($right);
+        $reverse = $right->compare($left);
+
+        // Then
+        $this->assertSame($expected, $comparison);
+        $this->assertSame(-$expected, $reverse);
+        $this->assertSame($expected === 0, $left->equals($right));
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function dataProviderForComparison(): array
+    {
+        return [
+            'identical networks'          => ['192.168.1.0/24', '192.168.1.0/24', 0],
+            'equal host-bit networks'     => ['192.168.1.200/24', '192.168.1.1/24', 0],
+            'equal root inputs'           => ['255.255.255.255/0', '0.0.0.0/0', 0],
+            'equal point-to-point inputs' => ['192.0.2.7/31', '192.0.2.6/31', 0],
+            'equal singleton inputs'      => ['255.255.255.255/32', '255.255.255.255/32', 0],
+            'broader at equal start'      => ['10.0.0.0/8', '10.0.0.0/16', -1],
+            'narrower at equal start'     => ['10.0.0.0/16', '10.0.0.0/8', 1],
+            'network before prefix'       => ['10.0.0.0/32', '11.0.0.0/8', -1],
+            'numeric before lexical'      => ['2.0.0.0/8', '10.0.0.0/8', -1],
+            'first singleton pair'        => ['0.0.0.0/32', '0.0.0.1/32', -1],
+            'first link before singleton' => ['0.0.0.1/31', '0.0.0.0/32', -1],
+            'first singleton after link'  => ['0.0.0.0/32', '0.0.0.1/31', 1],
+            'last link before last host'  => ['255.255.255.255/31', '255.255.255.255/32', -1],
+            'last link at equal start'    => ['255.255.255.254/31', '255.255.255.254/32', -1],
+            'maximum after minimum'       => ['255.255.255.255/32', '0.0.0.0/32', 1],
+            'first link before last link' => ['0.0.0.1/31', '255.255.255.255/31', -1],
+            'root before first half'      => ['255.255.255.255/0', '0.0.0.0/1', -1],
+            'root before first host'      => ['255.255.255.255/0', '0.0.0.0/32', -1],
+            'host bits do not order'      => ['10.255.255.255/8', '10.0.1.5/16', -1],
+        ];
+    }
+
+    #[Test]
+    public function testCompareSortsSubnetsIntoExplicitCanonicalOrder(): void
+    {
+        // Given
+        $subnets = \array_map(static fn (string $cidr): Subnet => Subnet::fromCidr($cidr), [
+            '255.255.255.255/32',
+            '10.0.0.1/16',
+            '0.0.0.0/32',
+            '192.0.2.7/31',
+            '255.255.255.255/0',
+            '10.255.255.255/8',
+            '0.0.0.1/31',
+            '2.0.0.1/8',
+            '192.0.2.7/32',
+            '255.255.255.255/31',
+            '0.0.0.1/32',
+        ]);
+
+        // When
+        \usort($subnets, static fn (Subnet $left, Subnet $right): int => $left->compare($right));
+
+        // Then
+        $this->assertSame([
+            '0.0.0.0/0',
+            '0.0.0.0/31',
+            '0.0.0.0/32',
+            '0.0.0.1/32',
+            '2.0.0.0/8',
+            '10.0.0.0/8',
+            '10.0.0.0/16',
+            '192.0.2.6/31',
+            '192.0.2.7/32',
+            '255.255.255.254/31',
+            '255.255.255.255/32',
+        ], \array_map(static fn (Subnet $subnet): string => $subnet->networkCidr(), $subnets));
+    }
+
+    #[Test]
+    public function testCompareSatisfiesTotalOrderingInvariants(): void
+    {
+        // Given - A bounded collection containing equal networks and boundary prefixes
+        $subnets = \array_map(static fn (string $cidr): Subnet => Subnet::fromCidr($cidr), [
+            '255.255.255.255/0',
+            '0.0.0.1/1',
+            '0.0.0.1/31',
+            '0.0.0.0/32',
+            '0.0.0.1/32',
+            '2.0.0.1/8',
+            '10.255.255.255/8',
+            '10.0.0.0/8',
+            '10.0.0.1/16',
+            '192.0.2.6/31',
+            '192.0.2.7/31',
+            '192.0.2.7/32',
+            '255.255.255.254/31',
+            '255.255.255.254/32',
+            '255.255.255.255/32',
+        ]);
+
+        // When / Then - Check the relation for every pair and ordered triple
+        foreach ($subnets as $left) {
+            foreach ($subnets as $middle) {
+                $comparison = $left->compare($middle);
+                $this->assertContains($comparison, [-1, 0, 1]);
+                $this->assertSame(-$comparison, $middle->compare($left));
+                $this->assertSame($comparison === 0, $left->equals($middle));
+
+                foreach ($subnets as $right) {
+                    if ($comparison <= 0 && $middle->compare($right) <= 0) {
+                        $this->assertLessThanOrEqual(0, $left->compare($right));
+                    }
+                }
+            }
+        }
+    }
+
     /**
      * @return array<string, array{string, int, string}>
      */
@@ -309,6 +431,231 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         $this->assertSame($cidr, $fromIPAddress->cidr());
         $this->assertSame($fromString->networkCidr(), $fromIPAddress->networkCidr());
         $this->assertTrue($fromIPAddress->equals($fromString));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForNetworkAlignment')]
+    public function testIsNetworkAddressChecksOriginalInput(string $cidr, bool $expected): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $aligned = $subnet->isNetworkAddress();
+
+        // Then
+        $this->assertSame($expected, $aligned);
+        $this->assertSame($cidr, $subnet->cidr());
+    }
+
+    /**
+     * @return array<string, array{string, bool}>
+     */
+    public static function dataProviderForNetworkAlignment(): array
+    {
+        return [
+            'aligned /24'       => ['192.168.1.0/24', true],
+            'host /24'          => ['192.168.1.50/24', false],
+            'root zero'         => ['0.0.0.0/0', true],
+            'root first host'   => ['0.0.0.1/0', false],
+            'root ordinary IP'  => ['192.168.1.50/0', false],
+            'root maximum'      => ['255.255.255.255/0', false],
+            'first even /31'    => ['0.0.0.0/31', true],
+            'first odd /31'     => ['0.0.0.1/31', false],
+            'ordinary even /31' => ['192.0.2.6/31', true],
+            'ordinary odd /31'  => ['192.0.2.7/31', false],
+            'last even /31'     => ['255.255.255.254/31', true],
+            'last odd /31'      => ['255.255.255.255/31', false],
+            'zero /32'          => ['0.0.0.0/32', true],
+            'ordinary /32'      => ['192.0.2.7/32', true],
+            'maximum /32'       => ['255.255.255.255/32', true],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForStrictNetworkCidrs')]
+    public function testFromNetworkCidrAcceptsAlignedInputs(string $cidr): void
+    {
+        // Given
+        $permissive = Subnet::fromCidr($cidr);
+
+        // When
+        $strict = Subnet::fromNetworkCidr($cidr);
+
+        // Then
+        $this->assertSame($cidr, $strict->cidr());
+        $this->assertSame($cidr, $strict->networkCidr());
+        $this->assertSame($permissive->ipAddress()->asQuads(), $strict->ipAddress()->asQuads());
+        $this->assertTrue($strict->equals($permissive));
+        $this->assertTrue($strict->isNetworkAddress());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForStrictNetworkCidrs(): array
+    {
+        return [
+            'aligned /24'       => ['192.168.1.0/24'],
+            'root'              => ['0.0.0.0/0'],
+            'first even /31'    => ['0.0.0.0/31'],
+            'ordinary even /31' => ['192.0.2.6/31'],
+            'last even /31'     => ['255.255.255.254/31'],
+            'zero /32'          => ['0.0.0.0/32'],
+            'ordinary /32'      => ['192.0.2.7/32'],
+            'maximum /32'       => ['255.255.255.255/32'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForHostCidrs')]
+    public function testFromNetworkCidrRejectsHostBits(string $cidr): void
+    {
+        // Given - Valid CIDR syntax with an unaligned input address
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid network CIDR: host bits are set in '{$cidr}'");
+
+        // When
+        Subnet::fromNetworkCidr($cidr);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForHostCidrs')]
+    public function testPermissiveConstructionStillRetainsHostBits(string $cidr): void
+    {
+        // Given
+        [$ip, $prefix] = \explode('/', $cidr);
+
+        // When
+        $parsed = Subnet::fromCidr($cidr);
+        $constructed = new Subnet($ip, (int) $prefix);
+        $fromAddress = new Subnet(new IPAddress($ip), (int) $prefix);
+
+        // Then
+        $this->assertSame($cidr, $parsed->cidr());
+        $this->assertSame($cidr, $constructed->cidr());
+        $this->assertSame($cidr, $fromAddress->cidr());
+        $this->assertSame($ip, $parsed->ipAddress()->asQuads());
+        $this->assertTrue($parsed->equals($constructed));
+        $this->assertTrue($parsed->equals($fromAddress));
+        $this->assertFalse($parsed->isNetworkAddress());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForHostCidrs(): array
+    {
+        return [
+            'host /24'         => ['192.168.1.50/24'],
+            'root first host'  => ['0.0.0.1/0'],
+            'root ordinary IP' => ['192.168.1.50/0'],
+            'root maximum'     => ['255.255.255.255/0'],
+            'first odd /31'    => ['0.0.0.1/31'],
+            'ordinary odd /31' => ['192.0.2.7/31'],
+            'last odd /31'     => ['255.255.255.255/31'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForLeadingZeroPrefix')]
+    #[DataProvider('dataProviderForMalformedSignedPrefix')]
+    public function testFromNetworkCidrPreservesMalformedPrefixDiagnostics(string $cidr): void
+    {
+        // Given - The same malformed prefixes accepted by neither factory
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid CIDR notation: prefix must be an integer in '{$cidr}'");
+
+        // When
+        Subnet::fromNetworkCidr($cidr);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForOversizedPrefix')]
+    public function testFromNetworkCidrPreservesOutOfRangePrefixDiagnostics(string $cidr): void
+    {
+        // Given - The original prefix spelling must survive validation
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'");
+
+        // When
+        Subnet::fromNetworkCidr($cidr);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForMalformedNetworkCidrs')]
+    public function testFromNetworkCidrPreservesSyntaxDiagnostics(string $cidr, string $expectedMessage): void
+    {
+        // Given - Syntax validation must precede the alignment check
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When
+        Subnet::fromNetworkCidr($cidr);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForMalformedNetworkCidrs')]
+    public function testFromCidrRetainsSyntaxDiagnostics(string $cidr, string $expectedMessage): void
+    {
+        // Given - Permissive parsing retains its established validation rules
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForMalformedNetworkCidrs(): array
+    {
+        return [
+            'missing slash'                => ['192.168.1.0', "Invalid CIDR notation: missing '/' in '192.168.1.0'"],
+            'multiple slashes'             => [
+                '192.168.1.0/24/extra',
+                "Invalid CIDR notation: multiple '/' found in '192.168.1.0/24/extra'",
+            ],
+            'empty prefix'                 => ['192.168.1.0/', "Invalid CIDR notation: prefix must be an integer in '192.168.1.0/'"],
+            'whitespace prefix'            => [
+                '192.168.1.0/ 24',
+                "Invalid CIDR notation: prefix must be an integer in '192.168.1.0/ 24'",
+            ],
+            'fractional prefix'            => [
+                '192.168.1.0/24.0',
+                "Invalid CIDR notation: prefix must be an integer in '192.168.1.0/24.0'",
+            ],
+            'alphabetic prefix'            => [
+                '192.168.1.0/abc',
+                "Invalid CIDR notation: prefix must be an integer in '192.168.1.0/abc'",
+            ],
+            'invalid address'              => ['999.0.0.0/24', "Invalid IPv4 address: '999.0.0.0'"],
+            'leading-zero address'         => ['192.168.001.0/24', "Invalid IPv4 address: '192.168.001.0'"],
+            'empty address'                => ['/24', "Invalid IPv4 address: ''"],
+            'prefix syntax before address' => [
+                'invalid/abc',
+                "Invalid CIDR notation: prefix must be an integer in 'invalid/abc'",
+            ],
+            'prefix range before address'  => [
+                'invalid/33',
+                "Invalid CIDR notation: prefix must be between 0 and 32 in 'invalid/33'",
+            ],
+            'prefix before host bits'      => [
+                '192.168.1.50/024',
+                "Invalid CIDR notation: prefix must be an integer in '192.168.1.50/024'",
+            ],
+        ];
     }
 
     /* ************************** *

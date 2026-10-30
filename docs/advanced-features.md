@@ -3,12 +3,77 @@
 This document covers advanced operations including subnet exclusion, exact range conversion, direct indexing, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
+- [Canonical Subnet Intersection](#canonical-subnet-intersection)
+- [Adjacency and Aggregation](#adjacency-and-aggregation)
+- [Deterministic Subnet Ordering](#deterministic-subnet-ordering)
+- [Strict Network Configuration](#strict-network-configuration)
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
 - [Network Class Information (Legacy)](#network-class-information-legacy)
+
+## Canonical Subnet Intersection
+
+`intersection()` returns the narrower CIDR when blocks overlap, or `null` when disjoint, including touching neighbors. CIDR blocks are nested whenever they overlap, so no range decomposition is needed. The operation is symmetric by value and uses full address ranges, including network and broadcast addresses.
+
+```php
+$scope = IPv4\Subnet::fromCidr('10.1.2.3/8');
+$requested = IPv4\Subnet::fromCidr('10.20.30.40/16');
+$shared = $scope->intersection($requested);
+echo $shared?->cidr() . "\n"; // 10.20.0.0/16
+echo $requested->ipAddress()->asQuads() . "\n"; // 10.20.30.40
+```
+
+The result's input IP is always the network address, even for equal networks with different original host IPs; neither original is changed. Work and additional space are O(1), independent of address count. `/0`, `/31`, `/32` and both IPv4 boundaries use the same contract. See [restricting blocks to a scope](examples.md#restrict-a-network-block-to-a-scope).
+
+## Adjacency and Aggregation
+
+`isAdjacent()` recognizes disjoint blocks whose full address ranges touch, in either order, even with different prefixes or input host bits. It includes network and broadcast addresses and uses O(1) time and additional space. A true result does not guarantee that the blocks can aggregate into one exact CIDR:
+
+```php
+$blocks = [
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.2.0/24'),
+];
+\var_dump($blocks[0]->isAdjacent($blocks[1])); // true
+$aggregated = IPv4\Subnets::aggregate($blocks);
+echo \implode(', ', \array_map(static fn (IPv4\Subnet $block): string => $block->networkCidr(), $aggregated));
+// 10.0.1.0/24, 10.0.2.0/24
+```
+
+Only appropriately aligned equal-prefix siblings can merge directly. Equality, overlap, containment and gaps are not adjacency; `/0` has no neighbor. Consecutive `/31` and `/32` blocks can touch, while the maximum address and zero never do. See [finding adjacent blocks](examples.md#find-adjacent-network-blocks) for unequal-prefix neighbors.
+
+## Deterministic Subnet Ordering
+
+Use `compare()` as a sorting callback to order blocks by ascending numeric network address and then ascending prefix. Broader blocks precede narrower ones at the same start. The method returns exactly `-1`, `0` or `1`; zero agrees with `equals()` even when the original inputs contain different host bits. Each comparison uses O(1) time and additional space.
+
+```php
+$networks = [
+    IPv4\Subnet::fromCidr('10.0.0.1/16'),
+    IPv4\Subnet::fromCidr('10.255.255.255/8'),
+    IPv4\Subnet::fromCidr('2.0.0.1/8'),
+];
+\usort($networks, static fn (IPv4\Subnet $a, IPv4\Subnet $b): int => $a->compare($b));
+echo \implode(', ', \array_map(static fn (IPv4\Subnet $network): string => $network->networkCidr(), $networks));
+// 2.0.0.0/8, 10.0.0.0/8, 10.0.0.0/16
+```
+
+Sorting preserves each subnet's original IP; use `networkCidr()` for canonical output. This ordering applies across `/0`, `/31`, `/32` and both IPv4 boundaries. See [sorting network blocks](examples.md#sort-network-blocks) for a larger example.
+
+## Strict Network Configuration
+
+Use `Subnet::fromNetworkCidr()` at a configuration-import boundary when host bits indicate a mistake. It delegates existing CIDR syntax validation, then rejects an unaligned address with `\InvalidArgumentException`. For example, `192.168.1.50/24` is rejected, while `192.168.1.0/24` is accepted. Both malformed input and host-bit errors identify the offending input.
+
+For an already constructed subnet, `isNetworkAddress()` tests the original IP's alignment without changing it. Calling `networkCidr()` on permissively parsed input produces a canonical string; it does not establish that the original input was aligned. The constructor and `fromCidr()` retain their existing host-address behavior.
+
+```php
+$configuredNetwork = IPv4\Subnet::fromNetworkCidr('192.0.2.6/31');
+\var_dump($configuredNetwork->isNetworkAddress()); // true
+```
+
+Both APIs use O(1) time and additional space, including `/0`. Only the zero address is aligned for `/0`, `/31` inputs must be even, and every valid `/32` is aligned. See [strict configuration import](examples.md#strict-network-configuration-import) for reporting rejected entries.
 
 ## Subnet Exclusion and Difference Operations
 

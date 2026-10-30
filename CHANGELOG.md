@@ -3,6 +3,11 @@
 ## Unreleased
 
 ### New Features
+- **`Subnet::intersection()`**: Returns the canonical narrower block for overlapping or equal networks, including host-bit inputs, or `null` for disjoint blocks; preserves both inputs and uses constant-time integer bounds
+- **`Subnet::isAdjacent()`**: Recognizes disjoint touching address ranges symmetrically, including unequal prefixes and nonmergeable neighbors, ignoring input host bits and preventing IPv4 endpoint wraparound
+- **`Subnet::compare()`**: Orders by numeric network address then ascending prefix (broader first at an equal start), returning exactly `-1`, `0` or `1` and agreeing with `equals()` despite input host bits
+- **`Subnet::isNetworkAddress()`**: Checks whether the original input IP is aligned to its network prefix without changing the input
+- **`Subnet::fromNetworkCidr()`**: Parses aligned network CIDRs with existing syntax validation and diagnostics, rejecting host bits with `InvalidArgumentException`; constructor and `fromCidr()` remain permissive
 - **`IPRange::toSubnets()`**: Converts any inclusive IPv4 range to the smallest exact CIDR cover, returning canonical, disjoint subnets in ascending network order without enumerating addresses; shares the existing exclusion algorithm
 - **`IPRange::at()` and `indexOf()`**: Look up addresses by zero-based index and find an address's index in constant time, including the full IPv4 range; invalid indices throw `OutOfRangeException`, valid addresses outside the range return `null`, and malformed strings throw `InvalidArgumentException`
 - **`Subnet::subnetAt()`**: Retrieves a canonical child subnet by zero-based index in constant time; shares splitting's prefix rules and validates the prefix before index bounds

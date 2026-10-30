@@ -81,6 +81,22 @@ Create a subnet from CIDR notation.
 $subnet = Subnet::fromCidr('192.168.1.100/24');
 ```
 
+#### fromNetworkCidr()
+```php
+Subnet::fromNetworkCidr(string $cidr): Subnet
+```
+Create a subnet only when the input IP is its network address. Uses the same syntax validation and diagnostics as `fromCidr()`, then throws `\InvalidArgumentException` if host bits are set. Construction and `fromCidr()` continue to accept and retain host addresses.
+
+For `/0`, only `0.0.0.0/0` is aligned. For `/31`, the input must be even; every valid `/32` address is aligned. Runs in O(1) time and additional space.
+
+**Example:**
+```php
+$network = Subnet::fromNetworkCidr('192.168.1.0/24');
+echo $network->cidr(); // 192.168.1.0/24
+
+// Subnet::fromNetworkCidr('192.168.1.50/24') throws \InvalidArgumentException.
+```
+
 ### Core Identity
 
 #### ipAddress()
@@ -94,6 +110,19 @@ Returns the input IP address as an IPAddress value object.
 $ip = $subnet->ipAddress();
 echo $ip;                  // "192.168.1.100"
 echo $ip->asHex();         // "C0A80164"
+```
+
+#### isNetworkAddress()
+```php
+isNetworkAddress(): bool
+```
+Checks whether the original input IP equals this subnet's network address. It does not validate an arbitrary string or change the stored input. Runs in O(1) time and additional space.
+
+**Example:**
+```php
+$host = Subnet::fromCidr('192.168.1.50/24');
+\var_dump($host->isNetworkAddress()); // false
+\var_dump(Subnet::fromNetworkCidr('192.168.1.0/24')->isNetworkAddress()); // true
 ```
 
 #### networkSize()
@@ -533,6 +562,42 @@ overlaps(Subnet $other): bool
 ```
 Check if this subnet overlaps with another subnet.
 
+#### isAdjacent()
+```php
+isAdjacent(Subnet $other): bool
+```
+Returns whether two disjoint full address ranges touch, in either order. Includes network and broadcast addresses, ignores input host bits, and permits unequal prefixes. Adjacency does not imply that blocks can aggregate; even same-prefix neighbors must be aligned siblings to merge. Gaps, overlap, containment and equality return false. Runs in O(1) time and additional space.
+
+**Example:**
+```php
+$left = Subnet::fromCidr('10.0.1.50/24');
+$right = Subnet::fromCidr('10.0.2.20/24');
+\var_dump($left->isAdjacent($right)); // true; these /24s cannot merge
+\var_dump($right->isAdjacent($left)); // true
+\var_dump($left->isAdjacent(Subnet::fromCidr('10.0.1.128/25'))); // false; contained
+\var_dump(Subnet::fromCidr('255.255.255.255/32')->isAdjacent(Subnet::fromCidr('0.0.0.0/32'))); // false
+```
+
+`/0` has no adjacent block. Consecutive `/31` or `/32` blocks can be adjacent; the maximum IPv4 address never wraps to zero. See [finding adjacent blocks](examples.md#find-adjacent-network-blocks).
+
+#### intersection()
+```php
+intersection(Subnet $other): ?Subnet
+```
+Returns `null` for disjoint blocks, including adjacent ones. Overlapping CIDR blocks are nested, so their intersection is the narrower block. The result always has a canonical input IP, including when equal networks were constructed with host bits. Both original inputs remain unchanged. The result is symmetric by value and uses the full address range, including network and broadcast addresses. Runs in O(1) time and additional space, including `/0`, `/31` and `/32` at either IPv4 boundary.
+
+**Example:**
+```php
+$left = Subnet::fromCidr('192.168.1.50/24');
+$right = Subnet::fromCidr('192.168.1.200/24');
+$shared = $left->intersection($right);
+echo $shared?->cidr() . "\n"; // 192.168.1.0/24
+echo $shared?->ipAddress()->asQuads() . "\n"; // 192.168.1.0
+\var_dump($left->intersection(Subnet::fromCidr('192.168.2.0/24'))); // null
+```
+
+See [restricting a block to a scope](examples.md#restrict-a-network-block-to-a-scope).
+
 #### exclude()
 ```php
 exclude(Subnet $exclude): Subnet[]
@@ -617,6 +682,21 @@ $inSubnet = $subnet->containsIP('192.168.1.100');  // true
 equals(Subnet $other): bool
 ```
 Check if two subnets are equal (same network and prefix).
+
+#### compare()
+```php
+compare(Subnet $other): int
+```
+Returns exactly `-1`, `0` or `1`, ordered by ascending numeric network address, then ascending prefix. At an equal start address, broader networks come first. Input host bits do not affect ordering; zero agrees with `equals()`. Runs in O(1) time and additional space.
+
+**Example:**
+```php
+\var_dump(Subnet::fromCidr('2.0.0.0/8')->compare(Subnet::fromCidr('10.0.0.0/8'))); // -1
+\var_dump(Subnet::fromCidr('10.0.0.0/8')->compare(Subnet::fromCidr('10.0.0.0/16'))); // -1
+\var_dump(Subnet::fromCidr('10.255.255.255/8')->compare(Subnet::fromCidr('10.0.0.0/8'))); // 0
+```
+
+Use `\usort($subnets, static fn (Subnet $a, Subnet $b): int => $a->compare($b))` to sort subnet objects. See the [sorting example](examples.md#sort-network-blocks) for canonical output.
 
 ### Output
 

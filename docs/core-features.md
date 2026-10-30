@@ -4,6 +4,8 @@ This document covers the fundamental operations and methods available in the IPv
 
 ## Table of Contents
 - [Network Component Access](#network-component-access)
+  - [Explicit Network Parsing](#explicit-network-parsing)
+- [Ordering Subnets](#ordering-subnets)
 - [Network Overlap and Containment](#network-overlap-and-containment)
 - [IP Address Type Detection](#ip-address-type-detection)
 - [Reverse DNS (ARPA Domain)](#reverse-dns-arpa-domain)
@@ -48,6 +50,24 @@ echo $subnet2->networkCidr();  // "192.168.1.0/24"
 // Both are equal
 \var_dump($subnet1->equals($subnet2));  // true
 ```
+
+### Explicit Network Parsing
+
+`isNetworkAddress()` checks the **original input IP's alignment**, even though `networkCidr()` always returns a canonical network. Use `fromNetworkCidr()` when a configuration entry must identify the network itself:
+
+```php
+$host = IPv4\Subnet::fromCidr('192.168.1.50/24');
+\var_dump($host->isNetworkAddress()); // false
+echo $host->cidr() . "\n";           // 192.168.1.50/24
+echo $host->networkCidr() . "\n";    // 192.168.1.0/24
+
+$network = IPv4\Subnet::fromNetworkCidr('192.168.1.0/24');
+\var_dump($network->isNetworkAddress()); // true
+```
+
+`fromNetworkCidr('192.168.1.50/24')` throws `\InvalidArgumentException` because host bits are set. It first applies the existing CIDR syntax validation, preserving its diagnostics. The constructor and `fromCidr()` remain permissive about host bits and retain the supplied IP.
+
+Only `0.0.0.0/0` is aligned for `/0`; `/31` requires an even input address, and every valid `/32` address is aligned. Both methods use constant time and additional space.
 
 ### IP Address
 
@@ -373,6 +393,19 @@ $inSubnet = $subnet->containsIP('192.168.113.255'); // true (broadcast address)
 - Network segmentation validation
 - Firewall rule verification
 
+## Ordering Subnets
+
+`compare()` returns exactly `-1`, `0` or `1` by numeric network address, then ascending prefix. Broader networks sort first at the same start. It uses the canonical network regardless of the original host IP, and zero agrees with `equals()`:
+
+```php
+$broad = IPv4\Subnet::fromCidr('10.255.255.255/8');
+$narrow = IPv4\Subnet::fromCidr('10.0.0.1/16');
+\var_dump($broad->compare($narrow)); // -1
+\var_dump($broad->compare(IPv4\Subnet::fromCidr('10.0.0.0/8'))); // 0
+```
+
+Numeric ordering puts `2.0.0.0/8` before `10.0.0.0/8`. The same rules apply to `/0`, `/31` and `/32`, including both IPv4 endpoints. Each comparison uses O(1) time and additional space. See [sorting network blocks](examples.md#sort-network-blocks).
+
 ## Network Overlap and Containment
 
 Useful for network planning, firewall rule validation, and routing table conflict detection.
@@ -402,6 +435,33 @@ $overlaps = $subnet1->overlaps($subnet3);  // false - completely separate
 - Detect routing table issues
 - Prevent duplicate IP assignments
 - Network planning and IPAM
+
+### Check Whether Subnets Touch
+
+`isAdjacent()` tests whether disjoint full address ranges touch, including network and broadcast addresses. It is symmetric, ignores input host bits and allows unequal prefixes:
+
+```php
+$left = IPv4\Subnet::fromCidr('10.0.0.200/24');
+$right = IPv4\Subnet::fromCidr('10.0.1.100/25');
+\var_dump($left->isAdjacent($right)); // true
+\var_dump(IPv4\Subnet::fromCidr('0.0.0.0/0')->isAdjacent($left)); // false; contains the block
+```
+
+Adjacency does not guarantee aggregation: `10.0.1.0/24` and `10.0.2.0/24` touch but cannot merge into one exact CIDR. Gaps, equality, containment and overlap return false. Consecutive `/31`s and `/32`s can touch, but IPv4 endpoints never wrap around. Each call uses O(1) time and additional space. See [finding adjacent network blocks](examples.md#find-adjacent-network-blocks).
+
+### Find the Shared Block
+
+`intersection()` returns the canonical narrower block when two CIDRs overlap and `null` when disjoint or merely adjacent. It is symmetric by value, includes all addresses, and preserves both input objects:
+
+```php
+$parent = IPv4\Subnet::fromCidr('10.1.2.3/8');
+$child = IPv4\Subnet::fromCidr('10.20.30.40/16');
+$shared = $parent->intersection($child);
+echo $shared?->cidr() . "\n"; // 10.20.0.0/16
+echo $child->cidr() . "\n";   // 10.20.30.40/16
+```
+
+Equal host-bit inputs also return a canonical input IP. `/0` can intersect every block, `/31` can intersect either member `/32`, and both IPv4 endpoints follow the same rules. Each call uses O(1) time and additional space. See [restricting a network block](examples.md#restrict-a-network-block-to-a-scope).
 
 ### Check if One Subnet Contains Another
 

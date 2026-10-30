@@ -9,6 +9,10 @@ require_once __DIR__ . '/vendor/autoload.php';
 ```
 
 ## Table of Contents
+- [Strict Network Configuration Import](#strict-network-configuration-import)
+- [Sort Network Blocks](#sort-network-blocks)
+- [Find Adjacent Network Blocks](#find-adjacent-network-blocks)
+- [Restrict a Network Block to a Scope](#restrict-a-network-block-to-a-scope)
 - [Network Planning and IPAM](#network-planning-and-ipam)
 - [Firewall and Security](#firewall-and-security)
 - [BGP Route Summarization](#bgp-route-summarization)
@@ -17,6 +21,101 @@ require_once __DIR__ . '/vendor/autoload.php';
 - [Network Automation](#network-automation)
 
 ---
+
+## Strict Network Configuration Import
+
+Collect valid network blocks and report rejected configuration entries. `fromNetworkCidr()` preserves the normal CIDR validation errors and adds rejection of host bits. Use `isNetworkAddress()` to inspect alignment on an existing subnet; `fromCidr()` and the constructor still accept host inputs.
+
+```php
+$configuredCidrs = ['192.168.1.0/24', '192.168.1.50/24', '192.0.2.6/31', '255.255.255.255/32'];
+$networks = [];
+$errors = [];
+
+foreach ($configuredCidrs as $cidr) {
+    try {
+        $networks[] = IPv4\Subnet::fromNetworkCidr($cidr);
+    } catch (\InvalidArgumentException $error) {
+        $errors[] = $error->getMessage();
+    }
+}
+
+echo \implode(', ', \array_map(static fn (IPv4\Subnet $network): string => $network->cidr(), $networks));
+// 192.168.1.0/24, 192.0.2.6/31, 255.255.255.255/32
+echo "\n" . \implode("\n", $errors) . "\n";
+// Invalid network CIDR: host bits are set in '192.168.1.50/24'
+
+$host = IPv4\Subnet::fromCidr('192.168.1.50/24');
+\var_dump($host->isNetworkAddress()); // false; the original IP is retained
+```
+
+Only `0.0.0.0/0` is aligned for `/0`; `/31` requires an even IP and every valid `/32` IP is aligned. Both alignment and strict parsing use constant time and additional space.
+
+## Sort Network Blocks
+
+Sort by numeric network address, with broader prefixes first at an equal start. `compare()` returns exactly `-1`, `0` or `1` and ignores input host bits; zero agrees with `equals()`. Each comparison uses constant time and additional space.
+
+```php
+$networks = \array_map(static fn (string $cidr): IPv4\Subnet => IPv4\Subnet::fromCidr($cidr), [
+    '10.0.0.1/16',
+    '255.255.255.255/32',
+    '2.0.0.1/8',
+    '10.255.255.255/8',
+    '192.0.2.7/31',
+    '255.255.255.255/0',
+]);
+\usort($networks, static fn (IPv4\Subnet $a, IPv4\Subnet $b): int => $a->compare($b));
+
+foreach ($networks as $network) {
+    echo $network->networkCidr() . "\n";
+}
+// 0.0.0.0/0
+// 2.0.0.0/8
+// 10.0.0.0/8
+// 10.0.0.0/16
+// 192.0.2.6/31
+// 255.255.255.255/32
+```
+
+The objects retain their original host IPs; `networkCidr()` formats the sorted blocks canonically. Numeric order places `2.0.0.0/8` before `10.0.0.0/8`, while `/8` precedes `/16` at the shared `10.0.0.0` start.
+
+## Find Adjacent Network Blocks
+
+Use `isAdjacent()` to find neighbors of one allocation without treating overlap, containment or a gap as adjacency. Each call uses constant time and additional space and checks the full range, including network and broadcast addresses:
+
+```php
+$current = IPv4\Subnet::fromCidr('10.0.1.50/24');
+$candidates = ['10.0.0.0/24', '10.0.2.0/25', '10.0.2.128/25', '10.0.1.128/25', '10.0.3.0/24'];
+
+foreach ($candidates as $cidr) {
+    $other = IPv4\Subnet::fromCidr($cidr);
+    if ($current->isAdjacent($other)) {
+        echo $other->networkCidr() . "\n";
+    }
+}
+// 10.0.0.0/24
+// 10.0.2.0/25
+```
+
+The relation is symmetric and permits unequal prefixes; host bits in `$current` do not change its range. Touching blocks need not merge: `10.0.1.0/24` and `10.0.2.0/24` are adjacent but are not aligned siblings. `/0` has no adjacent block; consecutive `/31` or `/32` blocks can touch, and the maximum IPv4 address never wraps to zero.
+
+## Restrict a Network Block to a Scope
+
+Use `intersection()` to intersect each requested block with one scope. An overlapping pair of CIDRs is nested, so the result is the canonical narrower block. A disjoint or adjacent pair returns `null`:
+
+```php
+$scope = IPv4\Subnet::fromCidr('10.1.2.3/8');
+$requests = ['10.20.30.40/16', '255.255.255.255/0', '192.0.2.1/24'];
+
+foreach ($requests as $cidr) {
+    $shared = $scope->intersection(IPv4\Subnet::fromCidr($cidr));
+    echo ($shared?->cidr() ?? 'no shared addresses') . "\n";
+}
+// 10.20.0.0/16
+// 10.0.0.0/8
+// no shared addresses
+```
+
+The result has a canonical input IP even when equal operands contain host bits. Original inputs remain unchanged; the relation is symmetric by value and includes network and broadcast addresses. Each call uses constant time and additional space, including `/0`, `/31`, `/32` and both IPv4 endpoints.
 
 ## Network Planning and IPAM
 
