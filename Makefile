@@ -13,7 +13,7 @@ lint :
 	vendor/bin/parallel-lint src tests
 
 style :
-	vendor/bin/phpcs --standard=tools/coding_standard.xml --ignore=vendor -s .
+	vendor/bin/phpcs --standard=tools/coding_standard.xml -s src tests
 
 phpstan :
 	vendor/bin/phpstan analyze -c tools/phpstan.neon $(PHPSTAN_FLAGS)
