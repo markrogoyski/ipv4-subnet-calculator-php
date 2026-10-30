@@ -737,12 +737,13 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
 
         // Then
         $this->assertExactMinimalCover($range, $subnets);
-        $actualAddresses = [];
-        foreach ($subnets as $subnet) {
-            foreach ($subnet->addressRange() as $ip) {
-                $actualAddresses[] = $ip->asInteger();
-            }
-        }
+        $actualAddresses = \array_merge(...\array_map(
+            static fn (Subnet $subnet): array => \array_map(
+                static fn (IPAddress $ip): int => $ip->asInteger(),
+                \iterator_to_array($subnet->addressRange(), false)
+            ),
+            $subnets
+        ));
         $this->assertSame($expectedAddresses, $actualAddresses);
     }
 

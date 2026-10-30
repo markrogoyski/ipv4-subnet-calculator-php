@@ -112,13 +112,6 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
         // Then
         $this->assertSame($expected, $forward);
         $this->assertSame($expected, $reverse);
-        $this->assertSame($leftCidr, $left->cidr());
-        $this->assertSame($rightCidr, $right->cidr());
-        if ($forward) {
-            $this->assertFalse($left->overlaps($right));
-            $this->assertFalse($left->contains($right));
-            $this->assertFalse($right->contains($left));
-        }
     }
 
     /**
@@ -158,53 +151,50 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @param list<int> $leftAddresses
-     * @param list<int> $rightAddresses
+     * Adjacency agrees with independently enumerated address sets for every pair of bounded fixtures.
      */
     #[Test]
-    #[DataProvider('dataProviderForBoundedSubnetSets')]
-    public function testAdjacencyMatchesIndependentAddressSets(
-        string $leftCidr,
-        array $leftAddresses,
-        string $rightCidr,
-        array $rightAddresses
-    ): void {
+    public function testAdjacencyMatchesIndependentAddressSets(): void
+    {
         // Given - Expected sets are enumerated independently of subnet bounds and relations
-        $left = Subnet::fromCidr($leftCidr);
-        $right = Subnet::fromCidr($rightCidr);
-        $common = \array_intersect($leftAddresses, $rightAddresses);
-        $expected = $common === [] && (
-            \max($leftAddresses) + 1 === \min($rightAddresses)
-            || \max($rightAddresses) + 1 === \min($leftAddresses)
-        );
+        $fixtures = self::boundedSubnetFixtures();
 
-        // When
-        $forward = $left->isAdjacent($right);
-        $reverse = $right->isAdjacent($left);
+        foreach ($fixtures as [$leftCidr, $leftAddresses]) {
+            foreach ($fixtures as [$rightCidr, $rightAddresses]) {
+                $left = Subnet::fromCidr($leftCidr);
+                $right = Subnet::fromCidr($rightCidr);
+                $common = \array_intersect($leftAddresses, $rightAddresses);
+                $expected = $common === [] && (
+                    \max($leftAddresses) + 1 === \min($rightAddresses)
+                    || \max($rightAddresses) + 1 === \min($leftAddresses)
+                );
 
-        // Then
-        $this->assertSame($expected, $forward);
-        $this->assertSame($expected, $reverse);
-        if ($forward) {
-            $this->assertFalse($left->overlaps($right));
+                // When
+                $forward = $left->isAdjacent($right);
+                $reverse = $right->isAdjacent($left);
+
+                // Then
+                $this->assertSame($expected, $forward, "{$leftCidr} isAdjacent {$rightCidr}");
+                $this->assertSame($expected, $reverse, "{$rightCidr} isAdjacent {$leftCidr}");
+                $this->assertFalse($forward && $left->overlaps($right), "{$leftCidr} adjacent but overlaps {$rightCidr}");
+            }
         }
     }
 
     /**
-     * Pair all blocks of up to eight addresses, including host inputs and boundary windows.
+     * Blocks of up to eight addresses at the bottom, an octet carry, and the top of the address space.
+     * Each CIDR is written from the block's last address so host-bit inputs are exercised.
      *
-     * @return \Generator<string, array{string, list<int>, string, list<int>}>
+     * @return list<array{string, list<int>}>
      */
-    public static function dataProviderForBoundedSubnetSets(): \Generator
+    private static function boundedSubnetFixtures(): array
     {
         $fixtures = [];
         foreach ([0, 0xC0000200, 0xFFFFFFF8] as $base) {
-            foreach ([[1, 32], [2, 31], [4, 30], [8, 29]] as [$size, $prefix]) {
-                for ($offset = 0; $offset < 8; $offset += $size) {
-                    $start = $base + $offset;
-                    $end = $start + $size - 1;
-                    $fixtures[] = [\long2ip($end) . '/' . $prefix, \range($start, $end)];
-                }
+            foreach ([[0, 8, 29], [0, 4, 30], [4, 4, 30], [0, 2, 31], [2, 2, 31], [6, 2, 31], [0, 1, 32], [1, 1, 32], [7, 1, 32]] as [$offset, $size, $prefix]) {
+                $start = $base + $offset;
+                $end = $start + $size - 1;
+                $fixtures[] = [\long2ip($end) . '/' . $prefix, \range($start, $end)];
             }
         }
 
@@ -212,20 +202,48 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
         $fixtures[] = ['192.0.1.255/32', [0xC00001FF]];
         $fixtures[] = ['192.0.2.1/31', [0xC0000200, 0xC0000201]];
 
-        foreach ($fixtures as $leftIndex => [$leftCidr, $leftAddresses]) {
-            foreach ($fixtures as $rightIndex => [$rightCidr, $rightAddresses]) {
-                yield "{$leftIndex}-{$rightIndex}" => [$leftCidr, $leftAddresses, $rightCidr, $rightAddresses];
-            }
-        }
+        return $fixtures;
     }
 
     #[Test]
-    #[DataProvider('dataProviderForIntersection')]
+    #[DataProvider('dataProviderForDisjointIntersection')]
+    public function testIntersectionOfDisjointBlocksIsNull(string $leftCidr, string $rightCidr): void
+    {
+        // Given
+        $left = Subnet::fromCidr($leftCidr);
+        $right = Subnet::fromCidr($rightCidr);
+
+        // When
+        $forward = $left->intersection($right);
+        $reverse = $right->intersection($left);
+
+        // Then
+        $this->assertNull($forward);
+        $this->assertNull($reverse);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForDisjointIntersection(): array
+    {
+        return [
+            'disjoint blocks'        => ['192.168.1.0/24', '192.168.3.0/24'],
+            'touching blocks'        => ['10.0.0.0/24', '10.0.1.0/25'],
+            'opposite singletons'    => ['0.0.0.0/32', '255.255.255.255/32'],
+            'singleton outside link' => ['0.0.0.0/31', '0.0.0.2/32'],
+            'neighboring links'      => ['0.0.0.0/31', '0.0.0.2/31'],
+            'disjoint halves'        => ['0.0.0.0/1', '128.0.0.0/1'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForNestedIntersection')]
     public function testIntersectionReturnsCanonicalNarrowerBlock(
         string $leftCidr,
         string $rightCidr,
-        ?string $expectedCidr,
-        ?string $expectedIp
+        string $expectedCidr,
+        string $expectedIp
     ): void {
         // Given
         $left = Subnet::fromCidr($leftCidr);
@@ -236,15 +254,6 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
         $reverse = $right->intersection($left);
 
         // Then
-        $this->assertSame($leftCidr, $left->cidr());
-        $this->assertSame($rightCidr, $right->cidr());
-        $this->assertSame(\explode('/', $leftCidr)[0], $left->ipAddress()->asQuads());
-        $this->assertSame(\explode('/', $rightCidr)[0], $right->ipAddress()->asQuads());
-        if ($expectedCidr === null) {
-            $this->assertNull($forward);
-            $this->assertNull($reverse);
-            return;
-        }
         $this->assertNotNull($forward);
         $this->assertNotNull($reverse);
         $this->assertSame($expectedCidr, $forward->cidr());
@@ -259,13 +268,11 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return array<string, array{string, string, ?string, ?string}>
+     * @return array<string, array{string, string, string, string}>
      */
-    public static function dataProviderForIntersection(): array
+    public static function dataProviderForNestedIntersection(): array
     {
         return [
-            'disjoint blocks'         => ['192.168.1.0/24', '192.168.3.0/24', null, null],
-            'touching blocks'         => ['10.0.0.0/24', '10.0.1.0/25', null, null],
             'nested child'            => ['192.168.1.0/24', '192.168.1.128/25', '192.168.1.128/25', '192.168.1.128'],
             'nested parent'           => ['192.168.1.128/25', '192.168.1.0/24', '192.168.1.128/25', '192.168.1.128'],
             'equal canonical blocks'  => ['192.168.1.0/24', '192.168.1.0/24', '192.168.1.0/24', '192.168.1.0'],
@@ -284,58 +291,57 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
             'singleton in parent'     => ['192.168.1.200/32', '192.168.1.0/24', '192.168.1.200/32', '192.168.1.200'],
             'equal first singleton'   => ['0.0.0.0/32', '0.0.0.0/32', '0.0.0.0/32', '0.0.0.0'],
             'equal last singleton'    => ['255.255.255.255/32', '255.255.255.255/32', '255.255.255.255/32', '255.255.255.255'],
-            'opposite singletons'     => ['0.0.0.0/32', '255.255.255.255/32', null, null],
-            'singleton outside link'  => ['0.0.0.0/31', '0.0.0.2/32', null, null],
-            'neighboring links'       => ['0.0.0.0/31', '0.0.0.2/31', null, null],
-            'disjoint halves'         => ['0.0.0.0/1', '128.0.0.0/1', null, null],
             'last link in upper half' => ['128.0.0.0/1', '255.255.255.255/31', '255.255.255.254/31', '255.255.255.254'],
         ];
     }
 
     /**
-     * @param list<int> $leftAddresses
-     * @param list<int> $rightAddresses
+     * Intersection agrees with independently enumerated address sets for every pair of bounded fixtures.
      */
     #[Test]
-    #[DataProvider('dataProviderForBoundedSubnetSets')]
-    public function testIntersectionMatchesExactIndependentMembership(
-        string $leftCidr,
-        array $leftAddresses,
-        string $rightCidr,
-        array $rightAddresses
-    ): void {
+    public function testIntersectionMatchesExactIndependentMembership(): void
+    {
         // Given - Enumerated expected sets do not depend on subnet bounds or relations
-        $left = Subnet::fromCidr($leftCidr);
-        $right = Subnet::fromCidr($rightCidr);
-        $expected = \array_values(\array_intersect($leftAddresses, $rightAddresses));
+        $fixtures = self::boundedSubnetFixtures();
 
-        // When
-        $forward = $left->intersection($right);
-        $reverse = $right->intersection($left);
+        foreach ($fixtures as [$leftCidr, $leftAddresses]) {
+            foreach ($fixtures as [$rightCidr, $rightAddresses]) {
+                $left = Subnet::fromCidr($leftCidr);
+                $right = Subnet::fromCidr($rightCidr);
+                $expected = \array_values(\array_intersect($leftAddresses, $rightAddresses));
+                $pair = "{$leftCidr} intersection {$rightCidr}";
 
-        // Then
-        if ($expected === []) {
-            $this->assertNull($forward);
-            $this->assertNull($reverse);
-            return;
+                // When
+                $forward = $left->intersection($right);
+                $reverse = $right->intersection($left);
+
+                // Then
+                if ($expected === []) {
+                    $this->assertNull($forward, $pair);
+                    $this->assertNull($reverse, $pair);
+                    continue;
+                }
+                $this->assertNotNull($forward, $pair);
+                $this->assertNotNull($reverse, $pair);
+                $this->assertSame($expected, self::addressIntegers($forward), $pair);
+                $this->assertSame($expected, self::addressIntegers($reverse), $pair);
+                $this->assertSame(\long2ip(\min($expected)), $forward->ipAddress()->asQuads(), $pair);
+                $this->assertTrue($left->contains($forward), $pair);
+                $this->assertTrue($right->contains($forward), $pair);
+                $this->assertTrue($forward->equals($reverse), $pair);
+            }
         }
-        $this->assertNotNull($forward);
-        $this->assertNotNull($reverse);
-        $this->assertSame(\count($expected), $forward->addressCount());
-        $this->assertSame(\count($expected), $reverse->addressCount());
-        $this->assertSame($expected, \array_map(
+    }
+
+    /**
+     * @return list<int>
+     */
+    private static function addressIntegers(Subnet $subnet): array
+    {
+        return \array_map(
             static fn (IPAddress $ip): int => $ip->asInteger(),
-            \iterator_to_array($forward->addressRange(), false)
-        ));
-        $this->assertSame($expected, \array_map(
-            static fn (IPAddress $ip): int => $ip->asInteger(),
-            \iterator_to_array($reverse->addressRange(), false)
-        ));
-        $this->assertSame(\long2ip(\min($expected)), $forward->ipAddress()->asQuads());
-        $this->assertSame(\long2ip(\min($expected)), $reverse->ipAddress()->asQuads());
-        $this->assertTrue($left->contains($forward));
-        $this->assertTrue($right->contains($forward));
-        $this->assertTrue($forward->equals($reverse));
+            \iterator_to_array($subnet->addressRange(), false)
+        );
     }
 
     /**

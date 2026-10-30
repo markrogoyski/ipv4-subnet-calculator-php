@@ -752,12 +752,12 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
         $subnet = new Subnet($ip, $prefix);
 
         // When
-        $indexedCidrs = [];
-        $splitCidrs = [];
-        foreach ($subnet->splitIterator($newPrefix) as $index => $child) {
-            $indexedCidrs[] = $subnet->subnetAt($newPrefix, $index)->cidr();
-            $splitCidrs[] = $child->cidr();
-        }
+        $children = \iterator_to_array($subnet->splitIterator($newPrefix));
+        $indexedCidrs = \array_map(
+            static fn (int $index): string => $subnet->subnetAt($newPrefix, $index)->cidr(),
+            \array_keys($children)
+        );
+        $splitCidrs = \array_map(static fn (Subnet $child): string => $child->cidr(), \array_values($children));
 
         // Then
         $this->assertSame($expectedSubnets, $indexedCidrs);

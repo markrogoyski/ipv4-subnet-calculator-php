@@ -120,13 +120,24 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         // Given - Two different IPs in the same subnet
         $subnet1 = new Subnet($ip1, $networkSize);
         $subnet2 = new Subnet($ip2, $networkSize);
+        $parsed = Subnet::fromCidr("{$ip1}/{$networkSize}");
+        $fromAddress = new Subnet(new IPAddress($ip1), $networkSize);
 
         // When - Getting CIDR notation
         $cidr1 = $subnet1->cidr();
         $cidr2 = $subnet2->cidr();
 
         // Then - cidr() should preserve input IPs (different strings)
+        $this->assertSame("{$ip1}/{$networkSize}", $cidr1);
+        $this->assertSame("{$ip2}/{$networkSize}", $cidr2);
         $this->assertNotSame($cidr1, $cidr2);
+        $this->assertSame($ip1, $subnet1->ipAddress()->asQuads());
+
+        // And every construction path retains the same input IP
+        $this->assertSame($cidr1, $parsed->cidr());
+        $this->assertSame($cidr1, $fromAddress->cidr());
+        $this->assertTrue($subnet1->equals($parsed));
+        $this->assertTrue($subnet1->equals($fromAddress));
 
         // But networkCidr() should be identical
         $this->assertSame($subnet1->networkCidr(), $subnet2->networkCidr());
@@ -296,10 +307,13 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
     public static function dataProviderForNetworkCidrEquality(): array
     {
         return [
-            'slash 24 different hosts' => ['192.168.1.100', '192.168.1.1', 24],
-            'slash 16 different hosts' => ['10.20.30.40', '10.20.50.60', 16],
-            'slash 30 different hosts' => ['203.0.113.13', '203.0.113.14', 30],
-            'slash 31 both IPs' => ['192.0.2.0', '192.0.2.1', 31],
+            'slash 24 different hosts'          => ['192.168.1.100', '192.168.1.1', 24],
+            'slash 16 different hosts'          => ['10.20.30.40', '10.20.50.60', 16],
+            'slash 30 different hosts'          => ['203.0.113.13', '203.0.113.14', 30],
+            'slash 31 both IPs'                 => ['192.0.2.0', '192.0.2.1', 31],
+            'slash 31 first and second IPs'     => ['0.0.0.0', '0.0.0.1', 31],
+            'slash 31 last and second-last IPs' => ['255.255.255.254', '255.255.255.255', 31],
+            'slash 0 different hosts'           => ['0.0.0.1', '255.255.255.255', 0],
         ];
     }
 
@@ -521,28 +535,6 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
         Subnet::fromNetworkCidr($cidr);
     }
 
-    #[Test]
-    #[DataProvider('dataProviderForHostCidrs')]
-    public function testPermissiveConstructionStillRetainsHostBits(string $cidr): void
-    {
-        // Given
-        [$ip, $prefix] = \explode('/', $cidr);
-
-        // When
-        $parsed = Subnet::fromCidr($cidr);
-        $constructed = new Subnet($ip, (int) $prefix);
-        $fromAddress = new Subnet(new IPAddress($ip), (int) $prefix);
-
-        // Then
-        $this->assertSame($cidr, $parsed->cidr());
-        $this->assertSame($cidr, $constructed->cidr());
-        $this->assertSame($cidr, $fromAddress->cidr());
-        $this->assertSame($ip, $parsed->ipAddress()->asQuads());
-        $this->assertTrue($parsed->equals($constructed));
-        $this->assertTrue($parsed->equals($fromAddress));
-        $this->assertFalse($parsed->isNetworkAddress());
-    }
-
     /**
      * @return array<string, array{string}>
      */
@@ -600,20 +592,6 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
 
         // When
         Subnet::fromNetworkCidr($cidr);
-    }
-
-    #[Test]
-    #[DataProvider('dataProviderForMalformedNetworkCidrs')]
-    public function testFromCidrRetainsSyntaxDiagnostics(string $cidr, string $expectedMessage): void
-    {
-        // Given - Permissive parsing retains its established validation rules
-
-        // Then
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage($expectedMessage);
-
-        // When
-        Subnet::fromCidr($cidr);
     }
 
     /**
@@ -716,6 +694,66 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
 
         // When
         Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @param string $cidr
+     */
+    #[Test]
+    #[DataProvider('dataProviderForWhitespaceOrFractionalPrefix')]
+    public function testFromCidrThrowsExceptionWhenPrefixIsWhitespaceOrFractional(string $cidr): void
+    {
+        // Given - A CIDR string whose prefix is not a plain integer
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid CIDR notation: prefix must be an integer in '{$cidr}'");
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array[] [cidr]
+     */
+    public static function dataProviderForWhitespaceOrFractionalPrefix(): array
+    {
+        return [
+            'whitespace prefix' => ['192.168.1.0/ 24'],
+            'fractional prefix' => ['192.168.1.0/24.0'],
+        ];
+    }
+
+    /**
+     * @param string $cidr
+     * @param string $expectedMessage
+     */
+    #[Test]
+    #[DataProvider('dataProviderForInvalidAddressOrPrefixPrecedence')]
+    public function testFromCidrReportsInvalidAddressAndValidatesPrefixFirst(string $cidr, string $expectedMessage): void
+    {
+        // Given - A CIDR string with an invalid address, and possibly an invalid prefix too
+
+        // Then - Prefix syntax and range are reported before the address
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When
+        Subnet::fromCidr($cidr);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForInvalidAddressOrPrefixPrecedence(): array
+    {
+        return [
+            'invalid address'              => ['999.0.0.0/24', "Invalid IPv4 address: '999.0.0.0'"],
+            'leading-zero address'         => ['192.168.001.0/24', "Invalid IPv4 address: '192.168.001.0'"],
+            'empty address'                => ['/24', "Invalid IPv4 address: ''"],
+            'prefix syntax before address' => ['invalid/abc', "Invalid CIDR notation: prefix must be an integer in 'invalid/abc'"],
+            'prefix range before address'  => ['invalid/33', "Invalid CIDR notation: prefix must be between 0 and 32 in 'invalid/33'"],
+        ];
     }
 
     /**

@@ -584,7 +584,7 @@ $right = Subnet::fromCidr('10.0.2.20/24');
 ```php
 intersection(Subnet $other): ?Subnet
 ```
-Returns `null` for disjoint blocks, including adjacent ones. Overlapping CIDR blocks are nested, so their intersection is the narrower block. The result always has a canonical input IP, including when equal networks were constructed with host bits. Both original inputs remain unchanged. The result is symmetric by value and uses the full address range, including network and broadcast addresses. Runs in O(1) time and additional space, including `/0`, `/31` and `/32` at either IPv4 boundary.
+Returns `null` for disjoint blocks, including adjacent ones. Overlapping CIDR blocks are nested, so their intersection is the narrower block. The result always has a canonical input IP, including when equal networks were constructed with host bits. The result is symmetric by value. Runs in O(1) time and additional space, including `/0`, `/31` and `/32` at either IPv4 boundary.
 
 **Example:**
 ```php

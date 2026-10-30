@@ -67,7 +67,7 @@ $network = IPv4\Subnet::fromNetworkCidr('192.168.1.0/24');
 
 `fromNetworkCidr('192.168.1.50/24')` throws `\InvalidArgumentException` because host bits are set. It first applies the existing CIDR syntax validation, preserving its diagnostics. The constructor and `fromCidr()` remain permissive about host bits and retain the supplied IP.
 
-Only `0.0.0.0/0` is aligned for `/0`; `/31` requires an even input address, and every valid `/32` address is aligned. Both methods use constant time and additional space.
+Only `0.0.0.0/0` is aligned for `/0`; `/31` requires an even input address, and every valid `/32` address is aligned.
 
 ### IP Address
 
@@ -279,7 +279,7 @@ echo "Usable hosts: {$usableHosts}\n";
 
 #### Access Addresses by Index
 
-Use `at()` to retrieve an address directly and `indexOf()` to find its position. Both operations use zero-based indices and O(1) time and additional space:
+Use `at()` to retrieve an address directly and `indexOf()` to find its position. Both operations use zero-based indices:
 
 ```php
 $subnet = IPv4\Subnet::fromCidr('192.0.2.0/24');
@@ -404,7 +404,7 @@ $narrow = IPv4\Subnet::fromCidr('10.0.0.1/16');
 \var_dump($broad->compare(IPv4\Subnet::fromCidr('10.0.0.0/8'))); // 0
 ```
 
-Numeric ordering puts `2.0.0.0/8` before `10.0.0.0/8`. The same rules apply to `/0`, `/31` and `/32`, including both IPv4 endpoints. Each comparison uses O(1) time and additional space. See [sorting network blocks](examples.md#sort-network-blocks).
+Numeric ordering puts `2.0.0.0/8` before `10.0.0.0/8`. The same rules apply to `/0`, `/31` and `/32`, including both IPv4 endpoints. See [sorting network blocks](examples.md#sort-network-blocks).
 
 ## Network Overlap and Containment
 
@@ -447,7 +447,7 @@ $right = IPv4\Subnet::fromCidr('10.0.1.100/25');
 \var_dump(IPv4\Subnet::fromCidr('0.0.0.0/0')->isAdjacent($left)); // false; contains the block
 ```
 
-Adjacency does not guarantee aggregation: `10.0.1.0/24` and `10.0.2.0/24` touch but cannot merge into one exact CIDR. Gaps, equality, containment and overlap return false. Consecutive `/31`s and `/32`s can touch, but IPv4 endpoints never wrap around. Each call uses O(1) time and additional space. See [finding adjacent network blocks](examples.md#find-adjacent-network-blocks).
+Adjacency does not guarantee aggregation: `10.0.1.0/24` and `10.0.2.0/24` touch but cannot merge into one exact CIDR. Gaps, equality, containment and overlap return false. Consecutive `/31`s and `/32`s can touch, but IPv4 endpoints never wrap around. See [finding adjacent network blocks](examples.md#find-adjacent-network-blocks).
 
 ### Find the Shared Block
 
@@ -461,7 +461,7 @@ echo $shared?->cidr() . "\n"; // 10.20.0.0/16
 echo $child->cidr() . "\n";   // 10.20.30.40/16
 ```
 
-Equal host-bit inputs also return a canonical input IP. `/0` can intersect every block, `/31` can intersect either member `/32`, and both IPv4 endpoints follow the same rules. Each call uses O(1) time and additional space. See [restricting a network block](examples.md#restrict-a-network-block-to-a-scope).
+Equal host-bit inputs also return a canonical input IP. `/0` can intersect every block, `/31` can intersect either member `/32`, and both IPv4 endpoints follow the same rules. See [restricting a network block](examples.md#restrict-a-network-block-to-a-scope).
 
 ### Check if One Subnet Contains Another
 
@@ -778,7 +778,7 @@ $parent = IPv4\Subnet::fromCidr('192.0.2.200/24');
 echo $parent->subnetAt(26, 3)->cidr(); // 192.0.2.192/26
 ```
 
-The index is zero-based, follows the order of `splitIterator()`, and must be less than `2^($newPrefix - $parentPrefix)`. The result is canonical even when the parent has host bits set. Lookup uses O(1) time and additional space. Invalid prefixes throw `\InvalidArgumentException` before indices are checked; negative or out-of-range indices throw `\OutOfRangeException`. The same prefix rules as splitting apply, so `/32` has no children.
+The index is zero-based, follows the order of `splitIterator()`, and must be less than `2^($newPrefix - $parentPrefix)`. The result is canonical even when the parent has host bits set. Invalid prefixes throw `\InvalidArgumentException` before indices are checked; negative or out-of-range indices throw `\OutOfRangeException`. The same prefix rules as splitting apply, so `/32` has no children.
 
 **Practical Example - Department Allocation:**
 

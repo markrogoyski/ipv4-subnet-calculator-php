@@ -1,9 +1,5 @@
 .PHONY : lint tests style phpstan phpmd psalm composer-unused composer-require-checker composer-audit coverage
 
-# Avoid worker sockets and user-cache writes; callers may override these flags.
-PHPSTAN_FLAGS ?= --debug --no-progress
-PSALM_FLAGS ?= --threads=1 --no-cache --no-progress
-
 all : lint tests style phpstan psalm composer-unused composer-require-checker
 
 tests :
@@ -16,10 +12,10 @@ style :
 	vendor/bin/phpcs --standard=tools/coding_standard.xml -s src tests
 
 phpstan :
-	vendor/bin/phpstan analyze -c tools/phpstan.neon $(PHPSTAN_FLAGS)
+	vendor/bin/phpstan analyze -c tools/phpstan.neon
 
 psalm :
-	vendor/bin/psalm -c tools/psalm.xml $(PSALM_FLAGS)
+	vendor/bin/psalm -c tools/psalm.xml
 
 phpmd :
 	vendor/bin/phpmd src/ ansi tools/phpmd.xml

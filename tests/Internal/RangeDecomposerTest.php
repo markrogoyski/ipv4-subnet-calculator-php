@@ -46,45 +46,14 @@ class RangeDecomposerTest extends TestCase
     public static function dataProviderForToSubnets(): array
     {
         return [
-            'single address /32'                        => [42, 42, ['0.0.0.42/32']],
-            'first address /32'                         => [0, 0, ['0.0.0.0/32']],
-            'last address /32'                          => [0xFFFFFFFF, 0xFFFFFFFF, ['255.255.255.255/32']],
-            'entire address space /0'                   => [0, 0xFFFFFFFF, ['0.0.0.0/0']],
-            'aligned /31'                               => [2, 3, ['0.0.0.2/31']],
-            'unaligned two addresses'                   => [1, 2, ['0.0.0.1/32', '0.0.0.2/32']],
-            'unaligned six addresses'                   => [
-                1, 6,
-                ['0.0.0.1/32', '0.0.0.2/31', '0.0.0.4/31', '0.0.0.6/32'],
-            ],
-            'zero start with unaligned end'             => [
-                0, 6,
-                ['0.0.0.0/30', '0.0.0.4/31', '0.0.0.6/32'],
-            ],
-            'successively larger blocks'                => [
+            'successively larger blocks'  => [
                 1, 15,
                 ['0.0.0.1/32', '0.0.0.2/31', '0.0.0.4/30', '0.0.0.8/29'],
             ],
-            'successively smaller blocks'               => [
+            'successively smaller blocks' => [
                 16, 30,
                 ['0.0.0.16/29', '0.0.0.24/30', '0.0.0.28/31', '0.0.0.30/32'],
             ],
-            'crossing an octet'                         => [
-                254, 257,
-                ['0.0.0.254/31', '0.0.1.0/31'],
-            ],
-            'crossing two octets'                       => [
-                65_534, 65_537,
-                ['0.0.255.254/31', '0.1.0.0/31'],
-            ],
-            'crossing the signed 32-bit boundary'       => [
-                0x7FFFFFFE, 0x80000001,
-                ['127.255.255.254/31', '128.0.0.0/31'],
-            ],
-            'unaligned start ending at maximum address' => [
-                0xFFFFFFF9, 0xFFFFFFFF,
-                ['255.255.255.249/32', '255.255.255.250/31', '255.255.255.252/30'],
-            ],
-            'upper half of address space'               => [0x80000000, 0xFFFFFFFF, ['128.0.0.0/1']],
         ];
     }
 

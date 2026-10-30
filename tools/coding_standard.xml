@@ -4,8 +4,6 @@
 
  <config name="php_version" value="80100"/>
 
- <exclude-pattern type="relative">^\.council/*</exclude-pattern>
-
  <rule ref="PSR12">
   <!-- Welcome to the future where we have HD wide-screen monitors -->
   <exclude name="Generic.Files.LineLength.TooLong"/>

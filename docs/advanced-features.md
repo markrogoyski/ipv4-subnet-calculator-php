@@ -26,11 +26,11 @@ echo $shared?->cidr() . "\n"; // 10.20.0.0/16
 echo $requested->ipAddress()->asQuads() . "\n"; // 10.20.30.40
 ```
 
-The result's input IP is always the network address, even for equal networks with different original host IPs; neither original is changed. Work and additional space are O(1), independent of address count. `/0`, `/31`, `/32` and both IPv4 boundaries use the same contract. See [restricting blocks to a scope](examples.md#restrict-a-network-block-to-a-scope).
+The result's input IP is always the network address, even for equal networks with different original host IPs; `/0`, `/31`, `/32` and both IPv4 boundaries use the same contract. See [restricting blocks to a scope](examples.md#restrict-a-network-block-to-a-scope).
 
 ## Adjacency and Aggregation
 
-`isAdjacent()` recognizes disjoint blocks whose full address ranges touch, in either order, even with different prefixes or input host bits. It includes network and broadcast addresses and uses O(1) time and additional space. A true result does not guarantee that the blocks can aggregate into one exact CIDR:
+`isAdjacent()` recognizes disjoint blocks whose full address ranges touch, in either order, even with different prefixes or input host bits. A true result does not guarantee that the blocks can aggregate into one exact CIDR:
 
 ```php
 $blocks = [
@@ -47,7 +47,7 @@ Only appropriately aligned equal-prefix siblings can merge directly. Equality, o
 
 ## Deterministic Subnet Ordering
 
-Use `compare()` as a sorting callback to order blocks by ascending numeric network address and then ascending prefix. Broader blocks precede narrower ones at the same start. The method returns exactly `-1`, `0` or `1`; zero agrees with `equals()` even when the original inputs contain different host bits. Each comparison uses O(1) time and additional space.
+Use `compare()` as a sorting callback to order blocks by ascending numeric network address and then ascending prefix. Broader blocks precede narrower ones at the same start. The method returns exactly `-1`, `0` or `1`; zero agrees with `equals()` even when the original inputs contain different host bits.
 
 ```php
 $networks = [
@@ -73,7 +73,7 @@ $configuredNetwork = IPv4\Subnet::fromNetworkCidr('192.0.2.6/31');
 \var_dump($configuredNetwork->isNetworkAddress()); // true
 ```
 
-Both APIs use O(1) time and additional space, including `/0`. Only the zero address is aligned for `/0`, `/31` inputs must be even, and every valid `/32` is aligned. See [strict configuration import](examples.md#strict-network-configuration-import) for reporting rejected entries.
+Only the zero address is aligned for `/0`, `/31` inputs must be even, and every valid `/32` is aligned. See [strict configuration import](examples.md#strict-network-configuration-import) for reporting rejected entries.
 
 ## Subnet Exclusion and Difference Operations
 
@@ -308,7 +308,7 @@ echo $all->toSubnets()[0]->cidr(); // 0.0.0.0/0
 
 ## Constant-Time Address and Subnet Indexing
 
-Use direct indexing when you need one address or child subnet from a large allocation. `IPRange::at()`, `IPRange::indexOf()`, and `Subnet::subnetAt()` use O(1) time and additional space, independent of the requested index:
+Use direct indexing when you need one address or child subnet from a large allocation. `IPRange::at()`, `IPRange::indexOf()`, and `Subnet::subnetAt()` compute their result directly, independent of the requested index:
 
 ```php
 $root = IPv4\Subnet::fromCidr('0.0.0.0/0');
