@@ -1,10 +1,11 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, exact range conversion, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, exact range conversion, direct indexing, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
+- [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
 - [Network Class Information (Legacy)](#network-class-information-legacy)
@@ -239,6 +240,25 @@ The decomposition uses integer alignment checks without enumerating addresses. W
 $all = new IPv4\IPRange(new IPv4\IPAddress('0.0.0.0'), new IPv4\IPAddress('255.255.255.255'));
 echo $all->toSubnets()[0]->cidr(); // 0.0.0.0/0
 ```
+
+## Constant-Time Address and Subnet Indexing
+
+Use direct indexing when you need one address or child subnet from a large allocation. `IPRange::at()`, `IPRange::indexOf()`, and `Subnet::subnetAt()` use O(1) time and additional space, independent of the requested index:
+
+```php
+$root = IPv4\Subnet::fromCidr('0.0.0.0/0');
+$addresses = $root->addressRange();
+
+echo $addresses->at(4_294_967_295); // 255.255.255.255
+$addresses->indexOf('255.255.255.255'); // 4_294_967_295
+echo $root->subnetAt(32, 4_294_967_295)->cidr(); // 255.255.255.255/32
+```
+
+All indices are zero-based. The range methods add or subtract cached integer endpoints. Child lookup calculates the child's size and offset from the parent's network address, after validating the prefix and index. It returns a canonical network even for a parent constructed with host bits set. No preceding addresses or children are visited.
+
+`at()` and `subnetAt()` reject negative and out-of-range indices with `\OutOfRangeException`. `indexOf()` returns `null` for a valid address outside the range and throws `\InvalidArgumentException` for malformed strings. `subnetAt()` requires a prefix strictly greater than the parent's and at most 32; invalid prefixes throw `\InvalidArgumentException` before index validation.
+
+For usable hosts, use `$subnet->hostRange()->at(0)` to get the first host. `/31` ranges include both addresses and `/32` ranges include their one address, following the existing host-range policy.
 
 ## CIDR Aggregation and Supernetting
 

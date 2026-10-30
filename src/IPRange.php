@@ -9,8 +9,8 @@ use IPv4\Internal\RangeDecomposer;
 /**
  * Immutable value object representing a range of IPv4 addresses.
  *
- * Provides iteration over all IPs in the range, containment checking,
- * count information, and exact CIDR decomposition. Used for full address ranges (network to broadcast)
+ * Provides iteration, constant-time indexing, containment checking, count information,
+ * and exact CIDR decomposition. Used for full address ranges (network to broadcast)
  * and host ranges (usable addresses only).
  *
  * Implements IteratorAggregate for foreach support and Countable for count().
@@ -73,6 +73,47 @@ final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable
     public function count(): int
     {
         return $this->endInt - $this->startInt + 1;
+    }
+
+    /**
+     * Get the IP address at a zero-based index in O(1) time and additional space.
+     *
+     * @param int $index Index from 0 to count() - 1
+     *
+     * @return IPAddress
+     *
+     * @throws \OutOfRangeException If index is negative or outside the range
+     */
+    public function at(int $index): IPAddress
+    {
+        if ($index < 0 || $index >= $this->count()) {
+            throw new \OutOfRangeException("Address index {$index} is outside the range");
+        }
+
+        return IPAddress::fromInteger($this->startInt + $index);
+    }
+
+    /**
+     * Find an IP address's zero-based index in O(1) time and additional space.
+     *
+     * @param string|IPAddress $ip IP address to find
+     *
+     * @return int|null Index, or null if the address is outside the range
+     *
+     * @throws \InvalidArgumentException If $ip is a string that is not a valid IPv4 address
+     */
+    public function indexOf(string|IPAddress $ip): ?int
+    {
+        if (\is_string($ip)) {
+            $ip = new IPAddress($ip);
+        }
+
+        $ipInt = $ip->asInteger();
+        if ($ipInt < $this->startInt || $ipInt > $this->endInt) {
+            return null;
+        }
+
+        return $ipInt - $this->startInt;
     }
 
     /**

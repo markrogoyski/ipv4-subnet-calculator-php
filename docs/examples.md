@@ -20,6 +20,30 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 ## Network Planning and IPAM
 
+### Retrieve an Indexed Subnet and Host
+
+Retrieve a numbered `/24` from a large allocation, then select a host within it without enumerating earlier subnets or hosts:
+
+```php
+$allocation = IPv4\Subnet::fromCidr('10.0.0.0/8');
+$office = $allocation->subnetAt(24, 513); // Zero-based: 10.2.1.0/24
+$hosts = $office->hostRange();
+
+echo $office->cidr() . "\n"; // 10.2.1.0/24
+echo $hosts->at(0) . "\n"; // 10.2.1.1, first usable host
+echo $hosts->at(99) . "\n"; // 10.2.1.100
+
+$index = $hosts->indexOf('10.2.1.100');
+if ($index !== null) {
+    echo "Host index: {$index}\n"; // Host index: 99
+}
+
+// To select a random usable host, choose a valid index.
+$randomHost = $hosts->at(\random_int(0, $hosts->count() - 1));
+```
+
+These lookups use O(1) time and additional space. Indices start at zero and must be below the range or child count; invalid indices throw `\OutOfRangeException`. Child prefixes follow the splitting rules and are validated before indices. `indexOf()` returns `null` for an address outside the range and rejects malformed strings with `\InvalidArgumentException`. Random selection does not reserve an address or prevent repeats.
+
 ### Office Subnet Allocation
 
 Allocate subnets to different office locations from a corporate address block.

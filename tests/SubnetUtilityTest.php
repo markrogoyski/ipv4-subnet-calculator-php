@@ -700,6 +700,142 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForIndexedSubnets')]
+    public function testSubnetAtReturnsCanonicalChild(string $cidr, int $newPrefix, int $index, string $expectedCidr): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $child = $subnet->subnetAt($newPrefix, $index);
+
+        // Then
+        $this->assertSame($expectedCidr, $child->cidr());
+        $this->assertSame($child->networkCidr(), $child->cidr());
+        $this->assertTrue($subnet->contains($child));
+        $this->assertSame($cidr, $subnet->cidr());
+    }
+
+    /**
+     * @return array<string, array{string, int, int, string}>
+     */
+    public static function dataProviderForIndexedSubnets(): array
+    {
+        return [
+            'first child of host-bit parent'  => ['192.0.2.200/24', 26, 0, '192.0.2.0/26'],
+            'second child of host-bit parent' => ['192.0.2.200/24', 26, 1, '192.0.2.64/26'],
+            'third child of host-bit parent'  => ['192.0.2.200/24', 26, 2, '192.0.2.128/26'],
+            'last child of host-bit parent'   => ['192.0.2.200/24', 26, 3, '192.0.2.192/26'],
+            '/30 first /31'                   => ['192.0.2.7/30', 31, 0, '192.0.2.4/31'],
+            '/30 last /31'                    => ['192.0.2.7/30', 31, 1, '192.0.2.6/31'],
+            '/31 first /32'                   => ['192.0.2.7/31', 32, 0, '192.0.2.6/32'],
+            '/31 last /32'                    => ['192.0.2.7/31', 32, 1, '192.0.2.7/32'],
+            '/0 first /1'                     => ['203.0.113.7/0', 1, 0, '0.0.0.0/1'],
+            '/0 last /1'                      => ['203.0.113.7/0', 1, 1, '128.0.0.0/1'],
+            '/0 first /32'                    => ['0.0.0.0/0', 32, 0, '0.0.0.0/32'],
+            '/0 upper half /32'               => ['0.0.0.0/0', 32, 2_147_483_648, '128.0.0.0/32'],
+            '/0 last /32'                     => ['203.0.113.7/0', 32, 4_294_967_295, '255.255.255.255/32'],
+            '/0 last /24'                     => ['0.0.0.0/0', 24, 16_777_215, '255.255.255.0/24'],
+            'nonzero network last /32'        => ['255.255.255.255/1', 32, 2_147_483_647, '255.255.255.255/32'],
+            'last /30 to /31'                 => ['255.255.255.255/30', 31, 1, '255.255.255.254/31'],
+        ];
+    }
+
+    /**
+     * @param list<string> $expectedSubnets
+     */
+    #[Test]
+    #[DataProvider('validIPV4Provider')]
+    public function testSubnetAtMatchesEveryChildOfSplit(string $ip, int $prefix, int $newPrefix, array $expectedSubnets): void
+    {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // When
+        $indexedCidrs = [];
+        $splitCidrs = [];
+        foreach ($subnet->splitIterator($newPrefix) as $index => $child) {
+            $indexedCidrs[] = $subnet->subnetAt($newPrefix, $index)->cidr();
+            $splitCidrs[] = $child->cidr();
+        }
+
+        // Then
+        $this->assertSame($expectedSubnets, $indexedCidrs);
+        $this->assertSame($splitCidrs, $indexedCidrs);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForInvalidSubnetIndices')]
+    public function testSubnetAtRejectsIndicesOutsideChildCount(string $cidr, int $newPrefix, int $index): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // Then
+        $this->expectException(\OutOfRangeException::class);
+
+        // When
+        $subnet->subnetAt($newPrefix, $index);
+    }
+
+    /**
+     * @return array<string, array{string, int, int}>
+     */
+    public static function dataProviderForInvalidSubnetIndices(): array
+    {
+        return [
+            'negative index'        => ['192.0.2.200/24', 26, -1],
+            'index equal to count'  => ['192.0.2.200/24', 26, 4],
+            'index beyond count'    => ['192.0.2.200/24', 26, 5],
+            'minimum integer'       => ['192.0.2.200/24', 26, \PHP_INT_MIN],
+            'maximum integer'       => ['192.0.2.200/24', 26, \PHP_INT_MAX],
+            '/31 past last /32'     => ['255.255.255.255/31', 32, 2],
+            '/0 negative /32 index' => ['0.0.0.0/0', 32, -1],
+            '/0 past last /32'      => ['0.0.0.0/0', 32, 4_294_967_296],
+            '/0 maximum /32 index'  => ['0.0.0.0/0', 32, \PHP_INT_MAX],
+            '/0 maximum /1 index'   => ['0.0.0.0/0', 1, \PHP_INT_MAX],
+            '/0 minimum /1 index'   => ['0.0.0.0/0', 1, \PHP_INT_MIN],
+            '/0 past last /1'       => ['0.0.0.0/0', 1, 2],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('invalidIPV4Provider')]
+    #[DataProvider('dataProviderForInvalidChildPrefixes')]
+    public function testSubnetAtValidatesPrefixBeforeIndex(string $ip, int $prefix, int $newPrefix, string $expectedMessage): void
+    {
+        // Given
+        $subnet = new Subnet($ip, $prefix);
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When - both prefix and index are invalid
+        $subnet->subnetAt($newPrefix, \PHP_INT_MAX);
+    }
+
+    /**
+     * @return array<string, array{string, int, int, string}>
+     */
+    public static function dataProviderForInvalidChildPrefixes(): array
+    {
+        $invalid = 'New prefix must be larger than current prefix';
+        $max = 'New prefix cannot exceed 32';
+
+        return [
+            'coarser prefix'          => ['192.0.2.1', 24, 23, $invalid],
+            'zero prefix'             => ['192.0.2.1', 24, 0, $invalid],
+            'negative prefix'         => ['192.0.2.1', 24, -1, $invalid],
+            'minimum integer prefix'  => ['192.0.2.1', 24, \PHP_INT_MIN, $invalid],
+            'maximum integer prefix'  => ['192.0.2.1', 24, \PHP_INT_MAX, $max],
+            '/0 equal prefix'         => ['0.0.0.0', 0, 0, $invalid],
+            '/0 prefix exceeds IPv4'  => ['0.0.0.0', 0, 33, $max],
+            '/32 prefix exceeds IPv4' => ['255.255.255.255', 32, 33, $max],
+        ];
+    }
+
+    #[Test]
     public function splitIteratorIsLazyForEntireAddressSpace(): void
     {
         // Given - /0 into /32 would be 4.3 billion subnets if materialized

@@ -632,19 +632,38 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function splitIterator(int $newPrefix): \Generator
     {
-        if ($newPrefix <= $this->networkSize) {
-            throw new \InvalidArgumentException(
-                "New prefix must be larger than current prefix ({$this->networkSize})"
-            );
-        }
-
-        if ($newPrefix > 32) {
-            throw new \InvalidArgumentException(
-                'New prefix cannot exceed 32'
-            );
-        }
+        $this->validateChildPrefix($newPrefix);
 
         return $this->generateSplit($newPrefix);
+    }
+
+    /**
+     * Get a child subnet by zero-based index in ascending network order.
+     *
+     * Returns a canonical child in O(1) time and additional space, even when the
+     * parent has host bits set. Validates the prefix before checking the index.
+     *
+     * @param int $newPrefix New CIDR prefix (strictly larger than current, at most 32)
+     * @param int $index     Index from 0 to 2^(newPrefix - networkSize) - 1
+     *
+     * @return self
+     *
+     * @throws \InvalidArgumentException If newPrefix is invalid
+     * @throws \OutOfRangeException If index is negative or outside the child count
+     */
+    public function subnetAt(int $newPrefix, int $index): self
+    {
+        $this->validateChildPrefix($newPrefix);
+
+        $childCount = 1 << ($newPrefix - $this->networkSize);
+        if ($index < 0 || $index >= $childCount) {
+            throw new \OutOfRangeException("Subnet index {$index} is outside the child count ({$childCount})");
+        }
+
+        $childSize = 1 << (32 - $newPrefix);
+        $childStart = $this->networkAddressInt() + $index * $childSize;
+
+        return new self(IPAddress::fromInteger($childStart), $newPrefix);
     }
 
     /**
@@ -964,6 +983,28 @@ final class Subnet implements \JsonSerializable, \Stringable
     /* ==================== *
      * PRIVATE HELPERS
      * ==================== */
+
+    /**
+     * Validate a prefix for splitting or indexed child lookup.
+     *
+     * @param int $newPrefix
+     *
+     * @throws \InvalidArgumentException If newPrefix is invalid
+     */
+    private function validateChildPrefix(int $newPrefix): void
+    {
+        if ($newPrefix <= $this->networkSize) {
+            throw new \InvalidArgumentException(
+                "New prefix must be larger than current prefix ({$this->networkSize})"
+            );
+        }
+
+        if ($newPrefix > 32) {
+            throw new \InvalidArgumentException(
+                'New prefix cannot exceed 32'
+            );
+        }
+    }
 
     /**
      * Generate the subnets of a split whose prefix has already been validated.

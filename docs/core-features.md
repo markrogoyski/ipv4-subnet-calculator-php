@@ -257,6 +257,30 @@ echo "Total IPs: {$totalIPs}\n";
 echo "Usable hosts: {$usableHosts}\n";
 ```
 
+#### Access Addresses by Index
+
+Use `at()` to retrieve an address directly and `indexOf()` to find its position. Both operations use zero-based indices and O(1) time and additional space:
+
+```php
+$subnet = IPv4\Subnet::fromCidr('192.0.2.0/24');
+$hosts = $subnet->hostRange();
+
+echo $subnet->hostRange()->at(0); // 192.0.2.1, first usable host
+echo $hosts->at($hosts->count() - 1); // 192.0.2.254, last usable host
+$hosts->indexOf('192.0.2.100'); // 99
+$hosts->indexOf('192.0.2.0'); // null, outside the usable host range
+```
+
+`at()` throws `\OutOfRangeException` for negative indices or indices at or beyond the count. `indexOf()` accepts a string or `IPAddress`, returns `null` for a valid address outside the range, and throws `\InvalidArgumentException` for malformed strings. Check its result with `!== null`, since `0` is a valid index.
+
+Indexing follows the existing usable-host rules:
+
+| Subnet | `hostRange()->at(0)` | Last usable host | Host count |
+|---|---|---|---|
+| `192.0.2.0/30` | `192.0.2.1` | `192.0.2.2` | 2 |
+| `192.0.2.6/31` | `192.0.2.6` | `192.0.2.7` | 2 |
+| `192.0.2.7/32` | `192.0.2.7` | `192.0.2.7` | 1 |
+
 #### Combining Iteration and Counting
 
 ```php
@@ -686,6 +710,15 @@ foreach (IPv4\Subnet::fromCidr('10.0.0.0/8')->splitIterator(24) as $network) {
     echo $network->cidr() . "\n";  // 65,536 /24s, one in memory at a time
 }
 ```
+
+To retrieve a single child directly, use `subnetAt()`:
+
+```php
+$parent = IPv4\Subnet::fromCidr('192.0.2.200/24');
+echo $parent->subnetAt(26, 3)->cidr(); // 192.0.2.192/26
+```
+
+The index is zero-based, follows the order of `splitIterator()`, and must be less than `2^($newPrefix - $parentPrefix)`. The result is canonical even when the parent has host bits set. Lookup uses O(1) time and additional space. Invalid prefixes throw `\InvalidArgumentException` before indices are checked; negative or out-of-range indices throw `\OutOfRangeException`. The same prefix rules as splitting apply, so `/32` has no children.
 
 **Practical Example - Department Allocation:**
 

@@ -497,6 +497,24 @@ splitIterator(int $newPrefix): \Generator<int, Subnet>
 ```
 Lazy version of `split()` that yields one subnet at a time. Use for large splits. Throws on call for an invalid prefix.
 
+#### subnetAt()
+```php
+subnetAt(int $newPrefix, int $index): Subnet
+```
+Returns the child at a zero-based index in ascending network order, using O(1) time and additional space. The result is canonical even when the parent's input IP has host bits set.
+
+The new prefix must be strictly greater than the parent prefix and at most 32, matching `splitIterator()`. A `/32` has no child subnets. Invalid prefixes throw `\InvalidArgumentException` **before** index validation. Indices must be from `0` to `2^($newPrefix - $parentPrefix) - 1`; negative or out-of-range indices throw `\OutOfRangeException`.
+
+**Examples:**
+```php
+$parent = Subnet::fromCidr('192.0.2.200/24');
+echo $parent->subnetAt(26, 0)->cidr(); // 192.0.2.0/26
+echo $parent->subnetAt(26, 3)->cidr(); // 192.0.2.192/26
+
+echo Subnet::fromCidr('0.0.0.0/0')->subnetAt(32, 4_294_967_295)->cidr();
+// 255.255.255.255/32, without traversing preceding children
+```
+
 #### contains()
 ```php
 contains(Subnet $other): bool
@@ -1058,6 +1076,40 @@ $count = $range->count();  // 256
 // Using PHP's \count() function (recommended)
 $count = \count($range);  // 256
 ```
+
+##### at()
+```php
+at(int $index): IPAddress
+```
+Returns the address at a zero-based index in O(1) time and additional space. Index `0` is the range's start, and `count() - 1` is its end. Negative indices and indices greater than or equal to `count()` throw `\OutOfRangeException`.
+
+**Examples:**
+```php
+$hosts = Subnet::fromCidr('192.0.2.0/30')->hostRange();
+echo $hosts->at(0); // 192.0.2.1, the first usable host
+echo $hosts->at($hosts->count() - 1); // 192.0.2.2
+
+$all = Subnet::fromCidr('0.0.0.0/0')->addressRange();
+echo $all->at(4_294_967_295); // 255.255.255.255
+```
+
+The existing host-range rules apply: `/31` includes both addresses, and `/32` includes its single address.
+
+##### indexOf()
+```php
+indexOf(string|IPAddress $ip): ?int
+```
+Returns the address's zero-based index in O(1) time and additional space, or `null` for a valid IPv4 address outside the range. Malformed strings throw `\InvalidArgumentException`. For every valid index, `$range->indexOf($range->at($index)) === $index`.
+
+**Examples:**
+```php
+$hosts = Subnet::fromCidr('192.0.2.0/30')->hostRange();
+$hosts->indexOf('192.0.2.1'); // 0
+$hosts->indexOf(new IPAddress('192.0.2.2')); // 1
+$hosts->indexOf('192.0.2.0'); // null (network address outside this host range)
+```
+
+Use `!== null` to distinguish an address at index `0` from an address outside the range.
 
 ##### contains()
 ```php

@@ -4,6 +4,8 @@
 
 ### New Features
 - **`IPRange::toSubnets()`**: Converts any inclusive IPv4 range to the smallest exact CIDR cover, returning canonical, disjoint subnets in ascending network order without enumerating addresses; shares the existing exclusion algorithm
+- **`IPRange::at()` and `indexOf()`**: Look up addresses by zero-based index and find an address's index in constant time, including the full IPv4 range; invalid indices throw `OutOfRangeException`, valid addresses outside the range return `null`, and malformed strings throw `InvalidArgumentException`
+- **`Subnet::subnetAt()`**: Retrieves a canonical child subnet by zero-based index in constant time; shares splitting's prefix rules and validates the prefix before index bounds
 
 ## v5.1.0 - 2026-10-25
 

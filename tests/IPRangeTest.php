@@ -139,6 +139,267 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForIndexedAddresses')]
+    public function testAtReturnsAddressAtZeroBasedIndex(string $start, string $end, int $index, string $expectedIp): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // When
+        $ip = $range->at($index);
+
+        // Then
+        $this->assertSame($expectedIp, $ip->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, string, int, string}>
+     */
+    public static function dataProviderForIndexedAddresses(): array
+    {
+        return [
+            'first address'                  => ['192.0.2.10', '192.0.2.20', 0, '192.0.2.10'],
+            'interior address'               => ['192.0.2.10', '192.0.2.20', 5, '192.0.2.15'],
+            'last address'                   => ['192.0.2.10', '192.0.2.20', 10, '192.0.2.20'],
+            'singleton'                      => ['192.0.2.7', '192.0.2.7', 0, '192.0.2.7'],
+            'crossing an octet'              => ['192.0.2.254', '192.0.3.1', 2, '192.0.3.0'],
+            'crossing two octets'            => ['10.0.255.255', '10.1.0.1', 1, '10.1.0.0'],
+            'crossing signed 32-bit limit'   => ['127.255.255.254', '128.0.0.1', 2, '128.0.0.0'],
+            'full IPv4 range first address'  => ['0.0.0.0', '255.255.255.255', 0, '0.0.0.0'],
+            'full IPv4 range upper half'     => ['0.0.0.0', '255.255.255.255', 2_147_483_648, '128.0.0.0'],
+            'full IPv4 range last address'   => ['0.0.0.0', '255.255.255.255', 4_294_967_295, '255.255.255.255'],
+            'nonzero start at IPv4 boundary' => ['255.255.255.250', '255.255.255.255', 5, '255.255.255.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForInvalidAddressIndices')]
+    public function testAtRejectsIndicesOutsideRange(string $start, string $end, int $index): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // Then
+        $this->expectException(\OutOfRangeException::class);
+
+        // When
+        $range->at($index);
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function dataProviderForInvalidAddressIndices(): array
+    {
+        return [
+            'negative index'          => ['192.0.2.10', '192.0.2.20', -1],
+            'index equal to count'    => ['192.0.2.10', '192.0.2.20', 11],
+            'index beyond count'      => ['192.0.2.10', '192.0.2.20', 12],
+            'singleton past end'      => ['255.255.255.255', '255.255.255.255', 1],
+            'minimum integer'         => ['192.0.2.10', '192.0.2.20', \PHP_INT_MIN],
+            'maximum integer'         => ['192.0.2.10', '192.0.2.20', \PHP_INT_MAX],
+            'full IPv4 negative'      => ['0.0.0.0', '255.255.255.255', -1],
+            'full IPv4 past end'      => ['0.0.0.0', '255.255.255.255', 4_294_967_296],
+            'full IPv4 maximum index' => ['0.0.0.0', '255.255.255.255', \PHP_INT_MAX],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIndexedHosts')]
+    public function testAtUsesUsableHostRange(string $cidr, int $index, string $expectedIp): void
+    {
+        // Given
+        $range = Subnet::fromCidr($cidr)->hostRange();
+
+        // When
+        $ip = $range->at($index);
+
+        // Then
+        $this->assertSame($expectedIp, $ip->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, int, string}>
+     */
+    public static function dataProviderForIndexedHosts(): array
+    {
+        return [
+            '/30 first host'      => ['192.0.2.1/30', 0, '192.0.2.1'],
+            '/30 last host'       => ['192.0.2.1/30', 1, '192.0.2.2'],
+            '/31 first host'      => ['192.0.2.7/31', 0, '192.0.2.6'],
+            '/31 last host'       => ['192.0.2.7/31', 1, '192.0.2.7'],
+            '/32 only host'       => ['192.0.2.7/32', 0, '192.0.2.7'],
+            '/31 IPv4 last host'  => ['255.255.255.255/31', 1, '255.255.255.255'],
+            '/32 IPv4 first host' => ['0.0.0.0/32', 0, '0.0.0.0'],
+            '/32 IPv4 last host'  => ['255.255.255.255/32', 0, '255.255.255.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForHostRangeBounds')]
+    public function testAtRejectsIndexEqualToHostCount(string $cidr): void
+    {
+        // Given
+        $range = Subnet::fromCidr($cidr)->hostRange();
+
+        // Then
+        $this->expectException(\OutOfRangeException::class);
+
+        // When
+        $range->at($range->count());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForHostRangeBounds(): array
+    {
+        return [
+            '/30' => ['192.0.2.0/30'],
+            '/31' => ['192.0.2.6/31'],
+            '/32' => ['192.0.2.7/32'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIndexedAddresses')]
+    public function testIndexOfReturnsZeroBasedIndex(string $start, string $end, int $expectedIndex, string $ip): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // When
+        $stringIndex = $range->indexOf($ip);
+        $objectIndex = $range->indexOf(new IPAddress($ip));
+
+        // Then
+        $this->assertSame($expectedIndex, $stringIndex);
+        $this->assertSame($expectedIndex, $objectIndex);
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIndexedAddresses')]
+    public function testIndexOfInvertsAt(string $start, string $end, int $index, string $expectedIp): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // When
+        $ip = $range->at($index);
+
+        // Then
+        $this->assertSame($expectedIp, $ip->asQuads());
+        $this->assertSame($index, $range->indexOf($ip));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForAddressesOutsideRange')]
+    public function testIndexOfReturnsNullOutsideRange(string $start, string $end, string $ip): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress($start), new IPAddress($end));
+
+        // When
+        $stringIndex = $range->indexOf($ip);
+        $objectIndex = $range->indexOf(new IPAddress($ip));
+
+        // Then
+        $this->assertNull($stringIndex);
+        $this->assertNull($objectIndex);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function dataProviderForAddressesOutsideRange(): array
+    {
+        return [
+            'immediately before range' => ['192.0.2.10', '192.0.2.20', '192.0.2.9'],
+            'immediately after range'  => ['192.0.2.10', '192.0.2.20', '192.0.2.21'],
+            'before singleton'         => ['192.0.2.7', '192.0.2.7', '192.0.2.6'],
+            'after singleton'          => ['192.0.2.7', '192.0.2.7', '192.0.2.8'],
+            'first IPv4 address'       => ['0.0.0.1', '255.255.255.254', '0.0.0.0'],
+            'last IPv4 address'        => ['0.0.0.1', '255.255.255.254', '255.255.255.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForMalformedIndexedAddresses')]
+    public function testIndexOfRejectsMalformedAddress(string $ip): void
+    {
+        // Given
+        $range = Subnet::fromCidr('0.0.0.0/0')->addressRange();
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid IPv4 address: '{$ip}'");
+
+        // When
+        $range->indexOf($ip);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForMalformedIndexedAddresses(): array
+    {
+        return [
+            'empty'          => [''],
+            'nonnumeric'     => ['invalid'],
+            'integer string' => ['3221225985'],
+            'IPv6'           => ['::1'],
+            'missing octet'  => ['192.0.2'],
+            'invalid octet'  => ['192.0.2.256'],
+            'leading zero'   => ['192.0.2.01'],
+            'CIDR'           => ['192.0.2.1/24'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIndexedHosts')]
+    public function testIndexOfUsesUsableHostRange(string $cidr, int $expectedIndex, string $ip): void
+    {
+        // Given
+        $range = Subnet::fromCidr($cidr)->hostRange();
+
+        // When
+        $index = $range->indexOf($ip);
+
+        // Then
+        $this->assertSame($expectedIndex, $index);
+        $this->assertSame($expectedIndex, $range->indexOf($range->at($expectedIndex)));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForAddressesOutsideHostRange')]
+    public function testIndexOfReturnsNullOutsideHostRange(string $cidr, string $ip): void
+    {
+        // Given
+        $range = Subnet::fromCidr($cidr)->hostRange();
+
+        // When
+        $index = $range->indexOf($ip);
+
+        // Then
+        $this->assertNull($index);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForAddressesOutsideHostRange(): array
+    {
+        return [
+            '/30 network'   => ['192.0.2.0/30', '192.0.2.0'],
+            '/30 broadcast' => ['192.0.2.0/30', '192.0.2.3'],
+            'before /31'    => ['192.0.2.6/31', '192.0.2.5'],
+            'after /31'     => ['192.0.2.6/31', '192.0.2.8'],
+            'before /32'    => ['192.0.2.7/32', '192.0.2.6'],
+            'after /32'     => ['192.0.2.7/32', '192.0.2.8'],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('dataProviderForContainsWithString')]
     public function testContainsWithStringIdentifiesIpsInRange(
         string $startIp,
