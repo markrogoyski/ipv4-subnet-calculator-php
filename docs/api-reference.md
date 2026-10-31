@@ -877,6 +877,55 @@ $summary = Subnets::summarize([
 // Returns: Subnet: 192.168.0.0/23
 ```
 
+### Set Operations
+
+These methods treat each array as the set of addresses its subnets cover, including network and broadcast addresses. Inputs may contain duplicate, nested, unsorted or adjacent subnets, with any array keys; host bits are ignored. Every element of both arrays is validated before any result is computed, so an invalid element throws `\InvalidArgumentException` even when the other array is empty. Inputs are sorted and merged into address intervals in O(n log n + m log m) time, then swept once; no addresses are enumerated. Results take additional time and space proportional to the number of returned blocks.
+
+#### intersection()
+```php
+Subnets::intersection(array $left, array $right): Subnet[]
+```
+Returns the addresses in both arrays as the fewest canonical CIDR blocks, in ascending order, with numeric keys. Commutative; `intersection($a, $a)` equals `aggregate($a)`.
+
+**Example:**
+```php
+$shared = Subnets::intersection(
+    [Subnet::fromCidr('10.0.0.0/23'), Subnet::fromCidr('10.0.4.0/24')],
+    [Subnet::fromCidr('10.0.1.0/24'), Subnet::fromCidr('10.0.4.128/25')],
+);
+// Returns: [Subnet: 10.0.1.0/24, Subnet: 10.0.4.128/25]
+```
+
+#### difference()
+```php
+Subnets::difference(array $left, array $right): Subnet[]
+```
+Returns the addresses in `$left` that are not in `$right` as the fewest canonical CIDR blocks, in ascending order, with numeric keys. Not commutative. Together, `difference($a, $b)` and `intersection($a, $b)` cover exactly the addresses of `$a`. For a single base subnet, `Subnet::excludeAll()` gives the same blocks.
+
+**Example:**
+```php
+$free = Subnets::difference(
+    [Subnet::fromCidr('10.0.0.0/23'), Subnet::fromCidr('10.0.4.0/24')],
+    [Subnet::fromCidr('10.0.0.0/24'), Subnet::fromCidr('10.0.1.128/26'), Subnet::fromCidr('10.0.4.0/25')],
+);
+// Returns: [Subnet: 10.0.1.0/25, Subnet: 10.0.1.192/26, Subnet: 10.0.4.128/25]
+```
+
+#### covers()
+```php
+Subnets::covers(array $covering, array $required): bool
+```
+Returns whether every address in `$required` is in `$covering`, equivalent to `difference($required, $covering) === []`. Several smaller blocks may together cover a larger one. Every array covers `[]`; `[]` covers no nonempty array.
+
+**Example:**
+```php
+$halves = [Subnet::fromCidr('192.0.2.0/25'), Subnet::fromCidr('192.0.2.128/25')];
+Subnets::covers($halves, [Subnet::fromCidr('192.0.2.0/24')]); // true
+Subnets::covers([], [Subnet::fromCidr('192.0.2.1/32')]);       // false
+```
+
+Union needs no separate method: use `Subnets::aggregate([...\array_values($left), ...\array_values($right)])`, so duplicate string keys cannot overwrite an input block.
+
 ---
 
 ## Value Object Classes

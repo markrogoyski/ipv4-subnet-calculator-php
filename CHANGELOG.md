@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### New Features
+- **`Subnets::intersection()` and `difference()`**: Return the minimal exact CIDR blocks shared by, or remaining between, two subnet collections
+- **`Subnets::covers()`**: Checks whether one subnet collection contains every address of another
 - **`Subnet::reverseZones()`**: Returns the octet-aligned reverse DNS zone origins that exactly cover the network
 - **`Subnet::intersection()`**: Returns the canonical narrower block for overlapping networks, or `null` when disjoint
 - **`Subnet::isAdjacent()`**: Checks whether two disjoint subnets touch end to start

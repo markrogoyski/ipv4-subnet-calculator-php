@@ -1,6 +1,6 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, exact range conversion, direct indexing, reverse-zone coverage, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, collection set operations, exact range conversion, direct indexing, reverse-zone coverage, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Canonical Subnet Intersection](#canonical-subnet-intersection)
@@ -8,6 +8,7 @@ This document covers advanced operations including subnet exclusion, exact range
 - [Deterministic Subnet Ordering](#deterministic-subnet-ordering)
 - [Strict Network Configuration](#strict-network-configuration)
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
+- [Collection Intersection, Difference, and Coverage](#collection-intersection-difference-and-coverage)
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [Exact Reverse-Zone Coverage](#exact-reverse-zone-coverage)
@@ -281,6 +282,41 @@ $result = $subnet->exclude($middle);
 // Result: 10.0.0.0/26, 10.0.0.64/27, 10.0.0.96/30, 10.0.0.101/32, 10.0.0.102/31,
 //         10.0.0.104/29, 10.0.0.112/28, 10.0.0.128/25
 ```
+
+## Collection Intersection, Difference, and Coverage
+
+`Subnets::intersection()`, `Subnets::difference()` and `Subnets::covers()` treat arrays of subnets as address sets. Use them when both sides are collections, such as address pools against allocations, where `excludeAll()` handles only one base subnet:
+
+```php
+$pools = [IPv4\Subnet::fromCidr('10.0.0.0/23'), IPv4\Subnet::fromCidr('10.0.4.0/24')];
+$allocated = [
+    IPv4\Subnet::fromCidr('10.0.0.0/24'),
+    IPv4\Subnet::fromCidr('10.0.1.128/26'),
+    IPv4\Subnet::fromCidr('10.0.4.0/25'),
+];
+
+$free = IPv4\Subnets::difference($pools, $allocated);
+// 10.0.1.0/25, 10.0.1.192/26, 10.0.4.128/25
+
+$inPools = IPv4\Subnets::intersection($pools, [
+    IPv4\Subnet::fromCidr('10.0.1.0/24'),
+    IPv4\Subnet::fromCidr('10.0.4.128/25'),
+]);
+// 10.0.1.0/24, 10.0.4.128/25
+```
+
+Both methods return the fewest canonical CIDR blocks for exactly the resulting addresses, sorted by network address and numerically indexed. Inputs may be unsorted, duplicated, nested or keyed. Intersection is commutative; difference is not.
+
+`covers()` checks whether one collection contains every address of another, even when no single block does:
+
+```php
+$halves = [IPv4\Subnet::fromCidr('192.0.2.0/25'), IPv4\Subnet::fromCidr('192.0.2.128/25')];
+\var_dump(IPv4\Subnets::covers($halves, [IPv4\Subnet::fromCidr('192.0.2.0/24')])); // true
+\var_dump(IPv4\Subnets::covers([], []));                                           // true
+\var_dump(IPv4\Subnets::covers([], [IPv4\Subnet::fromCidr('192.0.2.1/32')]));     // false
+```
+
+Every collection covers an empty one, and an empty collection covers nothing else. Union is `Subnets::aggregate()` over both arrays' values. See [auditing firewall coverage](examples.md#audit-firewall-coverage).
 
 ## Exact Range-to-CIDR Conversion
 

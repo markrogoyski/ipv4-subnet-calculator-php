@@ -313,6 +313,31 @@ echo \implode("\n", $allowedCidrs) . "\n";
 
 Each address in the range is covered once. Using `Subnets::summarize()` on these blocks would produce `192.0.2.0/29`, which also includes `.0` and `.7`.
 
+### Audit Firewall Coverage
+
+Check that permitted blocks reach every required destination, list the gaps, and find permissions outside the approved plan:
+
+```php
+$toSubnets = static fn (array $cidrs): array => \array_map(
+    static fn (string $cidr): IPv4\Subnet => IPv4\Subnet::fromCidr($cidr),
+    $cidrs
+);
+$toCidrs = static fn (array $subnets): string => \implode(', ', \array_map(
+    static fn (IPv4\Subnet $subnet): string => $subnet->cidr(),
+    $subnets
+));
+
+$permitted = $toSubnets(['10.10.0.0/25', '10.10.0.128/25', '10.10.2.0/24', '203.0.113.0/24']);
+$required = $toSubnets(['web' => '10.10.0.0/24', 'db' => '10.10.2.10/32', 'backup' => '10.10.3.0/30']);
+$approved = $toSubnets(['10.10.0.0/23', '10.10.2.0/24', '10.10.3.0/30']);
+
+\var_dump(IPv4\Subnets::covers($permitted, $required)); // false
+echo $toCidrs(IPv4\Subnets::difference($required, $permitted)) . "\n"; // 10.10.3.0/30
+echo $toCidrs(IPv4\Subnets::difference($permitted, $approved)) . "\n"; // 203.0.113.0/24
+```
+
+The two permitted `/25`s together cover the required `/24`. Results compare addresses, not rule text, so splitting or merging rules does not change them.
+
 ### Firewall Rule Validation
 
 Find overlapping address ranges and flag differing actions for review. Whether an overlap

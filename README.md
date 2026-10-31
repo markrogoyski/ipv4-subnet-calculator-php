@@ -38,7 +38,7 @@ Features
  * **Network Calculations** - Subnet masks, wildcard masks, network/host portions, broadcast addresses
  * **IP Address Operations** - Range detection, type classification (private, public, loopback, multicast, etc.)
  * **Network Analysis** - Overlap detection, containment checking, conflict validation
- * **CIDR Operations** - Aggregation, supernetting, subnet splitting
+ * **CIDR Operations** - Aggregation, supernetting, subnet splitting, collection intersection, difference and coverage
  * **Capacity Planning** - Utilization analysis, optimal subnet sizing, waste calculation
  * **Advanced IPAM** - Subnet exclusion, address space carving, sequential allocation
 
