@@ -838,6 +838,23 @@ foreach ($assignments as $dept => $subnet) {
 }
 ```
 
+### Allocate Variable-Size Subnets
+
+When departments need different sizes, `SubnetAllocator::allocate()` sizes each one from its host count and places it in the parent, avoiding reserved space:
+
+```php
+$plan = IPv4\SubnetAllocator::allocate(
+    IPv4\Subnet::fromCidr('10.0.0.0/22'),
+    ['Sales' => 50, 'Engineering' => 500],
+    [IPv4\Subnet::fromCidr('10.0.3.0/24')],  // Reserved
+);
+
+$plan->allocations();  // ['Sales' => 10.0.2.0/26, 'Engineering' => 10.0.0.0/23]
+$plan->remaining();    // [10.0.2.64/26, 10.0.2.128/25]
+```
+
+See [variable-size allocation](advanced-features.md#variable-size-subnet-allocation) for placement rules and failures.
+
 ## Adjacent Subnet Navigation
 
 Navigate to neighboring subnets of the same size for sequential IP allocation and network expansion planning.

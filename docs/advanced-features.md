@@ -1,6 +1,6 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, collection set operations, exact range conversion, direct indexing, reverse-zone coverage, global reachability, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, collection set operations, variable-size allocation, exact range conversion, direct indexing, reverse-zone coverage, global reachability, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Canonical Subnet Intersection](#canonical-subnet-intersection)
@@ -9,6 +9,7 @@ This document covers advanced operations including subnet exclusion, collection 
 - [Strict Network Configuration](#strict-network-configuration)
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
 - [Collection Intersection, Difference, and Coverage](#collection-intersection-difference-and-coverage)
+- [Variable-Size Subnet Allocation](#variable-size-subnet-allocation)
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [Exact Reverse-Zone Coverage](#exact-reverse-zone-coverage)
@@ -318,6 +319,50 @@ $halves = [IPv4\Subnet::fromCidr('192.0.2.0/25'), IPv4\Subnet::fromCidr('192.0.2
 ```
 
 Every collection covers an empty one, and an empty collection covers nothing else. Union is `Subnets::aggregate()` over both arrays' values. See [auditing firewall coverage](examples.md#audit-firewall-coverage).
+
+## Variable-Size Subnet Allocation
+
+`SubnetAllocator::allocate()` plans a VLSM layout: one CIDR block per named host-count requirement, placed inside one parent network around reserved space. It is stateless; the result is an immutable `AllocationPlan`.
+
+```php
+$plan = IPv4\SubnetAllocator::allocate(
+    IPv4\Subnet::fromCidr('192.168.10.0/24'),
+    ['users' => 100, 'servers' => 50, 'printers' => 10, 'uplink' => 2],
+    [IPv4\Subnet::fromCidr('192.168.10.0/28')],  // Gateways and infrastructure
+);
+
+foreach ($plan->allocations() as $name => $subnet) {
+    echo "{$name}: {$subnet}\n";
+}
+// users: 192.168.10.128/25
+// servers: 192.168.10.64/26
+// printers: 192.168.10.16/28
+// uplink: 192.168.10.32/31
+
+$plan->reserved();   // [192.168.10.0/28]
+$plan->remaining();  // [192.168.10.34/31, 192.168.10.36/30, 192.168.10.40/29, 192.168.10.48/28]
+```
+
+- **Sizing**: as `SubnetParser::optimalPrefixForHosts()`: one host gets a `/32`, two get a `/31` (RFC 3021), and larger counts add the network and broadcast addresses, so 100 hosts need a `/25`.
+- **Placement**: larger blocks first, equal sizes in bytewise name order (`strcmp()`), each at the lowest aligned address that is still free. The same input always gives the same plan, and `allocations()` keeps the caller's requirement order.
+- **Reservations**: must lie wholly inside the parent; duplicates, nesting and overlaps are merged. `reserved()` returns their union as the fewest CIDR blocks. The parent's host bits are ignored.
+- **Free space**: `remaining()` is the fewest CIDR blocks left over. Allocations, reservations and remaining space are disjoint and together cover exactly the parent. With no requirements, the plan is the parent minus the reservations.
+- **All or nothing**: invalid input throws `\InvalidArgumentException` before anything is placed: names must be nonempty strings, counts positive ints no larger than IPv4 allows, and reservations `Subnet` objects inside the parent. A requirement that does not fit throws `\RuntimeException` naming it, its prefix, and the largest free block. No partial plan is returned.
+
+```php
+try {
+    IPv4\SubnetAllocator::allocate(
+        IPv4\Subnet::fromCidr('10.0.0.0/24'),
+        ['x' => 100],
+        [IPv4\Subnet::fromCidr('10.0.0.64/26'), IPv4\Subnet::fromCidr('10.0.0.192/26')],
+    );
+} catch (\RuntimeException $e) {
+    echo $e->getMessage();
+    // Cannot allocate 'x' as a /25: largest free block is a /26 (128 free addresses in 2 blocks)
+}
+```
+
+Fragmentation can prevent a placement even when enough addresses are free in total, as above. Requirement names are array keys, so PHP keeps only the last of duplicate names and turns numeric strings such as `'10'` into integers, which are rejected; check for duplicates while building the map. Persistent pools, releasing allocations and alternative packing strategies are outside the allocator's scope; to add requirements later without moving existing ones, pass the earlier plan's reservations and allocations together as the next call's reservations: `[...$plan->reserved(), ...\array_values($plan->allocations())]`. Passing only the allocations drops the original reservations, so new blocks can land in them.
 
 ## Exact Range-to-CIDR Conversion
 

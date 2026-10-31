@@ -7,12 +7,14 @@ Complete reference of all public methods and classes in the IPv4 Subnet Calculat
 - [Subnet Class](#subnet-class)
 - [SubnetParser Class](#subnetparser-class)
 - [Subnets Class](#subnets-class)
+- [SubnetAllocator Class](#subnetallocator-class)
 - [Value Object Classes](#value-object-classes)
   - [IPAddress](#ipaddress-class)
   - [SubnetMask](#subnetmask-class)
   - [WildcardMask](#wildcardmask-class)
   - [IPRange](#iprange-class)
   - [ReverseDnsDelegation](#reversednsdelegation-class)
+  - [AllocationPlan](#allocationplan-class)
   - [Mask Interface](#mask-interface)
 - [Enum Classes](#enum-classes)
 
@@ -37,11 +39,13 @@ v5.0 introduces a clean object-oriented architecture:
 - **`Subnet`** - Main class for subnet operations
 - **`SubnetParser`** - Factory for creating subnets from various input formats
 - **`Subnets`** - Collection operations on arrays of Subnet objects
+- **`SubnetAllocator`** - Deterministic variable-size allocation within one parent network
 - **`IPAddress`** - Immutable IP address value object
 - **`SubnetMask`** - Immutable subnet mask value object
 - **`WildcardMask`** - Immutable wildcard mask value object
 - **`IPRange`** - Immutable IP range value object (iterable)
 - **`ReverseDnsDelegation`** - Immutable RFC 2317 classless reverse-DNS delegation data
+- **`AllocationPlan`** - Immutable result of a subnet allocation
 
 `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement the `Stringable` interface. `IPAddress`, `SubnetMask` and `WildcardMask` also provide format methods (`asQuads()`, `asHex()`, etc.); `SubnetMask` and `WildcardMask` share them through the [`Mask`](#mask-interface) interface.
 
@@ -962,9 +966,49 @@ Union needs no separate method: use `Subnets::aggregate([...\array_values($left)
 
 ---
 
+## SubnetAllocator Class
+
+`IPv4\SubnetAllocator` - Stateless, deterministic variable-size (VLSM) allocation within one parent network.
+
+#### allocate()
+```php
+SubnetAllocator::allocate(Subnet $parent, array $requirements, array $reserved = []): AllocationPlan
+```
+Allocate one CIDR block per named requirement from `$parent`, avoiding `$reserved`, and return an [`AllocationPlan`](#allocationplan-class).
+
+Each host count is sized as by [`optimalPrefixForHosts()`](#optimalprefixforhosts): `1` gives a `/32`, `2` a `/31`, and larger counts include network and broadcast addresses. Larger blocks are placed first, equal sizes in bytewise name order (`strcmp()`); each takes the lowest aligned free address where it fits. The parent's host bits are ignored. Reservations may be duplicated, nested, overlapping or keyed, but must each lie wholly inside the parent. With no requirements, the plan is the parent minus the reservations; reserving the entire parent is then valid.
+
+Requirement names are array keys: PHP keeps only the last duplicate key, so reject duplicates while building the map, and it converts numeric strings such as `'10'` to integers, which are rejected.
+
+All input is validated before anything is placed. Throws `\InvalidArgumentException` if a name is not a nonempty string, a host count is not an `int` accepted by `optimalPrefixForHosts()`, or a reservation is not a `Subnet` contained in the parent. Throws `\RuntimeException` naming the first requirement, in placement order, that no free block can hold, with its prefix, the largest free block and the free address count; fragmentation can cause this even when enough addresses are free in total. No partial plan is returned. Runs in time proportional to the number of requirements times the number of free blocks, plus sorting, independent of the parent's address count; no addresses are enumerated.
+
+**Parameters:**
+- `$parent` - Network to allocate from
+- `$requirements` - `array<string, int>`: name => required usable hosts
+- `$reserved` - Array of Subnet objects to keep free of allocations
+
+**Returns:** `AllocationPlan`
+
+**Example:**
+```php
+$plan = SubnetAllocator::allocate(
+    Subnet::fromCidr('10.0.0.0/22'),
+    ['Branch' => 50, 'HQ' => 500],
+    [Subnet::fromCidr('10.0.3.0/24')],
+);
+$plan->allocations(); // ['Branch' => Subnet: 10.0.2.0/26, 'HQ' => Subnet: 10.0.0.0/23]
+$plan->reserved();    // [Subnet: 10.0.3.0/24]
+$plan->remaining();   // [Subnet: 10.0.2.64/26, Subnet: 10.0.2.128/25]
+
+SubnetAllocator::allocate(Subnet::fromCidr('10.0.0.0/24'), ['a' => 200, 'b' => 100]);
+// Throws \RuntimeException: Cannot allocate 'b' as a /25: no free space remains
+```
+
+---
+
 ## Value Object Classes
 
-All value objects are immutable (readonly). `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload. `ReverseDnsDelegation` implements neither; use its accessor methods.
+All value objects are immutable (readonly). `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload. `ReverseDnsDelegation` and `AllocationPlan` implement neither; use their accessor methods.
 
 ### IPAddress Class
 
@@ -1398,6 +1442,42 @@ Subnet::fromCidr('192.0.2.6/31')->classlessDelegation()->cnameRecords();
 //     "6.2.0.192.in-addr.arpa" => "6.6-7.2.0.192.in-addr.arpa",
 //     "7.2.0.192.in-addr.arpa" => "7.6-7.2.0.192.in-addr.arpa",
 // ]
+```
+
+---
+
+### AllocationPlan Class
+
+`IPv4\AllocationPlan` - Immutable result of [`SubnetAllocator::allocate()`](#allocate). Its allocations, reservations and remaining space are disjoint and together cover exactly the parent network. All subnets are canonical.
+
+#### Construction
+
+Obtain plans from `SubnetAllocator::allocate()`. The constructor is internal and does not validate its arguments.
+
+#### Methods
+
+##### allocations()
+```php
+allocations(): array // array<string, Subnet>: name => subnet
+```
+One allocated subnet per requirement, in the caller's requirement order.
+
+##### reserved()
+```php
+reserved(): array // list<Subnet>
+```
+The union of the reservations as the fewest CIDR blocks, in ascending order.
+
+##### remaining()
+```php
+remaining(): array // list<Subnet>
+```
+The free space left after reservations and allocations as the fewest CIDR blocks, in ascending order.
+
+```php
+$plan = SubnetAllocator::allocate(Subnet::fromCidr('192.0.2.0/29'), ['link' => 2], [Subnet::fromCidr('192.0.2.0/31')]);
+$plan->allocations(); // ['link' => Subnet: 192.0.2.2/31]
+$plan->remaining();   // [Subnet: 192.0.2.4/30]
 ```
 
 ---

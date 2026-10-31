@@ -46,14 +46,17 @@ Indices start at zero and must be below the range or child count; invalid indice
 
 ### Office Subnet Allocation
 
-Allocate subnets to different office locations from a corporate address block.
+Allocate subnets to office locations from a corporate address block, keeping infrastructure space reserved.
+
+`SubnetAllocator::allocate()` sizes each office from its host count, places larger blocks first so every subnet stays aligned, and returns the allocations, the reserved space and the remaining free blocks together. The plan is deterministic: the same requirements always yield the same subnets.
 
 ```php
 <?php
-// Corporate allocation: 10.0.0.0/16
+// Corporate allocation: 10.0.0.0/16, with the first /24 kept for infrastructure
 $corporateBlock = IPv4\Subnet::fromCidr('10.0.0.0/16');
+$reserved = [IPv4\Subnet::fromCidr('10.0.0.0/24')];
 
-// Office requirements
+// Office requirements: usable hosts per office
 $offices = [
     'New York'     => 500,
     'London'       => 300,
@@ -62,53 +65,94 @@ $offices = [
     'Branch-Small' => 50,
 ];
 
-echo "Corporate IP Allocation Plan\n";
-echo \str_repeat('=', 80) . "\n\n";
-echo "Available: {$corporateBlock->cidr()}\n";
-echo "Total IPs: {$corporateBlock->addressCount()}\n\n";
-
-// Allocate largest offices first (VLSM) so each subnet starts on a boundary
-// aligned to its size. Allocating a larger subnet after a smaller one
-// would round its network address backward into space already in use.
-\arsort($offices);
-
-$currentNetwork = $corporateBlock->networkAddress()->asQuads();
-$allocations = [];
-
-foreach ($offices as $office => $requiredHosts) {
-    // Find optimal subnet size
-    $subnet = IPv4\SubnetParser::fromHostCount($currentNetwork, $requiredHosts);
-
-    // Verify subnet fits within corporate block
-    if (!$corporateBlock->contains($subnet)) {
-        echo "ERROR: Insufficient space for {$office}\n";
-        break;
-    }
-
-    $allocations[$office] = $subnet;
-
-    echo "{$office}:\n";
-    echo "  Required hosts: {$requiredHosts}\n";
-    echo "  Allocated: {$subnet->cidr()}\n";
-    echo "  Usable hosts: {$subnet->hostCount()}\n";
-    echo "  Range: {$subnet->hostRange()}\n";
-    echo "  Utilization: {$subnet->utilizationFor($requiredHosts)}%\n\n";
-
-    // Move to next available network
-    $currentNetwork = $subnet->next()->networkAddress()->asQuads();
+try {
+    // Largest blocks are placed first, each at the lowest free aligned address
+    $plan = IPv4\SubnetAllocator::allocate($corporateBlock, $offices, $reserved);
+} catch (\RuntimeException $e) {
+    // No partial plan: report the office that did not fit and stop
+    echo "Allocation failed: {$e->getMessage()}\n";
+    exit(1);
 }
 
-// Calculate remaining space
-$remaining = $corporateBlock->excludeAll(\array_values($allocations));
+echo "Corporate IP Allocation Plan for {$corporateBlock}\n";
+echo \str_repeat('=', 60) . "\n";
 
-echo "Remaining unallocated space:\n";
+foreach ($plan->allocations() as $office => $subnet) {
+    echo \sprintf(
+        "%-14s %-14s %4d usable for %3d required (%.1f%%)\n",
+        $office,
+        $subnet,
+        $subnet->hostCount(),
+        $offices[$office],
+        $subnet->utilizationFor($offices[$office])
+    );
+}
+
+echo "\nReserved:\n";
+foreach ($plan->reserved() as $block) {
+    echo "  {$block} ({$block->addressCount()} IPs)\n";
+}
+
+echo "\nRemaining unallocated space:\n";
 $totalRemaining = 0;
-foreach ($remaining as $block) {
-    echo "  {$block->cidr()} ({$block->addressCount()} IPs)\n";
+foreach ($plan->remaining() as $block) {
+    echo "  {$block} ({$block->addressCount()} IPs)\n";
     $totalRemaining += $block->addressCount();
 }
-echo "\nTotal remaining: {$totalRemaining} IP addresses\n";
+echo "Total remaining: {$totalRemaining} IP addresses\n";
+
+/*
+Corporate IP Allocation Plan for 10.0.0.0/16
+============================================================
+New York       10.0.4.0/23     510 usable for 500 required (98.0%)
+London         10.0.2.0/23     510 usable for 300 required (58.8%)
+Tokyo          10.0.6.0/24     254 usable for 250 required (98.4%)
+Sydney         10.0.1.0/24     254 usable for 150 required (59.1%)
+Branch-Small   10.0.7.0/26      62 usable for  50 required (80.6%)
+
+Reserved:
+  10.0.0.0/24 (256 IPs)
+
+Remaining unallocated space:
+  10.0.7.64/26 (64 IPs)
+  10.0.7.128/25 (128 IPs)
+  10.0.8.0/21 (2048 IPs)
+  10.0.16.0/20 (4096 IPs)
+  10.0.32.0/19 (8192 IPs)
+  10.0.64.0/18 (16384 IPs)
+  10.0.128.0/17 (32768 IPs)
+Total remaining: 63680 IP addresses
+*/
 ```
+
+Sydney fills the `/24` below London because each block takes the lowest free aligned address that fits. When an office cannot be placed, nothing is allocated and the exception names it:
+
+```php
+try {
+    IPv4\SubnetAllocator::allocate(
+        IPv4\Subnet::fromCidr('10.0.0.0/22'),
+        ['New York' => 500, 'London' => 300, 'Tokyo' => 250],
+        [IPv4\Subnet::fromCidr('10.0.0.0/24')],
+    );
+} catch (\RuntimeException $e) {
+    echo "Allocation failed: {$e->getMessage()}\n";
+    // Allocation failed: Cannot allocate 'New York' as a /23: largest free block is a /24 (256 free addresses in 1 block)
+}
+```
+
+Office names are array keys, so build the map with unique names. To add offices later without moving existing ones, reserve both the earlier plan's reservations and its allocations. Passing only the allocations would free the infrastructure `/24`, and a new `/26` would land at `10.0.0.0/26`:
+
+```php
+$expansion = IPv4\SubnetAllocator::allocate(
+    $corporateBlock,
+    ['Paris' => 50],
+    [...$plan->reserved(), ...\array_values($plan->allocations())],
+);
+
+echo $expansion->allocations()['Paris'] . "\n"; // 10.0.7.64/26
+```
+
+The new plan's `allocations()` lists only the new offices; its `reserved()` merges the infrastructure block with the earlier offices.
 
 ### Progressive IPAM with Allocation Tracking
 
