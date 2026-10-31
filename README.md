@@ -45,7 +45,7 @@ Features
 ### Output Formats
  * Multiple formats: dotted decimal, hex, binary, integer, quads array
  * Reports: JSON, associative arrays, formatted text, printed output
- * Reverse DNS: IPv4 ARPA domain generation
+ * Reverse DNS: IPv4 ARPA domain and reverse-zone origin generation
 
 ### Use Cases
  * Network planning and IP address management (IPAM)

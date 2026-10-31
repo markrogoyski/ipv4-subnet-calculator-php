@@ -258,6 +258,162 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
+     * reverseZones returns the exact octet-aligned reverse-zone origins covering the network
+     *
+     * @param string   $cidr
+     * @param string[] $expectedZones
+     */
+    #[Test]
+    #[DataProvider('dataProviderForReverseZones')]
+    public function reverseZonesReturnsOctetAlignedOrigins(string $cidr, array $expectedZones): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $zones = $subnet->reverseZones();
+
+        // Then
+        $this->assertSame($expectedZones, $zones);
+    }
+
+    /**
+     * @return array<string, array{string, list<string>}>
+     */
+    public static function dataProviderForReverseZones(): array
+    {
+        return [
+            '/0 entire space'           => ['0.0.0.0/0', ['in-addr.arpa']],
+            '/0 host bits'              => ['203.0.113.7/0', ['in-addr.arpa']],
+            '/7 two /8 zones'           => ['10.0.0.0/7', ['10.in-addr.arpa', '11.in-addr.arpa']],
+            '/7 upper endpoint'         => ['255.255.255.255/7', ['254.in-addr.arpa', '255.in-addr.arpa']],
+            '/8'                        => ['10.0.0.0/8', ['10.in-addr.arpa']],
+            '/8 lower endpoint'         => ['0.0.0.0/8', ['0.in-addr.arpa']],
+            '/8 host bits'              => ['10.20.30.40/8', ['10.in-addr.arpa']],
+            '/15 two /16 zones'         => ['172.16.0.0/15', ['16.172.in-addr.arpa', '17.172.in-addr.arpa']],
+            '/16'                       => ['172.16.0.0/16', ['16.172.in-addr.arpa']],
+            '/16 host bits'             => ['172.16.200.9/16', ['16.172.in-addr.arpa']],
+            '/20 sixteen /24 zones'     => ['192.168.16.0/20', [
+                '16.168.192.in-addr.arpa', '17.168.192.in-addr.arpa', '18.168.192.in-addr.arpa', '19.168.192.in-addr.arpa',
+                '20.168.192.in-addr.arpa', '21.168.192.in-addr.arpa', '22.168.192.in-addr.arpa', '23.168.192.in-addr.arpa',
+                '24.168.192.in-addr.arpa', '25.168.192.in-addr.arpa', '26.168.192.in-addr.arpa', '27.168.192.in-addr.arpa',
+                '28.168.192.in-addr.arpa', '29.168.192.in-addr.arpa', '30.168.192.in-addr.arpa', '31.168.192.in-addr.arpa',
+            ]],
+            '/23 octet carry'           => ['10.0.255.0/23', ['254.0.10.in-addr.arpa', '255.0.10.in-addr.arpa']],
+            '/24'                       => ['192.168.1.0/24', ['1.168.192.in-addr.arpa']],
+            '/24 host bits'             => ['192.168.1.50/24', ['1.168.192.in-addr.arpa']],
+            '/30 four /32 zones'        => ['192.0.2.4/30', [
+                '4.2.0.192.in-addr.arpa', '5.2.0.192.in-addr.arpa', '6.2.0.192.in-addr.arpa', '7.2.0.192.in-addr.arpa',
+            ]],
+            '/31'                       => ['192.0.2.6/31', ['6.2.0.192.in-addr.arpa', '7.2.0.192.in-addr.arpa']],
+            '/31 host bits'             => ['192.0.2.7/31', ['6.2.0.192.in-addr.arpa', '7.2.0.192.in-addr.arpa']],
+            '/31 lower endpoint'        => ['0.0.0.0/31', ['0.0.0.0.in-addr.arpa', '1.0.0.0.in-addr.arpa']],
+            '/31 upper endpoint'        => ['255.255.255.254/31', ['254.255.255.255.in-addr.arpa', '255.255.255.255.in-addr.arpa']],
+            '/32'                       => ['192.0.2.7/32', ['7.2.0.192.in-addr.arpa']],
+            '/32 lower endpoint'        => ['0.0.0.0/32', ['0.0.0.0.in-addr.arpa']],
+            '/32 upper endpoint'        => ['255.255.255.255/32', ['255.255.255.255.in-addr.arpa']],
+        ];
+    }
+
+    /**
+     * reverseZones splits to the next octet boundary: count, first and last origin
+     *
+     * @param string $cidr
+     * @param int    $expectedCount
+     * @param string $expectedFirst
+     * @param string $expectedLast
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLargeReverseZoneSplits')]
+    public function reverseZonesSplitsToNextOctetBoundary(string $cidr, int $expectedCount, string $expectedFirst, string $expectedLast): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $zones = $subnet->reverseZones();
+
+        // Then
+        $this->assertSame(
+            [$expectedCount, $expectedFirst, $expectedLast],
+            [\count($zones), $zones[0], $zones[\count($zones) - 1]]
+        );
+    }
+
+    /**
+     * @return array<string, array{string, int, string, string}>
+     */
+    public static function dataProviderForLargeReverseZoneSplits(): array
+    {
+        return [
+            '/1 lower half'      => ['0.0.0.0/1', 128, '0.in-addr.arpa', '127.in-addr.arpa'],
+            '/1 upper half'      => ['255.255.255.255/1', 128, '128.in-addr.arpa', '255.in-addr.arpa'],
+            '/9'                 => ['10.128.0.0/9', 128, '128.10.in-addr.arpa', '255.10.in-addr.arpa'],
+            '/17'                => ['172.16.0.0/17', 128, '0.16.172.in-addr.arpa', '127.16.172.in-addr.arpa'],
+            '/25 never the /24'  => ['192.0.2.0/25', 128, '0.2.0.192.in-addr.arpa', '127.2.0.192.in-addr.arpa'],
+            '/25 upper endpoint' => ['255.255.255.128/25', 128, '128.255.255.255.in-addr.arpa', '255.255.255.255.in-addr.arpa'],
+        ];
+    }
+
+    /**
+     * reverseZones is an ordered, duplicate-free, exact cover of the network by
+     * zones at the next octet boundary, independent of input host bits
+     */
+    #[Test]
+    public function reverseZonesExactlyCoverNetworkInOrder(): void
+    {
+        // Given
+        $cidrs = [
+            '0.0.0.0/0', '0.0.0.0/1', '128.0.0.0/1', '0.0.0.0/7', '254.0.0.0/7', '10.0.0.0/8',
+            '10.128.0.0/9', '9.255.0.0/15', '172.16.0.0/16', '172.16.128.0/17', '10.0.254.0/23',
+            '192.168.16.0/20', '192.168.1.0/24', '10.0.255.128/25', '192.0.2.8/29', '192.0.2.13/29',
+            '192.0.2.14/30', '192.0.2.7/31', '0.0.0.0/31', '255.255.255.255/31', '192.0.2.7/32',
+            '0.0.0.0/32', '255.255.255.255/32', '255.255.255.0/24', '255.255.0.0/16', '255.0.0.0/8',
+        ];
+
+        foreach ($cidrs as $cidr) {
+            $subnet = Subnet::fromCidr($cidr);
+            $zonePrefix = 8 * \intdiv($subnet->networkSize() + 7, 8);
+
+            // When
+            $zones = $subnet->reverseZones();
+            $blocks = \array_map([self::class, 'reverseZoneToSubnet'], $zones);
+
+            // Then
+            $this->assertSame(\array_values(\array_unique($zones)), $zones, "{$cidr} has duplicate zones");
+            $this->assertSame($zones, Subnet::fromCidr($subnet->networkCidr())->reverseZones(), "{$cidr} depends on host bits");
+            $this->assertSame(
+                $subnet->addressCount(),
+                \array_sum(\array_map(static fn (Subnet $block): int => $block->addressCount(), $blocks)),
+                "{$cidr} zones do not cover the network exactly"
+            );
+            foreach ($blocks as $i => $block) {
+                $this->assertStringEndsNotWith('.', $zones[$i], "{$cidr} zone has a trailing dot");
+                $this->assertSame($zonePrefix, $block->networkSize(), "{$cidr} zone {$zones[$i]} is not at the next octet boundary");
+                $this->assertTrue($subnet->contains($block), "{$cidr} zone {$zones[$i]} lies outside the network");
+            }
+            $sorted = $blocks;
+            \usort($sorted, static fn (Subnet $a, Subnet $b): int => $a->compare($b));
+            $this->assertSame(
+                \array_map(static fn (Subnet $block): string => $block->cidr(), $sorted),
+                \array_map(static fn (Subnet $block): string => $block->cidr(), $blocks),
+                "{$cidr} zones are not in numeric network order"
+            );
+        }
+    }
+
+    /**
+     * Independent oracle: parse a reverse-zone origin back into its network block.
+     */
+    private static function reverseZoneToSubnet(string $zone): Subnet
+    {
+        $labels = \explode('.', \substr($zone, 0, -\strlen('in-addr.arpa')));
+        $octets = \array_reverse(\array_filter($labels, static fn (string $label): bool => $label !== ''));
+
+        return new Subnet(\implode('.', \array_pad($octets, 4, '0')), 8 * \count($octets));
+    }
+
+    /**
      * @return array[]
      */
     public static function invalidIPV4Provider(): array

@@ -278,7 +278,7 @@ Found an issue or have a suggestion for improving the documentation?
    - Network Component Access (IP, Masks, Portions)
    - Network Overlap and Containment
    - IP Address Type Detection
-   - Reverse DNS (ARPA Domain)
+   - Reverse DNS (ARPA Domain and Zone Origins)
    - Subnet Operations (Split)
    - Adjacent Subnet Navigation
 

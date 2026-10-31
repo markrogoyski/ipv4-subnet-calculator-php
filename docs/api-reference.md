@@ -712,6 +712,19 @@ $subnet = Subnet::fromCidr('192.168.1.100/24');
 $arpa   = $subnet->arpaDomain();  // "100.1.168.192.in-addr.arpa"
 ```
 
+#### reverseZones()
+```php
+reverseZones(): array // list<string>
+```
+Get the reverse DNS zone origins that exactly cover the network: the smallest set of octet-aligned `in-addr.arpa` zones, in ascending network order, without trailing dots. A prefix off an octet boundary splits to the next one, so a `/20` yields sixteen `/24` origins and a `/25`–`/31` yields one `/32` origin per address, never the enclosing `/24`. `/0` yields `in-addr.arpa`. Input host bits are ignored. The names are calculated origins, not a claim that the caller controls those zones. Runs in time and memory proportional to the number of origins, at most 128.
+
+**Example:**
+```php
+Subnet::fromCidr('192.168.1.50/24')->reverseZones(); // ["1.168.192.in-addr.arpa"]
+Subnet::fromCidr('172.16.0.0/15')->reverseZones();   // ["16.172.in-addr.arpa", "17.172.in-addr.arpa"]
+Subnet::fromCidr('192.0.2.6/31')->reverseZones();    // ["6.2.0.192.in-addr.arpa", "7.2.0.192.in-addr.arpa"]
+```
+
 #### toArray()
 ```php
 toArray(): array

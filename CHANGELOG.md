@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### New Features
+- **`Subnet::reverseZones()`**: Returns the octet-aligned reverse DNS zone origins that exactly cover the network
 - **`Subnet::intersection()`**: Returns the canonical narrower block for overlapping networks, or `null` when disjoint
 - **`Subnet::isAdjacent()`**: Checks whether two disjoint subnets touch end to start
 - **`Subnet::compare()`**: Orders subnets by network address, then prefix, returning `-1`, `0` or `1`

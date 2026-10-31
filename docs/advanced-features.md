@@ -1,6 +1,6 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, exact range conversion, direct indexing, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, exact range conversion, direct indexing, reverse-zone coverage, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Canonical Subnet Intersection](#canonical-subnet-intersection)
@@ -10,6 +10,7 @@ This document covers advanced operations including subnet exclusion, exact range
 - [Subnet Exclusion and Difference Operations](#subnet-exclusion-and-difference-operations)
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
+- [Exact Reverse-Zone Coverage](#exact-reverse-zone-coverage)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
 - [Network Class Information (Legacy)](#network-class-information-legacy)
@@ -324,6 +325,19 @@ All indices are zero-based. The range methods add or subtract cached integer end
 `at()` and `subnetAt()` reject negative and out-of-range indices with `\OutOfRangeException`. `indexOf()` returns `null` for a valid address outside the range and throws `\InvalidArgumentException` for malformed strings. `subnetAt()` requires a prefix strictly greater than the parent's and at most 32; invalid prefixes throw `\InvalidArgumentException` before index validation.
 
 For usable hosts, use `$subnet->hostRange()->at(0)` to get the first host. `/31` ranges include both addresses and `/32` ranges include their one address, following the existing host-range policy.
+
+## Exact Reverse-Zone Coverage
+
+`reverseZones()` returns the smallest set of ordinary octet-aligned reverse zones whose address space equals the network exactly. Each origin is at the next octet boundary at or after the prefix, so zones never reach outside the network:
+
+```php
+$zones = IPv4\Subnet::fromCidr('192.0.2.0/25')->reverseZones();
+echo \count($zones) . "\n"; // 128
+echo $zones[0] . "\n";       // 0.2.0.192.in-addr.arpa
+echo $zones[127] . "\n";     // 127.2.0.192.in-addr.arpa
+```
+
+A `/25` never yields `2.0.192.in-addr.arpa`, because that zone also covers `192.0.2.128/25`. Per-address zones are exact but cumbersome to delegate; classless delegation (RFC 2317) is not covered by this method. Origins are ordered by network address with no duplicates, `/0` yields the single origin `in-addr.arpa`, and the input IP's host bits do not change the result.
 
 ## CIDR Aggregation and Supernetting
 

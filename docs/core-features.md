@@ -733,6 +733,19 @@ $arpaDomain = $subnet->arpaDomain();  // '203.112.168.192.in-addr.arpa'
 
 **Note:** The ARPA domain is based on the IP address used to create the subnet, not the network address.
 
+### Reverse Zone Origins
+
+Get the reverse DNS zones that exactly cover a network. Zones are delegated on octet boundaries, so a prefix off a boundary splits to the next one:
+
+```php
+IPv4\Subnet::fromCidr('10.0.0.0/8')->reverseZones();       // ['10.in-addr.arpa']
+IPv4\Subnet::fromCidr('192.168.1.50/24')->reverseZones();  // ['1.168.192.in-addr.arpa']
+IPv4\Subnet::fromCidr('192.168.16.0/20')->reverseZones();  // 16 zones: '16.168.192.in-addr.arpa' … '31.168.192.in-addr.arpa'
+IPv4\Subnet::fromCidr('192.0.2.6/31')->reverseZones();     // ['6.2.0.192.in-addr.arpa', '7.2.0.192.in-addr.arpa']
+```
+
+Names have no trailing dot; append one when writing absolute names in a zone file. A `/25`–`/31` returns one zone per address rather than the enclosing `/24`. See the [reverse DNS zone generator](examples.md#reverse-dns-zone-generator).
+
 ## Subnet Operations
 
 ### Split Network into Smaller Subnets

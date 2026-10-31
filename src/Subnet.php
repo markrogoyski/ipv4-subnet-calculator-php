@@ -1005,6 +1005,31 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Get the reverse DNS zone origins that exactly cover this network.
+     *
+     * Returns the smallest set of octet-aligned in-addr.arpa zones covering the
+     * network, in ascending network order, without trailing dots. Prefixes off an
+     * octet boundary split to the next one: a /20 yields sixteen /24 zones and a
+     * /25 yields 128 /32 zones, never the enclosing /24. Input host bits are ignored.
+     *
+     * @return list<string> e.g., ["1.168.192.in-addr.arpa"] for 192.168.1.50/24
+     */
+    public function reverseZones(): array
+    {
+        $zonePrefix = 8 * \intdiv($this->networkSize + 7, 8);
+        $zones = $zonePrefix > $this->networkSize
+            ? $this->generateSplit($zonePrefix)
+            : [$this];
+
+        $origins = [];
+        foreach ($zones as $zone) {
+            $origins[] = $this->reverseZoneOrigin($zone->networkAddressInt(), $zonePrefix);
+        }
+
+        return $origins;
+    }
+
+    /**
      * Get subnet data as an associative array.
      *
      * @return array<string, mixed>
@@ -1101,6 +1126,24 @@ final class Subnet implements \JsonSerializable, \Stringable
         for ($i = 0; $i < $numSubnets; $i++) {
             yield new self(IPAddress::fromInteger($networkInt + ($i * $addressCount)), $newPrefix);
         }
+    }
+
+    /**
+     * Format the reverse-zone origin for an octet-aligned network.
+     *
+     * @param int $networkInt Network address as an integer
+     * @param int $prefix     Prefix length, a multiple of 8
+     *
+     * @return string e.g., "1.168.192.in-addr.arpa" for 192.168.1.0 and 24
+     */
+    private function reverseZoneOrigin(int $networkInt, int $prefix): string
+    {
+        $labels = ['in-addr.arpa'];
+        for ($shift = 24; $shift >= 32 - $prefix; $shift -= 8) {
+            \array_unshift($labels, (string) (($networkInt >> $shift) & 0xFF));
+        }
+
+        return \implode('.', $labels);
     }
 
     /**

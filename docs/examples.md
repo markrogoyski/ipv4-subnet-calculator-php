@@ -645,9 +645,9 @@ echo $planner->exportDHCPConfig($scopes);
 
 ### Reverse DNS Zone Generator
 
-Generate reverse DNS zone configurations.
+Generate reverse DNS zone files, one per zone origin.
 
-Reverse zones are delegated on octet boundaries, so this generator accepts /8, /16 and /24 networks. Classless delegation of longer prefixes (RFC 2317) needs a child zone with its own naming and CNAME records in the parent zone, which this example does not cover.
+`reverseZones()` returns the octet-aligned zone origins that exactly cover a network, without trailing dots. A /8, /16 or /24 has one origin; a /20 has sixteen /24 origins; a /25–/32 has one /32 origin per address, never the enclosing /24. Classless delegation of a /25–/31 as one child zone (RFC 2317) needs its own naming and CNAME records in the parent zone, which this example does not cover. The generator appends the trailing dot only when it writes absolute names in zone-file syntax.
 
 Secondary servers compare the SOA serial to decide whether to transfer the zone (RFC 1034 §4.3.5), so every revision must carry a newer serial than the last. Serials are compared with RFC 1982 serial arithmetic: a serial is newer only if it is ahead of the previous one by 1 to 2³¹−1, modulo 2³². A jump of 2³¹ or more makes the zone look older, so a larger number is not always a newer serial. The generator takes the serial as an argument rather than deriving it from the date: store the serial of each zone you publish and pass its successor, `($previousSerial + 1) & 0xFFFFFFFF`, when you regenerate.
 
@@ -655,29 +655,29 @@ Secondary servers compare the SOA serial to decide whether to transfer the zone 
 <?php
 
 class ReverseDNSZoneGenerator {
-    public function generateZone($cidr, $nameservers, $serial, $hostnames = []) {
+    // Returns zone file text keyed by zone origin
+    public function generateZones($cidr, $nameservers, $serial, $hostnames = []) {
         $subnet = IPv4\Subnet::fromCidr($cidr);
-
-        if (!\in_array($subnet->networkSize(), [8, 16, 24], true)) {
-            throw new InvalidArgumentException(
-                "Reverse zones must be /8, /16 or /24; {$cidr} needs RFC 2317 classless delegation"
-            );
-        }
 
         // SOA serials are unsigned 32-bit values (RFC 1982)
         if (!\is_int($serial) || $serial < 0 || $serial > 0xFFFFFFFF) {
             throw new InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
         }
 
+        $zones = [];
+        foreach ($subnet->reverseZones() as $origin) {
+            $zones[$origin] = $this->generateZone($subnet, $origin, $nameservers, $serial, $hostnames);
+        }
+
+        return $zones;
+    }
+
+    private function generateZone($subnet, $origin, $nameservers, $serial, $hostnames) {
         $zone = "; Reverse DNS Zone\n";
-        $zone .= "; Network: {$subnet->cidr()}\n";
+        $zone .= "; Network: {$subnet->networkCidr()}\n";
         $zone .= "; Generated: " . \date('Y-m-d H:i:s') . "\n\n";
 
-        // Zone origin: the network octets in reverse, e.g. 192.168.1.0/24 => 1.168.192.in-addr.arpa
-        $networkOctets = \array_slice(\explode('.', $subnet->networkAddress()->asQuads()), 0, \intdiv($subnet->networkSize(), 8));
-        $origin = \implode('.', \array_reverse($networkOctets)) . '.in-addr.arpa';
-
-        $zone .= "\$ORIGIN {$origin}.\n";
+        $zone .= "\$ORIGIN {$this->absolute($origin)}\n";
         $zone .= "\$TTL 86400\n";
         $zone .= "@    IN    SOA    {$this->absolute($nameservers[0])} hostmaster.example.com. (\n";
         $zone .= "            " . \str_pad((string) $serial, 18) . "; Serial\n";
@@ -692,12 +692,12 @@ class ReverseDNSZoneGenerator {
         }
         $zone .= "\n";
 
-        // PTR records use absolute owner names (trailing dot); every address in an
-        // octet-aligned network falls within the zone origin
+        // PTR records use absolute owner names (trailing dot); an address belongs
+        // to this zone when its PTR name ends with the origin
         foreach ($hostnames as $ip => $hostname) {
-            if ($subnet->containsIP($ip)) {
-                $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
-                $zone .= "{$ptrRecord}.    IN    PTR    {$this->absolute($hostname)}\n";
+            $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
+            if (\str_ends_with(".{$ptrRecord}", ".{$origin}")) {
+                $zone .= "{$this->absolute($ptrRecord)}    IN    PTR    {$this->absolute($hostname)}\n";
             }
         }
 
@@ -714,24 +714,30 @@ class ReverseDNSZoneGenerator {
 $generator = new ReverseDNSZoneGenerator();
 
 $hostnames = [
-    '192.168.1.1' => 'gateway.example.com',
-    '192.168.1.10' => 'dns1.example.com',
-    '192.168.1.11' => 'dns2.example.com',
+    '192.168.0.1' => 'gateway.example.com',
+    '192.168.0.10' => 'dns1.example.com',
+    '192.168.0.11' => 'dns2.example.com',
     '192.168.1.20' => 'mail.example.com',
     '192.168.1.100' => 'web1.example.com',
+    '10.0.0.5' => 'elsewhere.example.com',  // Outside the network: no zone receives it
 ];
 
 // Serial of the previously published zone, read from wherever you store it
 $previousSerial = 2026102401;
 
-$zone = $generator->generateZone(
-    '192.168.1.0/24',
+// A /23 spans two /24 reverse zones
+$zones = $generator->generateZones(
+    '192.168.0.0/23',
     ['ns1.example.com', 'ns2.example.com'],
     ($previousSerial + 1) & 0xFFFFFFFF,  // Successor wraps 4294967295 to 0 (RFC 1982)
     $hostnames
 );
 
-echo $zone;
+foreach ($zones as $origin => $zone) {
+    echo "=== {$origin} ===\n{$zone}\n";
+}
+// === 0.168.192.in-addr.arpa ===  (PTRs for 192.168.0.1, .10 and .11)
+// === 1.168.192.in-addr.arpa ===  (PTRs for 192.168.1.20 and .100)
 ```
 
 ---
