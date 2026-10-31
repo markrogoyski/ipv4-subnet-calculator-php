@@ -1,6 +1,6 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, collection set operations, exact range conversion, direct indexing, reverse-zone coverage, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, collection set operations, exact range conversion, direct indexing, reverse-zone coverage, global reachability, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Canonical Subnet Intersection](#canonical-subnet-intersection)
@@ -12,6 +12,7 @@ This document covers advanced operations including subnet exclusion, collection 
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [Exact Reverse-Zone Coverage](#exact-reverse-zone-coverage)
+- [Global Reachability](#global-reachability)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
 - [Network Class Information (Legacy)](#network-class-information-legacy)
@@ -374,6 +375,43 @@ echo $zones[127] . "\n";     // 127.2.0.192.in-addr.arpa
 ```
 
 A `/25` never yields `2.0.192.in-addr.arpa`, because that zone also covers `192.0.2.128/25`. Per-address zones are exact but cumbersome to delegate; classless delegation (RFC 2317) is not covered by this method. Origins are ordered by network address with no duplicates, `/0` yields the single origin `in-addr.arpa`, and the input IP's host bits do not change the result.
+
+## Global Reachability
+
+`isGloballyReachable()` answers whether address policy permits global unicast forwarding, following the "Globally Reachable" column of the [IANA IPv4 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv4-special-registry/). It is separate from `isPublic()` and `addressType()`, which keep their existing classification. A true result is not evidence of allocation, a BGP route or live connectivity.
+
+The most specific matching registry entry decides, so a child entry overrides its parent:
+
+```php
+$reachable = static fn (string $ip): string => \var_export((new IPv4\IPAddress($ip))->isGloballyReachable(), true);
+
+echo $reachable('192.0.0.8') . "\n";    // false - IPv4 dummy address (192.0.0.0/24 parent is false)
+echo $reachable('192.0.0.9') . "\n";    // true - Port Control Protocol anycast
+echo $reachable('192.0.0.10') . "\n";   // true - TURN anycast
+echo $reachable('192.0.0.11') . "\n";   // false - back to the 192.0.0.0/24 parent
+echo $reachable('192.31.196.1') . "\n"; // true - AS112-v4
+echo $reachable('192.88.99.1') . "\n";  // false - deprecated 6to4 relay, reachability left blank
+echo $reachable('192.88.99.2') . "\n";  // false - 6a44 relay anycast, explicitly false
+echo $reachable('8.8.8.8') . "\n";      // true - ordinary unicast, not in the registry
+echo $reachable('233.252.0.1') . "\n";  // false - multicast is outside this unicast check
+```
+
+Policy notes:
+
+- Explicit true and false registry values are honored. Blank values, such as the deprecated `192.88.99.0/24` entry, return false conservatively, so false includes "not established by this policy".
+- Ordinary unicast space outside the registry returns true. Multicast (`224.0.0.0/4`) is not in the registry but returns false, because its scope is outside a unicast predicate.
+- `Subnet::isGloballyReachable()` checks the input IP only, like the other classification methods. `192.0.0.9/24` returns true even though most of that block is not reachable.
+
+### Registry Snapshot
+
+The library uses a checked-in snapshot of the registry, last updated by IANA on **2025-10-09**; it never fetches the registry at runtime. To refresh it:
+
+1. Recheck the live registry and its footnotes, and note its "Last Updated" date.
+2. Review every added, removed or changed row, especially the "Globally Reachable" column and blank fields.
+3. Add regression tests for each behavior change before updating the data.
+4. Update the table and snapshot date in `src/Internal/SpecialPurposeRegistry.php`, and add a CHANGELOG entry.
+
+Tests use the pinned snapshot, not the live registry.
 
 ## CIDR Aggregation and Supernetting
 

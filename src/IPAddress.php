@@ -6,6 +6,7 @@ namespace IPv4;
 
 use IPv4\Internal\IPv4;
 use IPv4\Internal\Platform;
+use IPv4\Internal\SpecialPurposeRegistry;
 
 /**
  * Immutable value object representing a single IPv4 address.
@@ -96,7 +97,7 @@ final class IPAddress implements \JsonSerializable, \Stringable
      * Check if the IP address is public: not in any of the special-purpose ranges recognized by this library.
      *
      * Stricter than global reachability: a few special-purpose blocks (e.g., 192.0.0.9/32,
-     * 192.31.196.0/24) are globally reachable but are not counted as public.
+     * 192.31.196.0/24) are globally reachable but are not counted as public; see isGloballyReachable().
      *
      * @return bool
      */
@@ -279,6 +280,28 @@ final class IPAddress implements \JsonSerializable, \Stringable
             || $this->isInBlock(0xC0_34_C1_00, 24)     // AMT: 192.52.193.0/24
             || $this->isInBlock(0xC0_AF_30_00, 24)     // Direct Delegation AS112: 192.175.48.0/24
             || $this->isInBlock(0xC0_58_63_02, 32);    // 6a44 relay anycast: 192.88.99.2/32
+    }
+
+    /**
+     * Check if the IP address is eligible for global unicast forwarding under IANA address policy.
+     *
+     * Follows the "Globally Reachable" column of the IANA IPv4 Special-Purpose Address
+     * Registry, using the most specific matching entry: 192.0.0.9 is reachable although
+     * 192.0.0.0/24 is not, and 192.88.99.2 is not. Addresses outside the registry are
+     * reachable, except multicast (224.0.0.0/4), which is outside this unicast check.
+     * False also means "not established by the registry", as for the blank deprecated
+     * 6to4 relay entry (192.88.99.0/24).
+     *
+     * This is address policy, not evidence of allocation, a route, or live connectivity.
+     * Independent of isPublic() and addressType(), which do not change.
+     *
+     * @link https://www.iana.org/assignments/iana-ipv4-special-registry/
+     *
+     * @return bool
+     */
+    public function isGloballyReachable(): bool
+    {
+        return !$this->isMulticast() && SpecialPurposeRegistry::isGloballyReachable($this->intValue);
     }
 
     /**

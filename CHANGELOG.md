@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### New Features
+- **`IPAddress::isGloballyReachable()` and `Subnet::isGloballyReachable()`**: Check global reachability against a pinned IANA special-purpose registry snapshot; `isPublic()` is unchanged
 - **`Subnets::intersection()` and `difference()`**: Return the minimal exact CIDR blocks shared by, or remaining between, two subnet collections
 - **`Subnets::covers()`**: Checks whether one subnet collection contains every address of another
 - **`Subnet::reverseZones()`**: Returns the octet-aligned reverse DNS zone origins that exactly cover the network

@@ -923,6 +923,153 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForIsGloballyReachable')]
+    public function testIsGloballyReachableFollowsMostSpecificRegistryEntry(string $ipAddress, bool $expectedResult): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $result = $ip->isGloballyReachable();
+
+        // Then
+        $this->assertSame($expectedResult, $result);
+    }
+
+    /**
+     * IANA IPv4 Special-Purpose Address Registry snapshot of 2025-10-09.
+     *
+     * @return array<string, array{string, bool}>
+     */
+    public static function dataProviderForIsGloballyReachable(): array
+    {
+        return [
+            // Ordinary unicast outside the registry
+            'ordinary 1.0.0.0'                      => ['1.0.0.0', true],
+            'ordinary 8.8.8.8'                      => ['8.8.8.8', true],
+            'ordinary 223.255.255.255'              => ['223.255.255.255', true],
+            // 0.0.0.0/8 and 0.0.0.0/32
+            'this host'                             => ['0.0.0.0', false],
+            'this network last'                     => ['0.255.255.255', false],
+            // Private-Use and Shared Address Space
+            'before 10/8'                           => ['9.255.255.255', true],
+            'private 10/8 first'                    => ['10.0.0.0', false],
+            'private 10/8 last'                     => ['10.255.255.255', false],
+            'after 10/8'                            => ['11.0.0.0', true],
+            'before shared'                         => ['100.63.255.255', true],
+            'shared first'                          => ['100.64.0.0', false],
+            'shared last'                           => ['100.127.255.255', false],
+            'after shared'                          => ['100.128.0.0', true],
+            'private 172.16/12 first'               => ['172.16.0.0', false],
+            'private 172.16/12 last'                => ['172.31.255.255', false],
+            'after 172.16/12'                       => ['172.32.0.0', true],
+            'private 192.168/16'                    => ['192.168.1.1', false],
+            // Loopback and link local
+            'loopback first'                        => ['127.0.0.0', false],
+            'loopback 127.0.0.1'                    => ['127.0.0.1', false],
+            'after loopback'                        => ['128.0.0.0', true],
+            'link local first'                      => ['169.254.0.0', false],
+            'link local last'                       => ['169.254.255.255', false],
+            // 192.0.0.0/24 and its more specific entries
+            'before IETF protocol'                  => ['191.255.255.255', true],
+            'IETF protocol first'                   => ['192.0.0.0', false],
+            'service continuity last'               => ['192.0.0.7', false],
+            'dummy address 192.0.0.8'               => ['192.0.0.8', false],
+            'PCP anycast 192.0.0.9'                 => ['192.0.0.9', true],
+            'TURN anycast 192.0.0.10'               => ['192.0.0.10', true],
+            'IETF protocol 192.0.0.11'              => ['192.0.0.11', false],
+            'IETF protocol 192.0.0.169'             => ['192.0.0.169', false],
+            'NAT64/DNS64 discovery 192.0.0.170'     => ['192.0.0.170', false],
+            'NAT64/DNS64 discovery 192.0.0.171'     => ['192.0.0.171', false],
+            'IETF protocol 192.0.0.172'             => ['192.0.0.172', false],
+            'IETF protocol last'                    => ['192.0.0.255', false],
+            'after IETF protocol'                   => ['192.0.1.0', true],
+            // Documentation and benchmarking
+            'TEST-NET-1'                            => ['192.0.2.1', false],
+            'TEST-NET-2'                            => ['198.51.100.1', false],
+            'TEST-NET-3 last'                       => ['203.0.113.255', false],
+            'after TEST-NET-3'                      => ['203.0.114.0', true],
+            'benchmarking first'                    => ['198.18.0.0', false],
+            'benchmarking last'                     => ['198.19.255.255', false],
+            'after benchmarking'                    => ['198.20.0.0', true],
+            // AS112 and AMT
+            'before AS112-v4'                       => ['192.31.195.255', true],
+            'AS112-v4 first'                        => ['192.31.196.0', true],
+            'AS112-v4 last'                         => ['192.31.196.255', true],
+            'after AS112-v4'                        => ['192.31.197.0', true],
+            'AMT first'                             => ['192.52.193.0', true],
+            'AMT last'                              => ['192.52.193.255', true],
+            'Direct Delegation AS112 first'         => ['192.175.48.0', true],
+            'Direct Delegation AS112 last'          => ['192.175.48.255', true],
+            // Deprecated 6to4 relay parent (unspecified) and 6a44 child (explicit false)
+            'before 6to4 relay'                     => ['192.88.98.255', true],
+            'unspecified 6to4 relay first'          => ['192.88.99.0', false],
+            'unspecified 6to4 relay 192.88.99.1'    => ['192.88.99.1', false],
+            '6a44 relay anycast'                    => ['192.88.99.2', false],
+            'unspecified 6to4 relay 192.88.99.3'    => ['192.88.99.3', false],
+            'unspecified 6to4 relay last'           => ['192.88.99.255', false],
+            'after 6to4 relay'                      => ['192.88.100.0', true],
+            // Multicast is outside this unicast predicate
+            'multicast first'                       => ['224.0.0.0', false],
+            'multicast globally scoped 233.252.0.1' => ['233.252.0.1', false],
+            'multicast last'                        => ['239.255.255.255', false],
+            // Reserved and limited broadcast
+            'reserved first'                        => ['240.0.0.0', false],
+            'reserved second to last'               => ['255.255.255.254', false],
+            'limited broadcast'                     => ['255.255.255.255', false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForGloballyReachableSpecialPurposeAddresses')]
+    public function testGloballyReachableSpecialPurposeAddressesAreStillNotPublic(
+        string $ipAddress,
+        AddressType $expectedType
+    ): void {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $isGloballyReachable = $ip->isGloballyReachable();
+        $isPublic = $ip->isPublic();
+        $addressType = $ip->addressType();
+
+        // Then
+        $this->assertTrue($isGloballyReachable);
+        $this->assertFalse($isPublic);
+        $this->assertSame($expectedType, $addressType);
+    }
+
+    /**
+     * @return array<string, array{string, AddressType}>
+     */
+    public static function dataProviderForGloballyReachableSpecialPurposeAddresses(): array
+    {
+        return [
+            'PCP anycast'             => ['192.0.0.9', AddressType::IetfProtocol],
+            'TURN anycast'            => ['192.0.0.10', AddressType::IetfProtocol],
+            'AS112-v4'                => ['192.31.196.1', AddressType::IanaReserved],
+            'AMT'                     => ['192.52.193.1', AddressType::IanaReserved],
+            'Direct Delegation AS112' => ['192.175.48.1', AddressType::IanaReserved],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIsPublicAgreesWithAddressType')]
+    public function testPublicAddressesAreGloballyReachable(string $ipAddress): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $isPublic = $ip->isPublic();
+        $isGloballyReachable = $ip->isGloballyReachable();
+
+        // Then
+        $this->assertTrue(!$isPublic || $isGloballyReachable, "{$ipAddress} is public but not globally reachable");
+    }
+
+    #[Test]
     #[DataProvider('dataProviderForNetworkClass')]
     public function testNetworkClassReturnsCorrectClass(string $ipAddress, NetworkClass $expectedClass): void
     {

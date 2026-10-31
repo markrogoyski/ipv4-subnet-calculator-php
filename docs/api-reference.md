@@ -342,7 +342,7 @@ Check if the IP is in private address space (RFC 1918).
 ```php
 isPublic(): bool
 ```
-Check if the IP is public: not in any of the [special-purpose ranges recognized by this library](core-features.md#supported-range-types-reference). Stricter than global reachability: a few special-purpose blocks are globally reachable but are not counted as public.
+Check if the IP is public: not in any of the [special-purpose ranges recognized by this library](core-features.md#supported-range-types-reference). Stricter than global reachability: a few special-purpose blocks are globally reachable but are not counted as public; see `isGloballyReachable()`.
 
 #### isLoopback()
 ```php
@@ -427,6 +427,22 @@ Check if the IP is the limited broadcast address (255.255.255.255).
 isThisNetwork(): bool
 ```
 Check if the IP is in "this network" range (0.0.0.0/8).
+
+#### isGloballyReachable()
+```php
+isGloballyReachable(): bool
+```
+Check if the IP is eligible for global unicast forwarding under the "Globally Reachable" column of the [IANA IPv4 Special-Purpose Address Registry](https://www.iana.org/assignments/iana-ipv4-special-registry/), using the most specific matching entry. Addresses outside the registry return true, except multicast (224.0.0.0/4), which returns false. A blank registry field, as on the deprecated 6to4 relay block 192.88.99.0/24, returns false: false includes "not established by this policy". This is address policy, not evidence of allocation, a route or live connectivity. `isPublic()` and `addressType()` are unaffected. Runs in O(1) time and additional space.
+
+**Example:**
+```php
+Subnet::fromCidr('192.0.0.9/32')->isGloballyReachable();   // true - PCP anycast
+Subnet::fromCidr('192.0.0.9/32')->isPublic();              // false - still IETF protocol space
+Subnet::fromCidr('192.0.0.8/32')->isGloballyReachable();   // false - IPv4 dummy address
+Subnet::fromCidr('192.88.99.2/32')->isGloballyReachable(); // false - 6a44 relay is not reachable
+```
+
+**Links:** [Global Reachability](advanced-features.md#global-reachability)
 
 #### addressType()
 ```php

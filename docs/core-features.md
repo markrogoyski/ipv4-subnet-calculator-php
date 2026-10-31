@@ -702,8 +702,17 @@ if ($destination->isPrivate()) {
 ```
 
 `isPublic()` excludes every special-purpose block, including the few IANA marks globally reachable
-(192.0.0.9/32, 192.0.0.10/32, 192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24). Check those
-separately if you need to route to them.
+(192.0.0.9/32, 192.0.0.10/32, 192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24). Use
+`isGloballyReachable()` when those should take the external route:
+
+```php
+$pcpAnycast = new IPv4\IPAddress('192.0.0.9');
+
+$pcpAnycast->isPublic();             // false - inside 192.0.0.0/24 (IETF protocol assignments)
+$pcpAnycast->isGloballyReachable();  // true - IANA marks 192.0.0.9/32 globally reachable
+```
+
+See [Global Reachability](advanced-features.md#global-reachability) for the full policy.
 
 **Network Configuration Validation:**
 ```php

@@ -726,6 +726,51 @@ class SubnetRangeTypeTest extends \PHPUnit\Framework\TestCase
         ];
     }
 
+    /* ****************************** *
+     * isGloballyReachable() TESTS
+     * ****************************** */
+
+    /**
+     * isGloballyReachable classifies the input IP only, not the whole block
+     * @param string $cidr     Subnet in CIDR notation
+     * @param bool   $expected Whether the input IP is globally reachable
+     */
+    #[Test]
+    #[DataProvider('dataProviderForIsGloballyReachable')]
+    public function testIsGloballyReachableForwardsToInputIp(string $cidr, bool $expected): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $result = $subnet->isGloballyReachable();
+
+        // Then
+        $this->assertSame($expected, $result, "Expected isGloballyReachable() for {$cidr} to be " . ($expected ? 'true' : 'false'));
+    }
+
+    /**
+     * @return array<string, array{string, bool}>
+     */
+    public static function dataProviderForIsGloballyReachable(): array
+    {
+        return [
+            'IETF protocol block from network' => ['192.0.0.0/24', false],
+            'IETF protocol block from PCP'     => ['192.0.0.9/24', true],
+            '/31 from dummy address'           => ['192.0.0.8/31', false],
+            '/31 from PCP anycast'             => ['192.0.0.9/31', true],
+            '/32 TURN anycast'                 => ['192.0.0.10/32', true],
+            '/32 NAT64/DNS64 discovery'        => ['192.0.0.170/32', false],
+            'private /7 from 10.0.0.0'         => ['10.0.0.0/7', false],
+            'private /7 from public 11.0.0.1'  => ['11.0.0.1/7', true],
+            '6to4 relay block from 6a44'       => ['192.88.99.2/24', false],
+            'AS112-v4 block'                   => ['192.31.196.0/24', true],
+            '/0 from this network'             => ['0.0.0.0/0', false],
+            '/0 from ordinary unicast'         => ['8.8.8.8/0', true],
+            '/32 limited broadcast'            => ['255.255.255.255/32', false],
+        ];
+    }
+
     /* ************************ *
      * getAddressType() TESTS
      * ************************ */

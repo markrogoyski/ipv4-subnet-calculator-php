@@ -512,6 +512,19 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Check if the IP address is eligible for global unicast forwarding under IANA address policy.
+     *
+     * Classifies the input IP only; see the note above on blocks that straddle ranges.
+     * A true result does not mean every address in the block is globally reachable.
+     *
+     * @return bool
+     */
+    public function isGloballyReachable(): bool
+    {
+        return $this->ip->isGloballyReachable();
+    }
+
+    /**
      * Get the address type classification.
      *
      * @return AddressType

@@ -338,6 +338,23 @@ echo $toCidrs(IPv4\Subnets::difference($permitted, $approved)) . "\n"; // 203.0.
 
 The two permitted `/25`s together cover the required `/24`. Results compare addresses, not rule text, so splitting or merging rules does not change them.
 
+### Validate Upstream Servers Are Globally Reachable
+
+Reject configured upstream resolvers and NTP servers that address policy keeps off the public internet. `isPublic()` would also reject the globally reachable AS112 block, so use `isGloballyReachable()`:
+
+```php
+$upstreams = ['dns1' => '1.1.1.1', 'dns2' => '192.168.1.53', 'as112' => '192.175.48.6', 'ntp' => '192.0.2.123'];
+
+$unreachable = \array_keys(\array_filter(
+    $upstreams,
+    static fn (string $ip): bool => !(new IPv4\IPAddress($ip))->isGloballyReachable()
+));
+
+echo \implode(', ', $unreachable) . "\n"; // dns2, ntp
+```
+
+A pass means only that the address is eligible for global forwarding; it does not prove the server is reachable or allocated.
+
 ### Firewall Rule Validation
 
 Find overlapping address ranges and flag differing actions for review. Whether an overlap
