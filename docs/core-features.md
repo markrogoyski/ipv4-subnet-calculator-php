@@ -755,6 +755,22 @@ IPv4\Subnet::fromCidr('192.0.2.6/31')->reverseZones();     // ['6.2.0.192.in-add
 
 Names have no trailing dot; append one when writing absolute names in a zone file. A `/25`–`/31` returns one zone per address rather than the enclosing `/24`. See the [reverse DNS zone generator](examples.md#reverse-dns-zone-generator).
 
+### Classless Delegation (RFC 2317)
+
+Delegate a `/25`–`/32` as one child zone. The parent `/24` zone publishes a CNAME for each address pointing into the child zone:
+
+```php
+$delegation = IPv4\Subnet::fromCidr('192.0.2.64/26')->classlessDelegation();
+
+$delegation->parentZone();    // '2.0.192.in-addr.arpa'
+$delegation->childZone();     // '64-127.2.0.192.in-addr.arpa'
+$delegation->cnameRecords();  // ['64.2.0.192.in-addr.arpa' => '64.64-127.2.0.192.in-addr.arpa', … 64 records]
+
+IPv4\Subnet::fromCidr('192.0.2.64/26')->classlessDelegation('cust1')->childZone();  // 'cust1.2.0.192.in-addr.arpa'
+```
+
+See [classless reverse delegation](advanced-features.md#classless-reverse-delegation) for naming rules and the [delegation example](examples.md#classless-reverse-dns-delegation).
+
 ## Subnet Operations
 
 ### Split Network into Smaller Subnets

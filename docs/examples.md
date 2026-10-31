@@ -689,7 +689,7 @@ echo $planner->exportDHCPConfig($scopes);
 
 Generate reverse DNS zone files, one per zone origin.
 
-`reverseZones()` returns the octet-aligned zone origins that exactly cover a network, without trailing dots. A /8, /16 or /24 has one origin; a /20 has sixteen /24 origins; a /25–/32 has one /32 origin per address, never the enclosing /24. Classless delegation of a /25–/31 as one child zone (RFC 2317) needs its own naming and CNAME records in the parent zone, which this example does not cover. The generator appends the trailing dot only when it writes absolute names in zone-file syntax.
+`reverseZones()` returns the octet-aligned zone origins that exactly cover a network, without trailing dots. A /8, /16 or /24 has one origin; a /20 has sixteen /24 origins; a /25–/32 has one /32 origin per address, never the enclosing /24. To delegate a /25–/32 as one child zone instead, see [classless reverse DNS delegation](#classless-reverse-dns-delegation). The generator appends the trailing dot only when it writes absolute names in zone-file syntax.
 
 Secondary servers compare the SOA serial to decide whether to transfer the zone (RFC 1034 §4.3.5), so every revision must carry a newer serial than the last. Serials are compared with RFC 1982 serial arithmetic: a serial is newer only if it is ahead of the previous one by 1 to 2³¹−1, modulo 2³². A jump of 2³¹ or more makes the zone look older, so a larger number is not always a newer serial. The generator takes the serial as an argument rather than deriving it from the date: store the serial of each zone you publish and pass its successor, `($previousSerial + 1) & 0xFFFFFFFF`, when you regenerate.
 
@@ -780,6 +780,54 @@ foreach ($zones as $origin => $zone) {
 }
 // === 0.168.192.in-addr.arpa ===  (PTRs for 192.168.0.1, .10 and .11)
 // === 1.168.192.in-addr.arpa ===  (PTRs for 192.168.1.20 and .100)
+```
+
+### Classless Reverse DNS Delegation
+
+Render the records both sides need when a provider delegates a /25–/32 under RFC 2317.
+
+`classlessDelegation()` supplies the parent zone, the child zone and one CNAME per address. The parent operator publishes the NS delegation and the CNAMEs in the parent /24 zone; the customer serves the child zone with its own SOA and PTR records. The library returns names without trailing dots, so the renderer adds them for absolute names.
+
+```php
+<?php
+
+function renderClasslessDelegation(IPv4\Subnet $subnet, array $nameservers, ?string $childLabel = null): array {
+    $delegation = $subnet->classlessDelegation($childLabel);
+    $absolute = static fn (string $name): string => \rtrim($name, '.') . '.';
+
+    // Parent /24 zone: delegate the child zone, then alias every address into it
+    $parent = "; In zone {$absolute($delegation->parentZone())}\n";
+    foreach ($nameservers as $ns) {
+        $parent .= "{$absolute($delegation->childZone())}    IN    NS       {$absolute($ns)}\n";
+    }
+    foreach ($delegation->cnameRecords() as $owner => $target) {
+        $parent .= "{$absolute($owner)}    IN    CNAME    {$absolute($target)}\n";
+    }
+
+    return [
+        'parent_zone'  => $delegation->parentZone(),
+        'parent_rdata' => $parent,
+        'child_zone'   => $delegation->childZone(),  // Customer's $ORIGIN for SOA, NS and PTR records
+    ];
+}
+
+// Usage
+$result = renderClasslessDelegation(
+    IPv4\Subnet::fromCidr('192.0.2.64/30'),
+    ['ns1.customer.example', 'ns2.customer.example']
+);
+
+echo $result['parent_rdata'];
+// ; In zone 2.0.192.in-addr.arpa.
+// 64-67.2.0.192.in-addr.arpa.    IN    NS       ns1.customer.example.
+// 64-67.2.0.192.in-addr.arpa.    IN    NS       ns2.customer.example.
+// 64.2.0.192.in-addr.arpa.    IN    CNAME    64.64-67.2.0.192.in-addr.arpa.
+// 65.2.0.192.in-addr.arpa.    IN    CNAME    65.64-67.2.0.192.in-addr.arpa.
+// 66.2.0.192.in-addr.arpa.    IN    CNAME    66.64-67.2.0.192.in-addr.arpa.
+// 67.2.0.192.in-addr.arpa.    IN    CNAME    67.64-67.2.0.192.in-addr.arpa.
+
+echo $result['child_zone'];  // 64-67.2.0.192.in-addr.arpa
+// The customer's PTR for 192.0.2.65 is owned by 65.64-67.2.0.192.in-addr.arpa.
 ```
 
 ---

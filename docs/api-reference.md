@@ -12,6 +12,7 @@ Complete reference of all public methods and classes in the IPv4 Subnet Calculat
   - [SubnetMask](#subnetmask-class)
   - [WildcardMask](#wildcardmask-class)
   - [IPRange](#iprange-class)
+  - [ReverseDnsDelegation](#reversednsdelegation-class)
   - [Mask Interface](#mask-interface)
 - [Enum Classes](#enum-classes)
 
@@ -40,8 +41,9 @@ v5.0 introduces a clean object-oriented architecture:
 - **`SubnetMask`** - Immutable subnet mask value object
 - **`WildcardMask`** - Immutable wildcard mask value object
 - **`IPRange`** - Immutable IP range value object (iterable)
+- **`ReverseDnsDelegation`** - Immutable RFC 2317 classless reverse-DNS delegation data
 
-All value objects implement the `Stringable` interface. `IPAddress`, `SubnetMask` and `WildcardMask` also provide format methods (`asQuads()`, `asHex()`, etc.); `SubnetMask` and `WildcardMask` share them through the [`Mask`](#mask-interface) interface.
+`IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement the `Stringable` interface. `IPAddress`, `SubnetMask` and `WildcardMask` also provide format methods (`asQuads()`, `asHex()`, etc.); `SubnetMask` and `WildcardMask` share them through the [`Mask`](#mask-interface) interface.
 
 ---
 
@@ -741,6 +743,22 @@ Subnet::fromCidr('172.16.0.0/15')->reverseZones();   // ["16.172.in-addr.arpa", 
 Subnet::fromCidr('192.0.2.6/31')->reverseZones();    // ["6.2.0.192.in-addr.arpa", "7.2.0.192.in-addr.arpa"]
 ```
 
+#### classlessDelegation()
+```php
+classlessDelegation(?string $childLabel = null): ReverseDnsDelegation
+```
+Get [RFC 2317](https://www.rfc-editor.org/rfc/rfc2317.html) classless reverse-DNS delegation data for a `/25`–`/32` network: the enclosing `/24` parent zone, the child zone origin, and one parent-zone CNAME per address. The child label defaults to `startLastOctet-endLastOctet`, such as `64-127`. A custom label must be one nonnumeric label of 1–63 ASCII letters, digits or hyphens, beginning and ending with a letter or digit; numeric-only labels are rejected because they could collide with PTR owner names. Input host bits are ignored. Throws `\InvalidArgumentException` for `/0`–`/24`, checked first, and for an invalid label. Runs in time and memory proportional to the address count, at most 128 records.
+
+**Example:**
+```php
+$delegation = Subnet::fromCidr('192.0.2.64/26')->classlessDelegation();
+$delegation->parentZone(); // "2.0.192.in-addr.arpa"
+$delegation->childZone();  // "64-127.2.0.192.in-addr.arpa"
+$delegation->cnameRecords()['65.2.0.192.in-addr.arpa']; // "65.64-127.2.0.192.in-addr.arpa"
+
+Subnet::fromCidr('192.0.2.64/26')->classlessDelegation('cust1')->childZone(); // "cust1.2.0.192.in-addr.arpa"
+```
+
 #### toArray()
 ```php
 toArray(): array
@@ -946,7 +964,7 @@ Union needs no separate method: use `Subnets::aggregate([...\array_values($left)
 
 ## Value Object Classes
 
-All value objects are immutable (readonly) and implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload.
+All value objects are immutable (readonly). `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload. `ReverseDnsDelegation` implements neither; use its accessor methods.
 
 ### IPAddress Class
 
@@ -1338,6 +1356,48 @@ Implement JsonSerializable interface. Encodes only the start and end addresses, 
 **Example:**
 ```php
 \json_encode($subnet->hostRange());  // {"start":"192.168.1.1","end":"192.168.1.254"}
+```
+
+---
+
+### ReverseDnsDelegation Class
+
+`IPv4\ReverseDnsDelegation` - Immutable [RFC 2317](https://www.rfc-editor.org/rfc/rfc2317.html) classless delegation data for a `/25`–`/32` block. All names omit trailing dots. NS, SOA and PTR records, parent-zone cooperation and DNS publishing remain the caller's responsibility.
+
+#### Construction
+
+```php
+new ReverseDnsDelegation(Subnet $subnet, ?string $childLabel = null): ReverseDnsDelegation
+```
+
+Usually obtained via [`Subnet::classlessDelegation()`](#classlessdelegation), which takes the same arguments and throws the same exceptions.
+
+#### Methods
+
+##### parentZone()
+```php
+parentZone(): string
+```
+The enclosing `/24` reverse zone, which publishes the CNAME records, e.g., `"2.0.192.in-addr.arpa"`.
+
+##### childZone()
+```php
+childZone(): string
+```
+The delegated child zone origin, one label below the parent, e.g., `"64-127.2.0.192.in-addr.arpa"`.
+
+##### cnameRecords()
+```php
+cnameRecords(): array // array<string, string>: owner => target
+```
+One record per address in ascending address order, network and broadcast included: delegation describes address space, not usable hosts. Each owner is the address's PTR name in the parent zone; each target is the same last-octet label in the child zone.
+
+```php
+Subnet::fromCidr('192.0.2.6/31')->classlessDelegation()->cnameRecords();
+// [
+//     "6.2.0.192.in-addr.arpa" => "6.6-7.2.0.192.in-addr.arpa",
+//     "7.2.0.192.in-addr.arpa" => "7.6-7.2.0.192.in-addr.arpa",
+// ]
 ```
 
 ---

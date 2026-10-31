@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### New Features
+- **`Subnet::classlessDelegation()`**: Returns RFC 2317 classless reverse-DNS delegation data for a /25–/32: parent zone, child zone and parent CNAME records, as a new `ReverseDnsDelegation` value object
 - **`IPAddress::isGloballyReachable()` and `Subnet::isGloballyReachable()`**: Check global reachability against a pinned IANA special-purpose registry snapshot; `isPublic()` is unchanged
 - **`Subnets::intersection()` and `difference()`**: Return the minimal exact CIDR blocks shared by, or remaining between, two subnet collections
 - **`Subnets::covers()`**: Checks whether one subnet collection contains every address of another

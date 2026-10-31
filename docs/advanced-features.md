@@ -374,7 +374,26 @@ echo $zones[0] . "\n";       // 0.2.0.192.in-addr.arpa
 echo $zones[127] . "\n";     // 127.2.0.192.in-addr.arpa
 ```
 
-A `/25` never yields `2.0.192.in-addr.arpa`, because that zone also covers `192.0.2.128/25`. Per-address zones are exact but cumbersome to delegate; classless delegation (RFC 2317) is not covered by this method. Origins are ordered by network address with no duplicates, `/0` yields the single origin `in-addr.arpa`, and the input IP's host bits do not change the result.
+A `/25` never yields `2.0.192.in-addr.arpa`, because that zone also covers `192.0.2.128/25`. Per-address zones are exact but cumbersome to delegate; use [`classlessDelegation()`](#classless-reverse-delegation) for one RFC 2317 child zone instead. Origins are ordered by network address with no duplicates, `/0` yields the single origin `in-addr.arpa`, and the input IP's host bits do not change the result.
+
+## Classless Reverse Delegation
+
+[RFC 2317](https://www.rfc-editor.org/rfc/rfc2317.html) delegates a block smaller than a `/24` by creating a child zone and having the parent `/24` zone alias each address's PTR name into it with a CNAME. `classlessDelegation()` returns both halves: the zone names and the parent's aliases.
+
+```php
+$delegation = IPv4\Subnet::fromCidr('192.0.2.200/25')->classlessDelegation();
+echo $delegation->parentZone() . "\n"; // 2.0.192.in-addr.arpa
+echo $delegation->childZone() . "\n";  // 128-255.2.0.192.in-addr.arpa
+
+$records = $delegation->cnameRecords();
+echo \count($records) . "\n";                       // 128
+echo $records['128.2.0.192.in-addr.arpa'] . "\n";   // 128.128-255.2.0.192.in-addr.arpa
+```
+
+- **Scope**: only `/25`–`/32`, always inside one `/24` parent. `/0`–`/24` throw `\InvalidArgumentException`; use `reverseZones()` for octet-aligned zones.
+- **Records**: one per address in ascending order, including the network and broadcast addresses, because delegation covers address space rather than usable hosts. Input host bits are ignored.
+- **Child label**: defaults to `startLastOctet-endLastOctet` (`7-7` for a `/32`). RFC 2317 leaves naming open, so a custom label is accepted, restricted to one nonnumeric label of 1–63 ASCII letters, digits or hyphens that begins and ends with a letter or digit. Dotted names, zone-file syntax and numeric-only labels, which could collide with PTR owners, are rejected.
+- **Not included**: NS and SOA records for the child, the PTR records inside it, and the parent operator's cooperation in publishing the CNAMEs and NS delegation. Names omit trailing dots; append them when writing absolute names in zone files.
 
 ## Global Reachability
 

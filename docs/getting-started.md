@@ -265,7 +265,7 @@ $maskHex     = $mask->asHex();      // 'FFFFFE00'
 $maskBinary  = $mask->asBinary();   // '11111111111111111111111000000000'
 $maskInteger = $mask->asInteger();  // 4294966784
 
-// All value objects convert to strings automatically
+// Address, mask and range value objects convert to strings automatically
 echo $subnet->networkAddress();     // "192.168.112.0"
 echo $subnet->mask();               // "255.255.254.0"
 ```

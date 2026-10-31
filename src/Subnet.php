@@ -1043,6 +1043,27 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Get RFC 2317 classless reverse-DNS delegation data for a /25–/32 network.
+     *
+     * Returns the enclosing /24 parent zone, the child zone origin, and one parent-zone
+     * CNAME per address (network and broadcast included). Input host bits are ignored.
+     *
+     * @param string|null $childLabel Single nonnumeric label of 1-63 letters, digits or hyphens,
+     *                                beginning and ending with a letter or digit; defaults to
+     *                                "startLastOctet-endLastOctet", e.g., "64-127"
+     *
+     * @return ReverseDnsDelegation e.g., child zone "64-127.2.0.192.in-addr.arpa" for 192.0.2.64/26
+     *
+     * @throws \InvalidArgumentException If the prefix is /0–/24 or the label is invalid
+     *
+     * @link https://www.rfc-editor.org/rfc/rfc2317
+     */
+    public function classlessDelegation(?string $childLabel = null): ReverseDnsDelegation
+    {
+        return new ReverseDnsDelegation($this, $childLabel);
+    }
+
+    /**
      * Get subnet data as an associative array.
      *
      * @return array<string, mixed>
