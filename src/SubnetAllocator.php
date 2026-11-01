@@ -50,7 +50,7 @@ final class SubnetAllocator
             static fn (string $a, string $b): int => ($prefixes[$a] <=> $prefixes[$b]) ?: \strcmp($a, $b)
         );
 
-        $reservedUnion = Subnets::intersection($reserved, [$parent]);
+        $reservedUnion = Subnets::aggregate($reserved);
         $free = Subnets::difference([$parent], $reservedUnion);
         $placed = [];
         foreach ($order as $name) {

@@ -29,7 +29,7 @@ final class Subnets
      *
      * @param Subnet[] $subnets Subnets to aggregate
      *
-     * @return Subnet[] Aggregated supernets
+     * @return list<Subnet> Aggregated supernets, in ascending order
      *
      * @throws \InvalidArgumentException If any element is not a Subnet
      *
@@ -309,7 +309,7 @@ final class Subnets
      *
      * @param Subnet[] $subnets
      *
-     * @return CidrBlock[]
+     * @return list<CidrBlock>
      */
     private static function collectBlocks(array $subnets): array
     {
@@ -332,7 +332,7 @@ final class Subnets
      *
      * @param CidrBlock[] $blocks
      *
-     * @return CidrBlock[]
+     * @return list<CidrBlock>
      */
     private static function removeContainedBlocks(array $blocks): array
     {
@@ -355,9 +355,9 @@ final class Subnets
      * Blocks must be sorted and disjoint. A newly merged block can only pair with the block
      * immediately before it, so a stack collapses each incoming block with its predecessors.
      *
-     * @param CidrBlock[] $blocks
+     * @param list<CidrBlock> $blocks
      *
-     * @return CidrBlock[]
+     * @return list<CidrBlock>
      */
     private static function mergeAdjacentBlocks(array $blocks): array
     {
@@ -403,9 +403,9 @@ final class Subnets
     /**
      * Convert blocks into Subnet objects.
      *
-     * @param CidrBlock[] $blocks
+     * @param list<CidrBlock> $blocks
      *
-     * @return Subnet[]
+     * @return list<Subnet>
      */
     private static function blocksToSubnets(array $blocks): array
     {
