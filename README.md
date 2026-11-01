@@ -301,6 +301,11 @@ Documentation
 
 ### Advanced Features
 - **[Subnet Exclusion](docs/advanced-features.md#subnet-exclusion-and-difference-operations)** - IPAM and address carving
+- **[Collection Set Operations](docs/advanced-features.md#collection-intersection-difference-and-coverage)** - Intersection, difference, and coverage
+- **[Variable-Size Allocation](docs/advanced-features.md#variable-size-subnet-allocation)** - Deterministic VLSM planning
+- **[Range-to-CIDR Conversion](docs/advanced-features.md#exact-range-to-cidr-conversion)** - Exact CIDR decomposition of ranges
+- **[Classless Reverse Delegation](docs/advanced-features.md#classless-reverse-delegation)** - RFC 2317 zones and CNAMEs
+- **[Global Reachability](docs/advanced-features.md#global-reachability)** - IANA special-purpose registry policy
 - **[CIDR Aggregation](docs/advanced-features.md#cidr-aggregation-and-supernetting)** - Route summarization
 - **[Utilization Statistics](docs/advanced-features.md#utilization-statistics)** - Capacity planning
 - **[Network Classes](docs/advanced-features.md#network-class-information-legacy)** - Legacy classful networking

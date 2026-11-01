@@ -11,7 +11,7 @@ Welcome to the comprehensive documentation for the IPv4 Subnet Calculator PHP li
 
 ### Feature Documentation
 - **[Core Features](core-features.md)** - Essential network calculations and operations
-- **[Advanced Features](advanced-features.md)** - CIDR aggregation, subnet exclusion, utilization analysis
+- **[Advanced Features](advanced-features.md)** - CIDR aggregation, subnet exclusion, set operations, allocation, reverse delegation, global reachability, utilization analysis
 - **[Reports](reports.md)** - Generate comprehensive network reports
 
 ### Reference & Examples
@@ -236,6 +236,8 @@ The library implements standards and best practices from various RFCs:
 - **RFC 1112** - Reserved Addresses
 - **RFC 3021** - Point-to-Point (/31) Networks
 - **RFC 4632** - CIDR (Classless Inter-Domain Routing)
+- **RFC 2317** - Classless IN-ADDR.ARPA Delegation
+- **RFC 6890** - Special-Purpose IP Address Registries (Global Reachability)
 
 See [Core Features - IP Address Type Detection](core-features.md#ip-address-type-detection) for detailed RFC compliance information.
 
@@ -283,7 +285,14 @@ Found an issue or have a suggestion for improving the documentation?
    - Adjacent Subnet Navigation
 
 3. **[Advanced Features](advanced-features.md)**
+   - Subnet Intersection, Adjacency, Ordering, and Strict Configuration
    - Subnet Exclusion and Difference Operations
+   - Collection Intersection, Difference, and Coverage
+   - Variable-Size Subnet Allocation
+   - Exact Range-to-CIDR Conversion
+   - Constant-Time Address and Subnet Indexing
+   - Exact Reverse-Zone Coverage and Classless Reverse Delegation
+   - Global Reachability
    - CIDR Aggregation and Supernetting
    - Utilization Statistics
    - Network Class Information (Legacy)

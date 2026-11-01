@@ -4,7 +4,6 @@ This document covers the fundamental operations and methods available in the IPv
 
 ## Table of Contents
 - [Network Component Access](#network-component-access)
-  - [Explicit Network Parsing](#explicit-network-parsing)
 - [Ordering Subnets](#ordering-subnets)
 - [Network Overlap and Containment](#network-overlap-and-containment)
 - [IP Address Type Detection](#ip-address-type-detection)

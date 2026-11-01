@@ -1,6 +1,6 @@
 # Advanced Features
 
-This document covers advanced operations including subnet exclusion, collection set operations, variable-size allocation, exact range conversion, direct indexing, reverse-zone coverage, global reachability, CIDR aggregation, utilization analysis, and legacy network class information.
+This document covers advanced operations including subnet exclusion, collection set operations, variable-size allocation, exact range conversion, direct indexing, reverse-zone coverage, classless reverse delegation, global reachability, CIDR aggregation, utilization analysis, and legacy network class information.
 
 ## Table of Contents
 - [Canonical Subnet Intersection](#canonical-subnet-intersection)
@@ -13,6 +13,7 @@ This document covers advanced operations including subnet exclusion, collection 
 - [Exact Range-to-CIDR Conversion](#exact-range-to-cidr-conversion)
 - [Constant-Time Address and Subnet Indexing](#constant-time-address-and-subnet-indexing)
 - [Exact Reverse-Zone Coverage](#exact-reverse-zone-coverage)
+- [Classless Reverse Delegation](#classless-reverse-delegation)
 - [Global Reachability](#global-reachability)
 - [CIDR Aggregation and Supernetting](#cidr-aggregation-and-supernetting)
 - [Utilization Statistics](#utilization-statistics)
