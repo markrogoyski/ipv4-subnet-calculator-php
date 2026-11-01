@@ -1452,7 +1452,7 @@ Subnet::fromCidr('192.0.2.6/31')->classlessDelegation()->cnameRecords();
 
 #### Construction
 
-Obtain plans from `SubnetAllocator::allocate()`. The constructor is internal and does not validate its arguments.
+Obtain plans from `SubnetAllocator::allocate()`. The constructor is internal. It checks only the shape of its arguments, throwing `\InvalidArgumentException` if an allocation key is not a string, the reserved or remaining array is not a list, or any element is not a `Subnet`. It does not check that the parts are disjoint, canonical or cover a parent network; only plans from `allocate()` are guaranteed to.
 
 #### Methods
 

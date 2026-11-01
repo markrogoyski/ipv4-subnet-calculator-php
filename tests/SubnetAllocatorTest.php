@@ -442,6 +442,45 @@ class SubnetAllocatorTest extends TestCase
         ];
     }
 
+    /**
+     * AllocationPlan rejects parts of the wrong shape when constructed directly
+     *
+     * @param array<mixed> $allocations
+     * @param array<mixed> $reserved
+     * @param array<mixed> $remaining
+     * @param string       $message
+     */
+    #[Test]
+    #[DataProvider('dataProviderForMalformedPlans')]
+    public function allocationPlanRejectsMalformedParts(array $allocations, array $reserved, array $remaining, string $message): void
+    {
+        // Given the malformed parts
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        // When
+        new AllocationPlan($allocations, $reserved, $remaining);
+    }
+
+    /**
+     * @return array<string, array{array<mixed>, array<mixed>, array<mixed>, string}>
+     */
+    public static function dataProviderForMalformedPlans(): array
+    {
+        $subnet = Subnet::fromCidr('10.0.0.0/24');
+
+        return [
+            'integer allocation key'  => [[$subnet], [], [], 'Allocation name must be a string, got integer key 0'],
+            'allocation not a subnet' => [['a' => '10.0.0.0/24'], [], [], 'Expected Subnet at index a, got string'],
+            'reserved not a list'     => [[], ['x' => $subnet], [], 'Reserved and remaining subnets must be lists'],
+            'remaining not a list'    => [[], [], [1 => $subnet], 'Reserved and remaining subnets must be lists'],
+            'reserved not a subnet'   => [[], [null], [], 'Expected Subnet at index 0, got null'],
+            'remaining not a subnet'  => [[], [], [$subnet, 5], 'Expected Subnet at index 1, got int'],
+        ];
+    }
+
     /* ************************** *
      * Helpers
      * ************************** */
