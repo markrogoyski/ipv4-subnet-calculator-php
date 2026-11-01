@@ -76,7 +76,7 @@ jobs:
       - name: PHP Stan
         run: |
           ./vendor/bin/phpstan --version
-          ./vendor/bin/phpstan analyze -c tools/phpstan.neon
+          ./vendor/bin/phpstan analyze -c tools/phpstan.neon --memory-limit=512M
 
       - name: Psalm
         run: |

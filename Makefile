@@ -12,7 +12,7 @@ style :
 	vendor/bin/phpcs --standard=tools/coding_standard.xml -s src tests
 
 phpstan :
-	vendor/bin/phpstan analyze -c tools/phpstan.neon
+	vendor/bin/phpstan analyze -c tools/phpstan.neon --memory-limit=512M
 
 psalm :
 	vendor/bin/psalm -c tools/psalm.xml
