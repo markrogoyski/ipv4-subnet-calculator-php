@@ -274,9 +274,10 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
                 $this->assertSame($comparison === 0, $left->equals($middle));
 
                 foreach ($subnets as $right) {
-                    if ($comparison <= 0 && $middle->compare($right) <= 0) {
-                        $this->assertLessThanOrEqual(0, $left->compare($right));
-                    }
+                    $this->assertFalse(
+                        $comparison <= 0 && $middle->compare($right) <= 0 && $left->compare($right) > 0,
+                        "{$left->cidr()} <= {$middle->cidr()} <= {$right->cidr()} but not transitively"
+                    );
                 }
             }
         }

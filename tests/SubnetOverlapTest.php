@@ -296,41 +296,77 @@ class SubnetOverlapTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * Intersection agrees with independently enumerated address sets for every pair of bounded fixtures.
+     * Intersection is null for every pair of bounded fixtures sharing no enumerated address.
      */
     #[Test]
-    public function testIntersectionMatchesExactIndependentMembership(): void
+    public function testIntersectionIsNullForDisjointIndependentMembership(): void
     {
         // Given - Enumerated expected sets do not depend on subnet bounds or relations
-        $fixtures = self::boundedSubnetFixtures();
+        $pairs = \array_filter(self::boundedFixturePairs(), static fn (array $pair): bool => $pair[2] === []);
+        $this->assertNotEmpty($pairs);
 
+        foreach ($pairs as [$leftCidr, $rightCidr]) {
+            $left = Subnet::fromCidr($leftCidr);
+            $right = Subnet::fromCidr($rightCidr);
+            $pair = "{$leftCidr} intersection {$rightCidr}";
+
+            // When
+            $forward = $left->intersection($right);
+            $reverse = $right->intersection($left);
+
+            // Then
+            $this->assertNull($forward, $pair);
+            $this->assertNull($reverse, $pair);
+        }
+    }
+
+    /**
+     * Intersection agrees with independently enumerated address sets for every overlapping pair of bounded fixtures.
+     */
+    #[Test]
+    public function testIntersectionMatchesOverlappingIndependentMembership(): void
+    {
+        // Given - Enumerated expected sets do not depend on subnet bounds or relations
+        $pairs = \array_filter(self::boundedFixturePairs(), static fn (array $pair): bool => $pair[2] !== []);
+        $this->assertNotEmpty($pairs);
+
+        foreach ($pairs as [$leftCidr, $rightCidr, $expected]) {
+            $left = Subnet::fromCidr($leftCidr);
+            $right = Subnet::fromCidr($rightCidr);
+            $pair = "{$leftCidr} intersection {$rightCidr}";
+
+            // When
+            $forward = $left->intersection($right);
+            $reverse = $right->intersection($left);
+
+            // Then
+            $this->assertNotNull($forward, $pair);
+            $this->assertNotNull($reverse, $pair);
+            $this->assertSame($expected, self::addressIntegers($forward), $pair);
+            $this->assertSame($expected, self::addressIntegers($reverse), $pair);
+            $this->assertSame(\long2ip(\min($expected)), $forward->ipAddress()->asQuads(), $pair);
+            $this->assertTrue($left->contains($forward), $pair);
+            $this->assertTrue($right->contains($forward), $pair);
+            $this->assertTrue($forward->equals($reverse), $pair);
+        }
+    }
+
+    /**
+     * Every ordered pair of bounded fixtures with the addresses they share.
+     *
+     * @return list<array{string, string, list<int>}>
+     */
+    private static function boundedFixturePairs(): array
+    {
+        $fixtures = self::boundedSubnetFixtures();
+        $pairs = [];
         foreach ($fixtures as [$leftCidr, $leftAddresses]) {
             foreach ($fixtures as [$rightCidr, $rightAddresses]) {
-                $left = Subnet::fromCidr($leftCidr);
-                $right = Subnet::fromCidr($rightCidr);
-                $expected = \array_values(\array_intersect($leftAddresses, $rightAddresses));
-                $pair = "{$leftCidr} intersection {$rightCidr}";
-
-                // When
-                $forward = $left->intersection($right);
-                $reverse = $right->intersection($left);
-
-                // Then
-                if ($expected === []) {
-                    $this->assertNull($forward, $pair);
-                    $this->assertNull($reverse, $pair);
-                    continue;
-                }
-                $this->assertNotNull($forward, $pair);
-                $this->assertNotNull($reverse, $pair);
-                $this->assertSame($expected, self::addressIntegers($forward), $pair);
-                $this->assertSame($expected, self::addressIntegers($reverse), $pair);
-                $this->assertSame(\long2ip(\min($expected)), $forward->ipAddress()->asQuads(), $pair);
-                $this->assertTrue($left->contains($forward), $pair);
-                $this->assertTrue($right->contains($forward), $pair);
-                $this->assertTrue($forward->equals($reverse), $pair);
+                $pairs[] = [$leftCidr, $rightCidr, \array_values(\array_intersect($leftAddresses, $rightAddresses))];
             }
         }
+
+        return $pairs;
     }
 
     /**

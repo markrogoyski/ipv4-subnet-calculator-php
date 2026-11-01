@@ -779,14 +779,14 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
             $this->assertSame($cursor, $subnet->networkAddress()->asInteger(), 'Blocks must be sorted without gaps or overlap.');
             $this->assertLessThanOrEqual($range->end()->asInteger(), $subnet->broadcastAddress()->asInteger());
 
-            if ($previous !== null && $previous->networkSize() === $subnet->networkSize()) {
-                $parentSize = 2 * $subnet->addressCount();
-                $this->assertNotSame(
-                    \intdiv($previous->networkAddress()->asInteger(), $parentSize),
-                    \intdiv($subnet->networkAddress()->asInteger(), $parentSize),
-                    'No adjacent output blocks may be mergeable siblings.'
-                );
-            }
+            $parentSize = 2 * $subnet->addressCount();
+            $this->assertFalse(
+                $previous !== null
+                    && $previous->networkSize() === $subnet->networkSize()
+                    && \intdiv($previous->networkAddress()->asInteger(), $parentSize)
+                        === \intdiv($subnet->networkAddress()->asInteger(), $parentSize),
+                'No adjacent output blocks may be mergeable siblings.'
+            );
 
             $cursor = $subnet->broadcastAddress()->asInteger() + 1;
             $addressCount += $subnet->addressCount();
