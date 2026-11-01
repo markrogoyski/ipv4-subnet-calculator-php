@@ -13,8 +13,6 @@ use PHPUnit\Framework\TestCase;
 /**
  * Tests for CIDR Aggregation / Supernetting feature.
  *
- * @covers \IPv4\Subnets
- *
  * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - Classless Inter-domain Routing (CIDR)
  */
 class SubnetsTest extends TestCase

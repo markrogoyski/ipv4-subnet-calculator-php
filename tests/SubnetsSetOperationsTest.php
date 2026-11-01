@@ -12,8 +12,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for set operations on subnet collections: intersection, difference and coverage.
- *
- * @covers \IPv4\Subnets
  */
 class SubnetsSetOperationsTest extends TestCase
 {

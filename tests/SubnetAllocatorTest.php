@@ -14,9 +14,6 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for deterministic variable-size allocation within one parent network.
- *
- * @covers \IPv4\SubnetAllocator
- * @covers \IPv4\AllocationPlan
  */
 class SubnetAllocatorTest extends TestCase
 {

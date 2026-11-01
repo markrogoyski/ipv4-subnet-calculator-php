@@ -1501,7 +1501,7 @@ $plan->remaining();   // [Subnet: 192.0.2.4/30]
 - `AddressType::Deprecated6to4` - RFC 3068/7526 deprecated 6to4 relay (192.88.99.0/24)
 - `AddressType::Reserved` - 240.0.0.0/4 reserved for future use
 - `AddressType::LimitedBroadcast` - 255.255.255.255 limited broadcast
-- `AddressType::IanaReserved` - IANA Special-Purpose assignments (192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24)
+- `AddressType::IanaReserved` - IANA Special-Purpose assignments (192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24, 192.88.99.2/32)
 - `AddressType::ThisNetwork` - 0.0.0.0/8 "this" network
 
 ### NetworkClass

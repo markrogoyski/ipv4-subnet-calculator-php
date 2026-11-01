@@ -36,16 +36,16 @@ Features
 
 ### Core Capabilities
  * **Network Calculations** - Subnet masks, wildcard masks, network/host portions, broadcast addresses
- * **IP Address Operations** - Range detection, type classification (private, public, loopback, multicast, etc.)
+ * **IP Address Operations** - Range detection, type classification (private, public, loopback, multicast, etc.), global reachability
  * **Network Analysis** - Overlap detection, containment checking, conflict validation
- * **CIDR Operations** - Aggregation, supernetting, subnet splitting, collection intersection, difference and coverage
+ * **CIDR Operations** - Aggregation, supernetting, subnet splitting, exact range-to-CIDR conversion, collection intersection, difference and coverage
  * **Capacity Planning** - Utilization analysis, optimal subnet sizing, waste calculation
- * **Advanced IPAM** - Subnet exclusion, address space carving, sequential allocation
+ * **Advanced IPAM** - Subnet exclusion, address space carving, sequential and variable-size (VLSM) allocation
 
 ### Output Formats
  * Multiple formats: dotted decimal, hex, binary, integer, quads array
  * Reports: JSON, associative arrays, formatted text, printed output
- * Reverse DNS: IPv4 ARPA domain and reverse-zone origin generation
+ * Reverse DNS: IPv4 ARPA domain, reverse-zone origin generation, and RFC 2317 classless delegation
 
 ### Use Cases
  * Network planning and IP address management (IPAM)
