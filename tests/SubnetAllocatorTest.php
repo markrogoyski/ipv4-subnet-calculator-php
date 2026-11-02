@@ -469,7 +469,8 @@ class SubnetAllocatorTest extends TestCase
         $subnet = Subnet::fromCidr('10.0.0.0/24');
 
         return [
-            'integer allocation key'  => [[$subnet], [], [], 'Allocation name must be a string, got integer key 0'],
+            'integer allocation key'  => [[$subnet], [], [], 'Allocation name must be a nonempty string, got integer key 0'],
+            'empty allocation name'   => [['' => $subnet], [], [], 'Allocation name must be a nonempty string, got empty string'],
             'allocation not a subnet' => [['a' => '10.0.0.0/24'], [], [], 'Expected Subnet at index a, got string'],
             'reserved not a list'     => [[], ['x' => $subnet], [], 'Reserved and remaining subnets must be lists'],
             'remaining not a list'    => [[], [], [1 => $subnet], 'Reserved and remaining subnets must be lists'],

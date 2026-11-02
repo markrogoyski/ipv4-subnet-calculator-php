@@ -73,6 +73,8 @@ final class SpecialPurposeRegistry
      *
      * An address outside every entry is ordinary space and returns true. Otherwise the
      * most specific entry decides, and a blank field returns false conservatively.
+     * Multicast (224.0.0.0/4) is in a separate IANA registry and is not covered here,
+     * so callers must exclude it themselves.
      *
      * @param int $address IPv4 address as unsigned 32-bit integer
      *

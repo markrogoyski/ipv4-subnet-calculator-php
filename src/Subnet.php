@@ -6,7 +6,6 @@ namespace IPv4;
 
 use IPv4\Internal\Assert;
 use IPv4\Internal\IPv4;
-use IPv4\Internal\RangeDecomposer;
 use IPv4\Internal\SubnetReport;
 
 /**
@@ -816,36 +815,7 @@ final class Subnet implements \JsonSerializable, \Stringable
      */
     public function excludeAll(array $excludes): array
     {
-        Assert::allSubnets($excludes);
-
-        $start = $this->networkAddressInt();
-        $end = $this->broadcastAddressInt();
-
-        // Clip exclusions to this subnet, then sweep the gaps between them in address order
-        $ranges = [];
-        foreach ($excludes as $exclude) {
-            $excludeStart = $exclude->networkAddressInt();
-            $excludeEnd = $exclude->broadcastAddressInt();
-            if ($excludeEnd < $start || $excludeStart > $end) {
-                continue;
-            }
-            $ranges[] = [\max($excludeStart, $start), \min($excludeEnd, $end)];
-        }
-        \sort($ranges);
-
-        $remaining = [];
-        $cursor = $start;
-        foreach ($ranges as [$rangeStart, $rangeEnd]) {
-            if ($rangeStart > $cursor) {
-                \array_push($remaining, ...RangeDecomposer::toSubnets($cursor, $rangeStart - 1));
-            }
-            $cursor = \max($cursor, $rangeEnd + 1);
-        }
-        if ($cursor <= $end) {
-            \array_push($remaining, ...RangeDecomposer::toSubnets($cursor, $end));
-        }
-
-        return $remaining;
+        return Subnets::difference([$this], $excludes);
     }
 
     /* ==================== *

@@ -26,7 +26,7 @@ final class AllocationPlan
      * @param list<Subnet>          $reserved    Normalized union of reservations
      * @param list<Subnet>          $remaining   Minimal exact free space
      *
-     * @throws \InvalidArgumentException If an element is not a Subnet, an allocation key is not a string,
+     * @throws \InvalidArgumentException If an element is not a Subnet, an allocation key is not a nonempty string,
      *                                   or reserved or remaining is not a list
      */
     public function __construct(
@@ -74,14 +74,17 @@ final class AllocationPlan
      * @param array<mixed> $reserved
      * @param array<mixed> $remaining
      *
-     * @throws \InvalidArgumentException If an element is not a Subnet, an allocation key is not a string,
+     * @throws \InvalidArgumentException If an element is not a Subnet, an allocation key is not a nonempty string,
      *                                   or reserved or remaining is not a list
      */
     private static function assertParts(array $allocations, array $reserved, array $remaining): void
     {
         foreach (\array_keys($allocations) as $name) {
-            if (!\is_string($name)) {
-                throw new \InvalidArgumentException("Allocation name must be a string, got integer key {$name}");
+            if (!\is_string($name) || $name === '') {
+                throw new \InvalidArgumentException(
+                    'Allocation name must be a nonempty string, got '
+                    . (\is_int($name) ? "integer key {$name}" : 'empty string')
+                );
             }
         }
         if (!\array_is_list($reserved) || !\array_is_list($remaining)) {
