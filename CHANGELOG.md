@@ -1,22 +1,21 @@
 # IPv4 SubnetCalculator Change Log
 
-## Unreleased
+## v5.2.0 - 2026-11-07
 
 ### New Features
-- **`SubnetAllocator::allocate()`**: Places named host-count requirements in one parent network around reservations, returning allocations, reservations and free space as a new `AllocationPlan` value object
-- **`Subnet::classlessDelegation()`**: Returns RFC 2317 classless reverse-DNS delegation data for a /25–/32: parent zone, child zone and parent CNAME records, as a new `ReverseDnsDelegation` value object
-- **`IPAddress::isGloballyReachable()` and `Subnet::isGloballyReachable()`**: Check global reachability against a pinned IANA special-purpose registry snapshot; `isPublic()` is unchanged
-- **`Subnets::intersection()` and `difference()`**: Return the minimal exact CIDR blocks shared by, or remaining between, two subnet collections
-- **`Subnets::covers()`**: Checks whether one subnet collection contains every address of another
-- **`Subnet::reverseZones()`**: Returns the octet-aligned reverse DNS zone origins that exactly cover the network
-- **`Subnet::intersection()`**: Returns the canonical narrower block for overlapping networks, or `null` when disjoint
-- **`Subnet::isAdjacent()`**: Checks whether two disjoint subnets touch end to start
-- **`Subnet::compare()`**: Orders subnets by network address, then prefix, returning `-1`, `0` or `1`
-- **`Subnet::isNetworkAddress()`**: Checks whether the input IP is aligned to its network prefix
-- **`Subnet::fromNetworkCidr()`**: Parses a CIDR and rejects host bits; `fromCidr()` and the constructor stay permissive
-- **`IPRange::toSubnets()`**: Converts an IP range to the smallest exact list of CIDR subnets
-- **`IPRange::at()` and `indexOf()`**: Look up an address by zero-based index, and an index by address
-- **`Subnet::subnetAt()`**: Returns a child subnet by zero-based index
+- **`SubnetAllocator::allocate()`**: Allocates named subnets sized by host count within a parent network, avoiding reserved blocks; returns an `AllocationPlan` of allocations, reservations and remaining free space
+- **`Subnets::intersection()`, `difference()` and `covers()`**: Set operations on subnet collections: the minimal exact CIDR blocks shared by, or left between, two collections, and whether one contains every address of another
+- **`Subnet::intersection()`**: Returns the smaller of two overlapping subnets, or `null` if they are disjoint
+- **`Subnet::isAdjacent()`**: Checks whether two disjoint subnets are contiguous
+- **`Subnet::compare()`**: Orders subnets by network address, then prefix (`-1`, `0`, `1`), for use with `usort()`
+- **`Subnet::fromNetworkCidr()`**: Strict `fromCidr()` that throws if host bits are set (e.g., `10.0.0.5/24`); `fromCidr()` and the constructor stay permissive
+- **`Subnet::isNetworkAddress()`**: Checks whether the input IP has no host bits set
+- **`IPRange::toSubnets()`**: Converts a range to the smallest exact list of CIDR subnets
+- **`IPRange::at()` and `indexOf()`**: Constant-time lookup of an address by zero-based index, and of an index by address
+- **`Subnet::subnetAt()`**: Returns the child subnet at a zero-based index for a given prefix
+- **`Subnet::reverseZones()`**: Returns the octet-aligned reverse DNS zones that exactly cover the network
+- **`Subnet::classlessDelegation()`**: Returns RFC 2317 classless reverse-DNS delegation data for /25–/32 (parent zone, child zone and parent CNAME records) as a `ReverseDnsDelegation`
+- **`IPAddress::isGloballyReachable()` and `Subnet::isGloballyReachable()`**: Check global reachability against the "Globally Reachable" column of a bundled copy of the IANA special-purpose registry; independent of `isPublic()`, which is unchanged
 
 ## v5.1.0 - 2026-10-25
 
