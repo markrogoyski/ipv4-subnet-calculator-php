@@ -852,6 +852,23 @@ $plan->allocations();  // ['Sales' => 10.0.2.0/26, 'Engineering' => 10.0.0.0/23]
 $plan->remaining();    // [10.0.2.64/26, 10.0.2.128/25]
 ```
 
+To request a block by prefix instead, such as a `/30` uplink that no host count produces, use `SubnetAllocator::allocateByPrefix()` and convert host counts with `SubnetParser::optimalPrefixForHosts()`:
+
+```php
+$plan = IPv4\SubnetAllocator::allocateByPrefix(
+    IPv4\Subnet::fromCidr('10.0.0.0/22'),
+    [
+        'Sales'       => IPv4\SubnetParser::optimalPrefixForHosts(50),
+        'Engineering' => IPv4\SubnetParser::optimalPrefixForHosts(500),
+        'Uplink'      => 30,
+    ],
+    [IPv4\Subnet::fromCidr('10.0.3.0/24')],  // Reserved
+);
+
+$plan->allocations();  // ['Sales' => 10.0.2.0/26, 'Engineering' => 10.0.0.0/23, 'Uplink' => 10.0.2.64/30]
+$plan->remaining();    // [10.0.2.68/30, 10.0.2.72/29, 10.0.2.80/28, 10.0.2.96/27, 10.0.2.128/25]
+```
+
 See [variable-size allocation](advanced-features.md#variable-size-subnet-allocation) for placement rules and failures.
 
 ## Adjacent Subnet Navigation

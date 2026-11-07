@@ -7,6 +7,7 @@ namespace IPv4\Tests;
 use IPv4\AllocationPlan;
 use IPv4\Subnet;
 use IPv4\SubnetAllocator;
+use IPv4\SubnetParser;
 use IPv4\Subnets;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -477,6 +478,300 @@ class SubnetAllocatorTest extends TestCase
             'reserved not a subnet'   => [[], [null], [], 'Expected Subnet at index 0, got null'],
             'remaining not a subnet'  => [[], [], [$subnet, 5], 'Expected Subnet at index 1, got int'],
         ];
+    }
+
+    /* ************************** *
+     * Allocation by prefix
+     * ************************** */
+
+    /**
+     * allocateByPrefix places each named prefix and returns allocations, reservations and free space
+     *
+     * @param string                $parentCidr
+     * @param array<string, int>    $prefixes
+     * @param array<string>         $reservedCidrs
+     * @param array<string, string> $expectedAllocations
+     * @param list<string>          $expectedReserved
+     * @param list<string>          $expectedRemaining
+     */
+    #[Test]
+    #[DataProvider('dataProviderForPrefixPlans')]
+    public function allocateByPrefixReturnsTheExpectedPlan(
+        string $parentCidr,
+        array $prefixes,
+        array $reservedCidrs,
+        array $expectedAllocations,
+        array $expectedReserved,
+        array $expectedRemaining
+    ): void {
+        // Given
+        $parent = Subnet::fromCidr($parentCidr);
+        $reserved = self::subnets($reservedCidrs);
+
+        // When
+        $plan = SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+
+        // Then
+        $this->assertSame(
+            [$expectedAllocations, $expectedReserved, $expectedRemaining],
+            [self::cidrs($plan->allocations()), self::cidrs($plan->reserved()), self::cidrs($plan->remaining())]
+        );
+    }
+
+    /**
+     * @return array<string, array{string, array<string, int>, array<string>, array<string, string>, list<string>, list<string>}>
+     */
+    public static function dataProviderForPrefixPlans(): array
+    {
+        return [
+            '/30 link'                       => [
+                '10.0.0.0/24',
+                ['link' => 30],
+                [],
+                ['link' => '10.0.0.0/30'],
+                [],
+                ['10.0.0.4/30', '10.0.0.8/29', '10.0.0.16/28', '10.0.0.32/27', '10.0.0.64/26', '10.0.0.128/25'],
+            ],
+            'equal prefixes ordered by name' => [
+                '10.0.0.0/28',
+                ['b' => 30, 'a' => 30, 'c' => 30],
+                [],
+                ['b' => '10.0.0.4/30', 'a' => '10.0.0.0/30', 'c' => '10.0.0.8/30'],
+                [],
+                ['10.0.0.12/30'],
+            ],
+            'larger block placed first'      => [
+                '10.0.0.0/24',
+                ['small' => 30, 'big' => 25],
+                [],
+                ['small' => '10.0.0.128/30', 'big' => '10.0.0.0/25'],
+                [],
+                ['10.0.0.132/30', '10.0.0.136/29', '10.0.0.144/28', '10.0.0.160/27', '10.0.0.192/26'],
+            ],
+            'mixed host count and prefix'    => [
+                '192.168.0.0/24',
+                ['lan' => SubnetParser::optimalPrefixForHosts(50), 'wan' => 30],
+                [],
+                ['lan' => '192.168.0.0/26', 'wan' => '192.168.0.64/30'],
+                [],
+                ['192.168.0.68/30', '192.168.0.72/29', '192.168.0.80/28', '192.168.0.96/27', '192.168.0.128/25'],
+            ],
+            '/31 point-to-point link'        => [
+                '192.0.2.7/31',
+                ['link' => 31],
+                [],
+                ['link' => '192.0.2.6/31'],
+                [],
+                [],
+            ],
+            '/31 two single hosts'           => [
+                '192.0.2.6/31',
+                ['a' => 32, 'b' => 32],
+                [],
+                ['a' => '192.0.2.6/32', 'b' => '192.0.2.7/32'],
+                [],
+                [],
+            ],
+            '/32 single host'                => [
+                '192.0.2.7/32',
+                ['h' => 32],
+                [],
+                ['h' => '192.0.2.7/32'],
+                [],
+                [],
+            ],
+            'equal prefix fills the parent'  => [
+                '10.0.0.0/24',
+                ['all' => 24],
+                [],
+                ['all' => '10.0.0.0/24'],
+                [],
+                [],
+            ],
+            '/0 whole space'                 => [
+                '0.0.0.0/0',
+                ['all' => 0],
+                [],
+                ['all' => '0.0.0.0/0'],
+                [],
+                [],
+            ],
+            '/0 split into halves'           => [
+                '0.0.0.0/0',
+                ['upper' => 1, 'lower' => 1],
+                [],
+                ['upper' => '128.0.0.0/1', 'lower' => '0.0.0.0/1'],
+                [],
+                [],
+            ],
+            'reserved first block'           => [
+                '10.0.0.0/24',
+                ['lan' => 25, 'link' => 30],
+                ['10.0.0.0/26'],
+                ['lan' => '10.0.0.128/25', 'link' => '10.0.0.64/30'],
+                ['10.0.0.0/26'],
+                ['10.0.0.68/30', '10.0.0.72/29', '10.0.0.80/28', '10.0.0.96/27'],
+            ],
+            'reservation splits free space'  => [
+                '10.0.0.0/24',
+                ['a' => 26, 'b' => 26],
+                ['10.0.0.64/26'],
+                ['a' => '10.0.0.0/26', 'b' => '10.0.0.128/26'],
+                ['10.0.0.64/26'],
+                ['10.0.0.192/26'],
+            ],
+            'host-bit parent is normalized'  => [
+                '10.0.0.77/24',
+                ['a' => 25],
+                [],
+                ['a' => '10.0.0.0/25'],
+                [],
+                ['10.0.0.128/25'],
+            ],
+            'empty prefixes'                 => [
+                '10.0.0.0/24',
+                [],
+                ['10.0.0.16/28'],
+                [],
+                ['10.0.0.16/28'],
+                ['10.0.0.0/28', '10.0.0.32/27', '10.0.0.64/26', '10.0.0.128/25'],
+            ],
+        ];
+    }
+
+    /**
+     * allocateByPrefix throws a RuntimeException naming the first block that cannot be placed
+     *
+     * @param string             $parentCidr
+     * @param array<string, int> $prefixes
+     * @param array<string>      $reservedCidrs
+     * @param string             $message
+     */
+    #[Test]
+    #[DataProvider('dataProviderForPrefixPlacementFailures')]
+    public function allocateByPrefixThrowsWhenARequestCannotBePlaced(string $parentCidr, array $prefixes, array $reservedCidrs, string $message): void
+    {
+        // Given
+        $parent = Subnet::fromCidr($parentCidr);
+        $reserved = self::subnets($reservedCidrs);
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage($message);
+
+        // When
+        SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+    }
+
+    /**
+     * @return array<string, array{string, array<string, int>, array<string>, string}>
+     */
+    public static function dataProviderForPrefixPlacementFailures(): array
+    {
+        return [
+            'prefix shorter than parent' => ['10.0.0.0/24', ['x' => 23], [], "Cannot allocate 'x' as a /23: largest free block is a /24 (256 free addresses in 1 block)"],
+            '/0 in a /24'                => ['10.0.0.0/24', ['x' => 0], [], "Cannot allocate 'x' as a /0: largest free block is a /24 (256 free addresses in 1 block)"],
+            '/31 in a /32 parent'        => ['192.0.2.7/32', ['h' => 31], [], "Cannot allocate 'h' as a /31: largest free block is a /32 (1 free address in 1 block)"],
+            'insufficient capacity'      => ['10.0.0.0/24', ['a' => 25, 'b' => 25, 'c' => 25], [], "Cannot allocate 'c' as a /25: no free space remains"],
+            'whole parent reserved'      => ['10.0.0.0/24', ['a' => 32], ['10.0.0.0/24'], "Cannot allocate 'a' as a /32: no free space remains"],
+        ];
+    }
+
+    /**
+     * allocateByPrefix rejects invalid input with an InvalidArgumentException before placing anything
+     *
+     * @param array<mixed> $prefixes
+     * @param array<mixed> $reserved
+     * @param string       $message
+     */
+    #[Test]
+    #[DataProvider('dataProviderForInvalidPrefixInput')]
+    public function allocateByPrefixRejectsInvalidInput(array $prefixes, array $reserved, string $message): void
+    {
+        // Given
+        $parent = Subnet::fromCidr('10.0.0.77/24');
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        // When
+        SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+    }
+
+    /**
+     * @return array<string, array{array<mixed>, array<mixed>, string}>
+     */
+    public static function dataProviderForInvalidPrefixInput(): array
+    {
+        return [
+            'list prefixes'                      => [[24], [], 'Requirement name must be a nonempty string, got integer key 0'],
+            'numeric string name'                => [['ok' => 24, '10' => 24], [], 'Requirement name must be a nonempty string, got integer key 10'],
+            'empty name'                         => [['' => 24], [], 'Requirement name must be a nonempty string, got empty string'],
+            'negative prefix'                    => [['a' => -1], [], "Requirement 'a' prefix must be between 0 and 32, got -1"],
+            'prefix beyond 32'                   => [['a' => 33], [], "Requirement 'a' prefix must be between 0 and 32, got 33"],
+            'string prefix'                      => [['a' => '24'], [], "Requirement 'a' prefix must be an int, got string"],
+            'float prefix'                       => [['a' => 24.0], [], "Requirement 'a' prefix must be an int, got float"],
+            'bool prefix'                        => [['a' => true], [], "Requirement 'a' prefix must be an int, got bool"],
+            'null prefix'                        => [['a' => null], [], "Requirement 'a' prefix must be an int, got null"],
+            'bad prefix after unplaceable'       => [['big' => 23, 'bad' => 33], [], "Requirement 'bad' prefix must be between 0 and 32, got 33"],
+            'reservation not a subnet'           => [[], ['10.0.0.0/25'], 'Expected Subnet at index 0, got string'],
+            'reservation outside parent'         => [[], [Subnet::fromCidr('10.0.1.0/24')], 'Reservation 10.0.1.0/24 is not contained in parent 10.0.0.0/24'],
+            'bad reservation beside unplaceable' => [['big' => 23], [Subnet::fromCidr('10.0.0.0/25'), Subnet::fromCidr('0.0.0.0/0')], 'Reservation 0.0.0.0/0 is not contained in parent 10.0.0.0/24'],
+        ];
+    }
+
+    /**
+     * allocateByPrefix produces the same plan as allocate when given each host count's optimal prefix
+     *
+     * @param string             $parentCidr
+     * @param array<string, int> $requirements
+     * @param array<string>      $reservedCidrs
+     */
+    #[Test]
+    #[DataProvider('dataProviderForPlans')]
+    public function allocateByPrefixMatchesAllocateForEquivalentInput(string $parentCidr, array $requirements, array $reservedCidrs): void
+    {
+        // Given
+        $parent = Subnet::fromCidr($parentCidr);
+        $reserved = self::subnets($reservedCidrs);
+        $prefixes = \array_map(SubnetParser::optimalPrefixForHosts(...), $requirements);
+
+        // When
+        $byHosts = SubnetAllocator::allocate($parent, $requirements, $reserved);
+        $byPrefix = SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+
+        // Then
+        $this->assertSame(
+            [self::cidrs($byHosts->allocations()), self::cidrs($byHosts->reserved()), self::cidrs($byHosts->remaining())],
+            [self::cidrs($byPrefix->allocations()), self::cidrs($byPrefix->reserved()), self::cidrs($byPrefix->remaining())]
+        );
+    }
+
+    /**
+     * allocateByPrefix matches allocate for a large parent with many requests
+     */
+    #[Test]
+    public function allocateByPrefixMatchesAllocateForALargeParentWithManyRequests(): void
+    {
+        // Given - Deterministic requests from 1 to about 16 million hosts, around private space
+        $parent = Subnet::fromCidr('0.0.0.0/0');
+        $reserved = self::subnets(['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8', '255.255.255.255/32']);
+        $requirements = [];
+        for ($i = 0; $i < 200; $i++) {
+            $requirements["site-{$i}"] = 1 + ($i * 7919 * 104729) % (1 << (($i % 24) + 1));
+        }
+        $prefixes = \array_map(SubnetParser::optimalPrefixForHosts(...), $requirements);
+
+        // When
+        $byHosts = SubnetAllocator::allocate($parent, $requirements, $reserved);
+        $byPrefix = SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+
+        // Then
+        $this->assertSame(
+            [self::cidrs($byHosts->allocations()), self::cidrs($byHosts->reserved()), self::cidrs($byHosts->remaining())],
+            [self::cidrs($byPrefix->allocations()), self::cidrs($byPrefix->reserved()), self::cidrs($byPrefix->remaining())]
+        );
     }
 
     /* ************************** *

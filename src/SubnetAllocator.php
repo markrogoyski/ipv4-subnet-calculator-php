@@ -9,9 +9,9 @@ use IPv4\Internal\Assert;
 /**
  * Stateless, deterministic variable-size subnet allocation (VLSM) within one parent network.
  *
- * Each named requirement receives one CIDR block sized for its usable host count. Larger
- * blocks are placed first, equal sizes in bytewise name order, each at the lowest free
- * address where it fits aligned. The result is complete or an exception is thrown.
+ * Each named requirement receives one CIDR block sized for its usable host count or given CIDR
+ * prefix. Larger blocks are placed first, equal sizes in bytewise name order, each at the lowest
+ * free address where it fits aligned. The result is complete or an exception is thrown.
  */
 final class SubnetAllocator
 {
@@ -39,8 +39,58 @@ final class SubnetAllocator
      */
     public static function allocate(Subnet $parent, array $requirements, array $reserved = []): AllocationPlan
     {
+        return self::place($parent, self::requirementPrefixes($requirements), $reserved);
+    }
+
+    /**
+     * Allocate one subnet per named CIDR prefix from a parent network, avoiding reserved space.
+     *
+     * Use this when a block's size is known as a prefix rather than a host count. Host-count
+     * sizing maps two hosts to a /31 and three to a /29, so a /30 link can only be requested
+     * here. Mix both sizings by converting host counts with SubnetParser::optimalPrefixForHosts():
+     * ['lan' => SubnetParser::optimalPrefixForHosts(50), 'wan' => 30].
+     *
+     * Placement matches allocate(): larger blocks (smaller prefixes) first, equal prefixes in
+     * bytewise name order, each at the lowest free aligned address; the plan lists allocations in
+     * input order. The parent's host bits are ignored. Reservations may duplicate, nest or overlap
+     * one another. All input is validated before anything is placed, and the plan is complete or
+     * an exception is thrown. A prefix shorter than the parent's is valid input that cannot fit.
+     *
+     * PHP collapses duplicate array keys before the call, so callers must reject duplicate names
+     * while building the prefix map. Numeric-string keys such as '10' become integers and are
+     * rejected.
+     *
+     * @param Subnet             $parent   Network to allocate from
+     * @param array<string, int> $prefixes name => CIDR prefix (0 to 32)
+     * @param Subnet[]           $reserved Subnets wholly inside the parent to keep free of allocations
+     *
+     * @return AllocationPlan
+     *
+     * @throws \InvalidArgumentException If a name is not a nonempty string, a prefix is not an int from
+     *                                   0 to 32, or a reservation is not a Subnet inside the parent
+     * @throws \RuntimeException         If a block cannot be placed in the free space left, including a
+     *                                   prefix shorter than the parent's
+     */
+    public static function allocateByPrefix(Subnet $parent, array $prefixes, array $reserved = []): AllocationPlan
+    {
+        return self::place($parent, self::validatedPrefixes($prefixes), $reserved);
+    }
+
+    /**
+     * Place validated prefixes in the parent's free space, after validating the reservations.
+     *
+     * @param Subnet             $parent   Network to allocate from
+     * @param array<string, int> $prefixes name => prefix, in input order
+     * @param Subnet[]           $reserved Subnets wholly inside the parent to keep free of allocations
+     *
+     * @return AllocationPlan
+     *
+     * @throws \InvalidArgumentException If a reservation is not a Subnet inside the parent
+     * @throws \RuntimeException         If a block cannot be placed in the free space left
+     */
+    private static function place(Subnet $parent, array $prefixes, array $reserved): AllocationPlan
+    {
         $parent = new Subnet($parent->networkAddress(), $parent->networkSize());
-        $prefixes = self::requirementPrefixes($requirements);
         self::assertReservations($parent, $reserved);
 
         // Larger blocks (smaller prefixes) first, then bytewise name order
@@ -67,6 +117,56 @@ final class SubnetAllocator
     }
 
     /**
+     * Assert that a requirement name is a nonempty string.
+     *
+     * @param int|string $name
+     *
+     * @psalm-assert non-empty-string $name
+     *
+     * @throws \InvalidArgumentException If the name is an integer key or an empty string
+     */
+    private static function assertName(int|string $name): void
+    {
+        if (!\is_string($name) || $name === '') {
+            throw new \InvalidArgumentException(
+                'Requirement name must be a nonempty string, got '
+                . (\is_int($name) ? "integer key {$name}" : 'empty string')
+            );
+        }
+    }
+
+    /**
+     * Validate the names and prefixes of a prefix map.
+     *
+     * @param array<mixed> $prefixes
+     *
+     * @return array<string, int> name => prefix, in input order
+     *
+     * @throws \InvalidArgumentException If a name or prefix is invalid
+     */
+    private static function validatedPrefixes(array $prefixes): array
+    {
+        $validated = [];
+        foreach ($prefixes as $name => $prefix) {
+            self::assertName($name);
+            if (!\is_int($prefix)) {
+                throw new \InvalidArgumentException(
+                    "Requirement '{$name}' prefix must be an int, got " . \get_debug_type($prefix)
+                );
+            }
+            if ($prefix < 0 || $prefix > 32) {
+                throw new \InvalidArgumentException(
+                    "Requirement '{$name}' prefix must be between 0 and 32, got {$prefix}"
+                );
+            }
+
+            $validated[$name] = $prefix;
+        }
+
+        return $validated;
+    }
+
+    /**
      * Validate the requirements and convert each host count to its prefix.
      *
      * @param array<mixed> $requirements
@@ -79,12 +179,7 @@ final class SubnetAllocator
     {
         $prefixes = [];
         foreach ($requirements as $name => $hostCount) {
-            if (!\is_string($name) || $name === '') {
-                throw new \InvalidArgumentException(
-                    'Requirement name must be a nonempty string, got '
-                    . (\is_int($name) ? "integer key {$name}" : 'empty string')
-                );
-            }
+            self::assertName($name);
             if (!\is_int($hostCount)) {
                 throw new \InvalidArgumentException(
                     "Requirement '{$name}' host count must be an int, got " . \get_debug_type($hostCount)

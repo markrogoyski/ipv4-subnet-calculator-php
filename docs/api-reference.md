@@ -1004,6 +1004,38 @@ SubnetAllocator::allocate(Subnet::fromCidr('10.0.0.0/24'), ['a' => 200, 'b' => 1
 // Throws \RuntimeException: Cannot allocate 'b' as a /25: no free space remains
 ```
 
+#### allocateByPrefix()
+```php
+SubnetAllocator::allocateByPrefix(Subnet $parent, array $prefixes, array $reserved = []): AllocationPlan
+```
+Allocate one CIDR block per named prefix from `$parent`, avoiding `$reserved`, and return an [`AllocationPlan`](#allocationplan-class).
+
+Use this when a block's size is known as a prefix rather than a host count. Host-count sizing maps `2` hosts to a `/31` and `3` to a `/29`, so a `/30` link can only be requested by prefix. To mix both sizings, convert host counts with [`optimalPrefixForHosts()`](#optimalprefixforhosts): `['lan' => SubnetParser::optimalPrefixForHosts(50), 'wan' => 30]`.
+
+Placement, ordering, reservations and names behave exactly as in [`allocate()`](#allocate): larger blocks (smaller prefixes) first, equal prefixes in bytewise name order, each at the lowest aligned free address; allocations are returned in input order. For equivalent input, `allocate($parent, $hosts, $reserved)` and `allocateByPrefix($parent, array_map(SubnetParser::optimalPrefixForHosts(...), $hosts), $reserved)` return the same plan.
+
+All input is validated before anything is placed. Throws `\InvalidArgumentException` if a name is not a nonempty string, a prefix is not an `int` (`Requirement 'wan' prefix must be an int, got string`) or lies outside 0–32 (`Requirement 'wan' prefix must be between 0 and 32, got 33`), or a reservation is not a `Subnet` contained in the parent. A prefix shorter than the parent's is valid input that cannot fit: like any block that no free space can hold, it throws `\RuntimeException` naming the first such block in placement order. No partial plan is returned.
+
+**Parameters:**
+- `$parent` - Network to allocate from
+- `$prefixes` - `array<string, int>`: name => CIDR prefix (0–32)
+- `$reserved` - Array of Subnet objects to keep free of allocations
+
+**Returns:** `AllocationPlan`
+
+**Example:**
+```php
+$plan = SubnetAllocator::allocateByPrefix(
+    Subnet::fromCidr('192.168.0.0/24'),
+    ['lan' => SubnetParser::optimalPrefixForHosts(50), 'wan' => 30],
+);
+$plan->allocations(); // ['lan' => Subnet: 192.168.0.0/26, 'wan' => Subnet: 192.168.0.64/30]
+$plan->remaining();   // [Subnet: 192.168.0.68/30, Subnet: 192.168.0.72/29, Subnet: 192.168.0.80/28, Subnet: 192.168.0.96/27, Subnet: 192.168.0.128/25]
+
+SubnetAllocator::allocateByPrefix(Subnet::fromCidr('10.0.0.0/24'), ['x' => 23]);
+// Throws \RuntimeException: Cannot allocate 'x' as a /23: largest free block is a /24 (256 free addresses in 1 block)
+```
+
 ---
 
 ## Value Object Classes
@@ -1448,11 +1480,11 @@ Subnet::fromCidr('192.0.2.6/31')->classlessDelegation()->cnameRecords();
 
 ### AllocationPlan Class
 
-`IPv4\AllocationPlan` - Immutable result of [`SubnetAllocator::allocate()`](#allocate). Its allocations, reservations and remaining space are disjoint and together cover exactly the parent network. All subnets are canonical.
+`IPv4\AllocationPlan` - Immutable result of [`SubnetAllocator::allocate()`](#allocate) or [`allocateByPrefix()`](#allocatebyprefix). Its allocations, reservations and remaining space are disjoint and together cover exactly the parent network. All subnets are canonical.
 
 #### Construction
 
-Obtain plans from `SubnetAllocator::allocate()`. The constructor is internal. It checks only the shape of its arguments, throwing `\InvalidArgumentException` if an allocation key is not a string, the reserved or remaining array is not a list, or any element is not a `Subnet`. It does not check that the parts are disjoint, canonical or cover a parent network; only plans from `allocate()` are guaranteed to.
+Obtain plans from `SubnetAllocator::allocate()` or `allocateByPrefix()`. The constructor is internal. It checks only the shape of its arguments, throwing `\InvalidArgumentException` if an allocation key is not a string, the reserved or remaining array is not a list, or any element is not a `Subnet`. It does not check that the parts are disjoint, canonical or cover a parent network; only plans from `allocate()` or `allocateByPrefix()` are guaranteed to.
 
 #### Methods
 

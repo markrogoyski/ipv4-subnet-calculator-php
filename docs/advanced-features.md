@@ -365,6 +365,35 @@ try {
 
 Fragmentation can prevent a placement even when enough addresses are free in total, as above. Requirement names are array keys, so PHP keeps only the last of duplicate names and turns numeric strings such as `'10'` into integers, which are rejected; check for duplicates while building the map. Persistent pools, releasing allocations and alternative packing strategies are outside the allocator's scope; to add requirements later without moving existing ones, pass the earlier plan's reservations and allocations together as the next call's reservations: `[...$plan->reserved(), ...\array_values($plan->allocations())]`. Passing only the allocations drops the original reservations, so new blocks can land in them.
 
+### Sizing by Prefix
+
+Host-count sizing maps two hosts to a `/31` and three to a `/29`, so no host count yields a `/30`. `SubnetAllocator::allocateByPrefix()` takes `name => prefix` instead and otherwise behaves exactly like `allocate()`: the same placement order, reservations, all-or-nothing validation and returned plan. Mixed plans need no other API; convert host counts with `SubnetParser::optimalPrefixForHosts()`:
+
+```php
+$plan = IPv4\SubnetAllocator::allocateByPrefix(
+    IPv4\Subnet::fromCidr('192.168.10.0/24'),
+    [
+        'users'    => IPv4\SubnetParser::optimalPrefixForHosts(100),
+        'servers'  => IPv4\SubnetParser::optimalPrefixForHosts(50),
+        'printers' => IPv4\SubnetParser::optimalPrefixForHosts(10),
+        'uplink'   => 30,
+    ],
+    [IPv4\Subnet::fromCidr('192.168.10.0/28')],  // Gateways and infrastructure
+);
+
+foreach ($plan->allocations() as $name => $subnet) {
+    echo "{$name}: {$subnet}\n";
+}
+// users: 192.168.10.128/25
+// servers: 192.168.10.64/26
+// printers: 192.168.10.16/28
+// uplink: 192.168.10.32/30
+
+$plan->remaining();  // [192.168.10.36/30, 192.168.10.40/29, 192.168.10.48/28]
+```
+
+Prefixes must be ints from 0 to 32; anything else throws `\InvalidArgumentException` before anything is placed. A prefix shorter than the parent's is valid but cannot fit, so it throws the same `\RuntimeException` as any block that the free space cannot hold.
+
 ## Exact Range-to-CIDR Conversion
 
 `IPRange::toSubnets()` converts any inclusive range to its smallest exact CIDR cover. Results are canonical, disjoint, and sorted by ascending network address. Even two adjacent addresses may need separate `/32` blocks when they are not aligned to a `/31`:
