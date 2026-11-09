@@ -566,6 +566,26 @@ echo Subnet::fromCidr('0.0.0.0/0')->subnetAt(32, 4_294_967_295)->cidr();
 // 255.255.255.255/32, without traversing preceding children
 ```
 
+#### supernet()
+```php
+supernet(int $prefix): Subnet
+```
+Returns the enclosing block at a shorter or equal prefix. The result is canonical (its input IP is the network address) even when this subnet's input IP has host bits set, and it always contains this subnet.
+
+The prefix must be from `0` to the current prefix. A prefix equal to the current one returns the canonical form of this block, so generic code such as `supernet(\min(16, $subnet->networkSize()))` works for any subnet. Any other prefix throws `\InvalidArgumentException` with the message `Supernet prefix must be between 0 and {current prefix}, got {prefix}`.
+
+**Examples:**
+```php
+$subnet = Subnet::fromCidr('192.168.1.100/24');
+echo $subnet->supernet(16)->cidr(); // 192.168.0.0/16
+echo $subnet->supernet(24)->cidr(); // 192.168.1.0/24
+echo $subnet->supernet(0)->cidr();  // 0.0.0.0/0
+
+echo Subnet::fromCidr('10.0.0.5/32')->supernet(31)->cidr(); // 10.0.0.4/31
+
+$subnet->supernet(25); // throws \InvalidArgumentException
+```
+
 #### contains()
 ```php
 contains(Subnet $other): bool

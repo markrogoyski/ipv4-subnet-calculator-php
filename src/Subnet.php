@@ -709,6 +709,30 @@ final class Subnet implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Get the enclosing supernet at a shorter or equal prefix.
+     *
+     * Returns a canonical block whose input IP is the network address, even when
+     * this subnet's input IP has host bits set. An equal prefix returns the canonical
+     * form of this block, so the result always contains this subnet.
+     *
+     * @param int $prefix Supernet CIDR prefix (0 to the current network size)
+     *
+     * @return self
+     *
+     * @throws \InvalidArgumentException If prefix is negative or larger than the current network size
+     */
+    public function supernet(int $prefix): self
+    {
+        if ($prefix < 0 || $prefix > $this->networkSize) {
+            throw new \InvalidArgumentException(
+                "Supernet prefix must be between 0 and {$this->networkSize}, got {$prefix}"
+            );
+        }
+
+        return new self((new self($this->ip, $prefix))->networkAddress(), $prefix);
+    }
+
+    /**
      * Check if this subnet fully contains another subnet.
      *
      * @param self $other

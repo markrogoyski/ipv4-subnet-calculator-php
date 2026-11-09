@@ -992,6 +992,119 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    #[DataProvider('dataProviderForSupernets')]
+    public function testSupernetReturnsCanonicalEnclosingBlock(string $cidr, int $prefix, string $expectedCidr): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // When
+        $supernet = $subnet->supernet($prefix);
+
+        // Then
+        $this->assertSame($expectedCidr, $supernet->cidr());
+        $this->assertSame($prefix, $supernet->networkSize());
+        $this->assertSame($supernet->networkCidr(), $supernet->cidr());
+        $this->assertSame($supernet->networkAddress()->asQuads(), $supernet->ipAddress()->asQuads());
+        $this->assertTrue($supernet->contains($subnet));
+        $this->assertSame($cidr, $subnet->cidr());
+    }
+
+    /**
+     * @return array<string, array{string, int, string}>
+     */
+    public static function dataProviderForSupernets(): array
+    {
+        return [
+            '/24 to /16'                 => ['192.168.1.0/24', 16, '192.168.0.0/16'],
+            '/24 to /8'                  => ['192.168.1.0/24', 8, '192.0.0.0/8'],
+            '/24 to /0'                  => ['192.168.1.0/24', 0, '0.0.0.0/0'],
+            '/24 to /23'                 => ['192.168.1.0/24', 23, '192.168.0.0/23'],
+            '/24 equal prefix'           => ['192.168.1.0/24', 24, '192.168.1.0/24'],
+            'host bits set to /16'       => ['192.168.1.77/24', 16, '192.168.0.0/16'],
+            'host bits set equal prefix' => ['192.168.1.77/24', 24, '192.168.1.0/24'],
+            '/32 to /31'                 => ['10.0.0.5/32', 31, '10.0.0.4/31'],
+            '/32 equal prefix'           => ['10.0.0.5/32', 32, '10.0.0.5/32'],
+            '/32 to /0'                  => ['255.255.255.255/32', 0, '0.0.0.0/0'],
+            '/31 to /30'                 => ['10.0.0.6/31', 30, '10.0.0.4/30'],
+            '/31 host bits set to /30'   => ['10.0.0.7/31', 30, '10.0.0.4/30'],
+            '/31 host bits set equal'    => ['10.0.0.7/31', 31, '10.0.0.6/31'],
+            '/0 equal prefix'            => ['203.0.113.7/0', 0, '0.0.0.0/0'],
+            'top of address space to /1' => ['255.255.255.255/31', 1, '128.0.0.0/1'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForSupernetRoundTrips')]
+    public function testSupernetContainsOriginalAtEveryValidPrefix(string $cidr): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+        $prefixes = \range(0, $subnet->networkSize());
+
+        // When
+        $supernets = \array_map(static fn (int $prefix): Subnet => $subnet->supernet($prefix), $prefixes);
+
+        // Then
+        $this->assertSame($prefixes, \array_map(static fn (Subnet $supernet): int => $supernet->networkSize(), $supernets));
+        $this->assertSame(
+            \array_fill(0, \count($prefixes), true),
+            \array_map(static fn (Subnet $supernet): bool => $supernet->contains($subnet), $supernets)
+        );
+        $this->assertSame(
+            \array_map(static fn (Subnet $supernet): string => $supernet->networkCidr(), $supernets),
+            \array_map(static fn (Subnet $supernet): string => $supernet->cidr(), $supernets)
+        );
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForSupernetRoundTrips(): array
+    {
+        return [
+            '/24'               => ['192.168.1.0/24'],
+            '/24 host bits set' => ['192.168.1.77/24'],
+            '/31'               => ['10.0.0.7/31'],
+            '/32'               => ['10.0.0.5/32'],
+            '/0'                => ['203.0.113.7/0'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForInvalidSupernetPrefixes')]
+    public function testSupernetRejectsPrefixOutsideRange(string $cidr, int $prefix, string $expectedMessage): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr($cidr);
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedMessage);
+
+        // When
+        $subnet->supernet($prefix);
+    }
+
+    /**
+     * @return array<string, array{string, int, string}>
+     */
+    public static function dataProviderForInvalidSupernetPrefixes(): array
+    {
+        return [
+            'current plus one'       => ['192.168.1.0/24', 25, 'Supernet prefix must be between 0 and 24, got 25'],
+            'negative prefix'        => ['192.168.1.0/24', -1, 'Supernet prefix must be between 0 and 24, got -1'],
+            'prefix exceeds IPv4'    => ['192.168.1.0/24', 33, 'Supernet prefix must be between 0 and 24, got 33'],
+            'minimum integer prefix' => ['192.168.1.0/24', \PHP_INT_MIN, 'Supernet prefix must be between 0 and 24, got ' . \PHP_INT_MIN],
+            'maximum integer prefix' => ['192.168.1.0/24', \PHP_INT_MAX, 'Supernet prefix must be between 0 and 24, got ' . \PHP_INT_MAX],
+            '/32 prefix exceeds'     => ['10.0.0.5/32', 33, 'Supernet prefix must be between 0 and 32, got 33'],
+            '/31 current plus one'   => ['10.0.0.6/31', 32, 'Supernet prefix must be between 0 and 31, got 32'],
+            '/0 current plus one'    => ['0.0.0.0/0', 1, 'Supernet prefix must be between 0 and 0, got 1'],
+            '/0 negative prefix'     => ['0.0.0.0/0', -1, 'Supernet prefix must be between 0 and 0, got -1'],
+        ];
+    }
+
+    #[Test]
     public function splitIteratorIsLazyForEntireAddressSpace(): void
     {
         // Given - /0 into /32 would be 4.3 billion subnets if materialized

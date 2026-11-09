@@ -12,6 +12,7 @@
 - **`IPAddress::compare()`**: Orders addresses by unsigned 32-bit integer value (`-1`, `0`, `1`), for use with `usort()`
 - **`IPAddress::next()`**: Returns the following address, carrying across octet boundaries; throws `\RuntimeException` at `255.255.255.255`
 - **`IPAddress::previous()`**: Returns the preceding address, carrying across octet boundaries; throws `\RuntimeException` at `0.0.0.0`
+- **`Subnet::supernet()`**: Returns the canonical enclosing block at a shorter or equal prefix (e.g., `192.168.1.0/24` to `/16` gives `192.168.0.0/16`); throws `\InvalidArgumentException` for a prefix outside 0 to the current prefix
 
 ## v5.2.0 - 2026-11-07
 
