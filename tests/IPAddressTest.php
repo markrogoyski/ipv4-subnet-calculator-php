@@ -1218,4 +1218,172 @@ class IPAddressTest extends \PHPUnit\Framework\TestCase
             'max' => ['255.255.255.255', '"255.255.255.255"'],
         ];
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForCompare')]
+    public function testCompareOrdersByUnsignedIntegerValue(string $left, string $right, int $expected): void
+    {
+        // Given
+        $leftIp = new IPAddress($left);
+        $rightIp = new IPAddress($right);
+
+        // When
+        $result = $leftIp->compare($rightIp);
+
+        // Then
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function dataProviderForCompare(): array
+    {
+        return [
+            'lower first octet before higher' => ['9.255.255.255', '10.0.0.0', -1],
+            'higher first octet after lower'  => ['10.0.0.0', '9.255.255.255', 1],
+            'private A before private C'      => ['10.0.0.0', '192.168.0.1', -1],
+            'private C before max'            => ['192.168.0.1', '255.255.255.255', -1],
+            'high bit clear before high bit'  => ['127.255.255.255', '128.0.0.0', -1],
+            'max after zero'                  => ['255.255.255.255', '0.0.0.0', 1],
+            'equal private addresses'         => ['192.168.0.1', '192.168.0.1', 0],
+            'equal zero addresses'            => ['0.0.0.0', '0.0.0.0', 0],
+            'equal max addresses'             => ['255.255.255.255', '255.255.255.255', 0],
+        ];
+    }
+
+    #[Test]
+    public function testCompareSortsAddressesWithUsort(): void
+    {
+        // Given - Unsorted addresses spanning both ends of the space, including a duplicate
+        $addresses = \array_map(static fn (string $ip): IPAddress => new IPAddress($ip), [
+            '192.168.0.1',
+            '255.255.255.255',
+            '10.0.0.0',
+            '0.0.0.0',
+            '9.255.255.255',
+            '128.0.0.0',
+            '10.0.0.0',
+        ]);
+
+        // When
+        \usort($addresses, static fn (IPAddress $left, IPAddress $right): int => $left->compare($right));
+
+        // Then
+        $this->assertSame([
+            '0.0.0.0',
+            '9.255.255.255',
+            '10.0.0.0',
+            '10.0.0.0',
+            '128.0.0.0',
+            '192.168.0.1',
+            '255.255.255.255',
+        ], \array_map(static fn (IPAddress $ip): string => $ip->asQuads(), $addresses));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForNext')]
+    public function testNextReturnsFollowingAddress(string $ipAddress, string $expected): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $next = $ip->next();
+
+        // Then
+        $this->assertSame($expected, $next->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForNext(): array
+    {
+        return [
+            'within last octet'       => ['10.0.0.1', '10.0.0.2'],
+            'carry into third octet'  => ['10.0.0.255', '10.0.1.0'],
+            'carry into second octet' => ['10.0.255.255', '10.1.0.0'],
+            'carry into first octet'  => ['10.255.255.255', '11.0.0.0'],
+            'carry into high bit'     => ['127.255.255.255', '128.0.0.0'],
+            'from zero'               => ['0.0.0.0', '0.0.0.1'],
+            'up to max'               => ['255.255.255.254', '255.255.255.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForPrevious')]
+    public function testPreviousReturnsPrecedingAddress(string $ipAddress, string $expected): void
+    {
+        // Given
+        $ip = new IPAddress($ipAddress);
+
+        // When
+        $previous = $ip->previous();
+
+        // Then
+        $this->assertSame($expected, $previous->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForPrevious(): array
+    {
+        return [
+            'within last octet'        => ['10.0.0.2', '10.0.0.1'],
+            'borrow from third octet'  => ['10.0.1.0', '10.0.0.255'],
+            'borrow from second octet' => ['10.1.0.0', '10.0.255.255'],
+            'borrow from first octet'  => ['11.0.0.0', '10.255.255.255'],
+            'borrow from high bit'     => ['128.0.0.0', '127.255.255.255'],
+            'from max'                 => ['255.255.255.255', '255.255.255.254'],
+            'down to zero'             => ['0.0.0.1', '0.0.0.0'],
+        ];
+    }
+
+    #[Test]
+    public function testNextAndPreviousDoNotMutateReceiver(): void
+    {
+        // Given
+        $ip = new IPAddress('10.0.0.255');
+
+        // When
+        $next = $ip->next();
+        $previous = $ip->previous();
+
+        // Then
+        $this->assertSame(
+            ['10.0.0.255', '10.0.1.0', '10.0.0.254'],
+            [$ip->asQuads(), $next->asQuads(), $previous->asQuads()]
+        );
+        $this->assertNotSame($ip, $next);
+    }
+
+    #[Test]
+    public function testNextThrowsAtMaximumAddress(): void
+    {
+        // Given
+        $ip = new IPAddress('255.255.255.255');
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Next address would exceed valid IPv4 address range');
+
+        // When
+        $ip->next();
+    }
+
+    #[Test]
+    public function testPreviousThrowsAtMinimumAddress(): void
+    {
+        // Given
+        $ip = new IPAddress('0.0.0.0');
+
+        // Then
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Previous address would be below valid IPv4 address range');
+
+        // When
+        $ip->previous();
+    }
 }

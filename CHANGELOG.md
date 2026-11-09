@@ -9,6 +9,9 @@
 - **`IPRange::overlaps()`**: Checks whether two ranges share at least one address
 - **`IPRange::intersection()`**: Returns the addresses two ranges share, or `null` if they are disjoint
 - **`IPRange::isAdjacent()`**: Checks whether two disjoint ranges are contiguous
+- **`IPAddress::compare()`**: Orders addresses by unsigned 32-bit integer value (`-1`, `0`, `1`), for use with `usort()`
+- **`IPAddress::next()`**: Returns the following address, carrying across octet boundaries; throws `\RuntimeException` at `255.255.255.255`
+- **`IPAddress::previous()`**: Returns the preceding address, carrying across octet boundaries; throws `\RuntimeException` at `0.0.0.0`
 
 ## v5.2.0 - 2026-11-07
 

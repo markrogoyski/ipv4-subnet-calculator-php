@@ -375,6 +375,52 @@ final class IPAddress implements \JsonSerializable, \Stringable
     }
 
     /**
+     * Compare with another IP address by unsigned integer value.
+     *
+     * Usable as a usort() callback to order addresses numerically.
+     *
+     * @param self $other
+     *
+     * @return int -1 if this address is lower, 0 if equal, 1 if higher
+     */
+    public function compare(self $other): int
+    {
+        return $this->intValue <=> $other->intValue;
+    }
+
+    /**
+     * Get the next IP address, carrying across octet boundaries.
+     *
+     * @return self
+     *
+     * @throws \RuntimeException If this is 255.255.255.255
+     */
+    public function next(): self
+    {
+        if ($this->intValue === IPv4::MAX_ADDRESS) {
+            throw new \RuntimeException('Next address would exceed valid IPv4 address range');
+        }
+
+        return self::fromInteger($this->intValue + 1);
+    }
+
+    /**
+     * Get the previous IP address, borrowing across octet boundaries.
+     *
+     * @return self
+     *
+     * @throws \RuntimeException If this is 0.0.0.0
+     */
+    public function previous(): self
+    {
+        if ($this->intValue === 0) {
+            throw new \RuntimeException('Previous address would be below valid IPv4 address range');
+        }
+
+        return self::fromInteger($this->intValue - 1);
+    }
+
+    /**
      * Get the IP address as a 32-bit unsigned integer.
      *
      * @return int

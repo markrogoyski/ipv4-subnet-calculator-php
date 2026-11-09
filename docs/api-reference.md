@@ -1165,6 +1165,45 @@ equals(IPAddress $other): bool
 ```
 Compare with another IPAddress.
 
+##### compare()
+```php
+compare(IPAddress $other): int
+```
+Order addresses by unsigned 32-bit integer value. Returns `-1` if this address is lower, `0` if equal, `1` if higher; usable as a `usort()` callback.
+
+**Example:**
+```php
+$addresses = [new IPAddress('192.168.0.1'), new IPAddress('10.0.0.0'), new IPAddress('9.255.255.255')];
+usort($addresses, fn (IPAddress $a, IPAddress $b): int => $a->compare($b));
+// 9.255.255.255, 10.0.0.0, 192.168.0.1
+```
+
+##### next()
+```php
+next(): IPAddress
+```
+Get the following address, carrying across octet boundaries. Returns a new instance.
+
+Throws `\RuntimeException` if the address is 255.255.255.255.
+
+**Example:**
+```php
+$next = (new IPAddress('10.0.0.255'))->next();  // 10.0.1.0
+```
+
+##### previous()
+```php
+previous(): IPAddress
+```
+Get the preceding address, borrowing across octet boundaries. Returns a new instance.
+
+Throws `\RuntimeException` if the address is 0.0.0.0.
+
+**Example:**
+```php
+$previous = (new IPAddress('10.0.1.0'))->previous();  // 10.0.0.255
+```
+
 ---
 
 ### SubnetMask Class
