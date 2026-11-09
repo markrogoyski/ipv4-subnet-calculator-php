@@ -34,6 +34,8 @@ $subnet->containsIP('192.168.1.100');  // true
 Features
 --------
 
+IPv4 only. IPv6 is out of scope: the library relies on native 64-bit integer arithmetic and has no bcmath/gmp dependency.
+
 ### Core Capabilities
  * **Network Calculations** - Subnet masks, wildcard masks, network/host portions, broadcast addresses
  * **IP Address Operations** - Range detection, type classification (private, public, loopback, multicast, etc.), global reachability
@@ -89,6 +91,9 @@ composer install
     * (For 32-bit architecture, use [v4.4](https://github.com/markrogoyski/ipv4-subnet-calculator-php/releases/tag/v4.4.0))
 * **PHP extensions**: `ctype`, `filter` (both enabled by default in standard PHP builds)
 * **Upgrading from v4?** See the **[Migration Guide](docs/migration-v4-to-v5.md)**
+
+### Versioning
+This library follows [Semantic Versioning](https://semver.org/): breaking changes are made only in major releases.
 
 **[Detailed Installation Guide →](docs/getting-started.md)**
 
