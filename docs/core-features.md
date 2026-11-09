@@ -341,6 +341,9 @@ $start = new IPAddress('10.0.0.1');
 $end = new IPAddress('10.0.0.10');
 $range = new IPRange($start, $end);
 
+// Or from dotted-quad strings (strings and IPAddress objects can be mixed)
+$range = new IPRange('10.0.0.1', '10.0.0.10');
+
 // Count IPs in the range
 echo "Range contains: " . \count($range) . " IPs\n";  // 10
 
@@ -368,6 +371,24 @@ foreach ($range->toSubnets() as $subnet) {
 ```
 
 The endpoints are inclusive, and no addresses outside them are included. This works for arbitrary ranges, including `hostRange()` results, without iterating over individual addresses. See [Exact Range-to-CIDR Conversion](advanced-features.md#exact-range-to-cidr-conversion) for how this differs from parsing and summarization.
+
+#### Compare Ranges
+
+Ranges that are not CIDR-aligned, such as DHCP pools, can be compared directly:
+
+```php
+$engineering = new IPv4\IPRange('192.168.10.100', '192.168.10.199');
+$sales = new IPv4\IPRange('192.168.10.150', '192.168.10.250');
+
+$engineering->overlaps($sales);       // true
+echo $engineering->intersection($sales);  // 192.168.10.150 - 192.168.10.199 (null if disjoint)
+$engineering->isAdjacent(new IPv4\IPRange('192.168.10.200', '192.168.10.250'));  // true
+
+$scope = IPv4\Subnet::fromCidr('192.168.10.0/24')->hostRange();
+$scope->containsRange($sales);        // true
+```
+
+These methods take an `IPRange`; convert a subnet with `addressRange()` or `hostRange()`. See [Detect Overlapping DHCP Pools](examples.md#detect-overlapping-dhcp-pools) for a fuller example.
 
 ### Check if IP is in Subnet
 

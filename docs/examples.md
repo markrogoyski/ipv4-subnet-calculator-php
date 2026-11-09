@@ -725,6 +725,47 @@ echo \str_repeat('=', 80) . "\n\n";
 echo $planner->exportDHCPConfig($scopes);
 ```
 
+### Detect Overlapping DHCP Pools
+
+DHCP pools are rarely CIDR-aligned, so compare them as `IPRange` objects. Two pools that overlap can lease the same address twice; a pool outside its scope hands out addresses the router cannot reach.
+
+```php
+<?php
+
+$pools = [
+    'Engineering' => new IPv4\IPRange('192.168.10.100', '192.168.10.199'),
+    'Sales'       => new IPv4\IPRange('192.168.10.150', '192.168.10.250'),
+    'Guest'       => new IPv4\IPRange('192.168.11.10', '192.168.11.254'),
+];
+
+// Report every overlapping pair once
+$names = \array_keys($pools);
+foreach ($names as $i => $a) {
+    foreach (\array_slice($names, $i + 1) as $b) {
+        $overlap = $pools[$a]->intersection($pools[$b]);
+        if ($overlap !== null) {
+            echo "{$a} and {$b} overlap: {$overlap} (" . \count($overlap) . " addresses)\n";
+        }
+    }
+}
+// Engineering and Sales overlap: 192.168.10.150 - 192.168.10.199 (50 addresses)
+
+// Check that each pool fits within its scope's usable hosts
+// (IPRange methods take ranges, so convert the subnet with hostRange() or addressRange())
+$scope = IPv4\Subnet::fromCidr('192.168.10.0/24')->hostRange();
+\var_dump($scope->containsRange($pools['Sales']));  // bool(true)
+\var_dump($scope->containsRange($pools['Guest']));  // bool(false)
+
+// Contiguous pools can be merged into one
+$first = new IPv4\IPRange('192.168.20.10', '192.168.20.99');
+$second = new IPv4\IPRange('192.168.20.100', '192.168.20.199');
+if ($first->isAdjacent($second)) {
+    echo new IPv4\IPRange($first->start(), $second->end()) . "\n";  // 192.168.20.10 - 192.168.20.199
+}
+```
+
+`overlaps()` answers the yes/no question without building the shared range. A pool that ends exactly where another starts (`.199` and `.200`) is adjacent, not overlapping.
+
 ---
 
 ## DNS Configuration

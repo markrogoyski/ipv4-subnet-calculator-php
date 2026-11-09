@@ -1289,15 +1289,25 @@ describe($subnet->wildcardMask());  // '/24 = 0.0.0.255'
 #### Construction
 
 ```php
-new IPRange(IPAddress $start, IPAddress $end): IPRange
+new IPRange(string|IPAddress $start, string|IPAddress $end): IPRange
 ```
 
-**Example:**
+Each address may be a dotted-quad string or an `IPAddress`, in any combination. `IPAddress` instances are stored as given, so `start()` and `end()` return the same objects.
+
+Throws `\InvalidArgumentException` if either string is not a valid IPv4 address, or if start is greater than end.
+
+**Examples:**
 ```php
 $range = new IPRange(
     new IPAddress('192.168.1.0'),
     new IPAddress('192.168.1.255')
 );
+
+$pool = new IPRange('192.168.10.100', '192.168.10.199');  // 100 addresses
+$mixed = new IPRange('10.0.0.1', new IPAddress('10.0.0.10'));
+
+new IPRange('192.168.1.100', '192.168.1.50');  // InvalidArgumentException: Start IP '192.168.1.100' is greater than end IP '192.168.1.50'
+new IPRange('10.0.0.1', '10.0.0.256');         // InvalidArgumentException: Invalid IPv4 address: '10.0.0.256'
 ```
 
 #### Methods
@@ -1369,6 +1379,77 @@ contains(string|IPAddress $ip): bool
 ```
 Check if an IP is within the range.
 Throws `\InvalidArgumentException` if `$ip` is a string that is not a valid IPv4 address.
+
+`contains()` checks a single address. To compare two ranges, use `containsRange()`, `overlaps()`, `intersection()` or `isAdjacent()` below.
+
+The range relations take an `IPRange` only, not a `Subnet`. Convert a subnet with `$subnet->addressRange()` (every address, network to broadcast) or `$subnet->hostRange()` (usable hosts only; for `/31` and `/32` this is the same as the address range). All four compare the range endpoints in O(1) time and never throw.
+
+##### containsRange()
+```php
+containsRange(IPRange $other): bool
+```
+Check if every address of `$other` is within this range. Containment is inclusive: a range contains itself, and shared endpoints count.
+
+**Examples:**
+```php
+$scope = Subnet::fromCidr('192.168.10.0/24')->hostRange();  // 192.168.10.1 - 192.168.10.254
+$scope->containsRange(new IPRange('192.168.10.150', '192.168.10.250'));  // true
+$scope->containsRange(new IPRange('192.168.10.150', '192.168.10.255'));  // false (includes the broadcast address)
+
+$p2p = Subnet::fromCidr('192.0.2.6/31')->addressRange();
+$p2p->containsRange(new IPRange('192.0.2.7', '192.0.2.7'));  // true (a /32 inside a /31)
+```
+
+##### overlaps()
+```php
+overlaps(IPRange $other): bool
+```
+Check if the two ranges share at least one address. Symmetric; a single shared endpoint counts, but touching ranges (one ends just before the other starts) do not overlap.
+
+**Examples:**
+```php
+$engineering = new IPRange('192.168.10.100', '192.168.10.199');
+$engineering->overlaps(new IPRange('192.168.10.150', '192.168.10.250'));  // true
+$engineering->overlaps(new IPRange('192.168.10.200', '192.168.10.250'));  // false (touching, not overlapping)
+```
+
+##### intersection()
+```php
+intersection(IPRange $other): ?IPRange
+```
+Return the addresses shared by both ranges, from the larger start to the smaller end, or `null` if the ranges are disjoint. Unlike `Subnet::intersection()`, the result need not be either input: partially overlapping ranges give the overlapping part.
+
+**Examples:**
+```php
+$engineering = new IPRange('192.168.10.100', '192.168.10.199');
+$sales = new IPRange('192.168.10.150', '192.168.10.250');
+
+echo $engineering->intersection($sales);  // 192.168.10.150 - 192.168.10.199
+$engineering->intersection(new IPRange('192.168.11.10', '192.168.11.254'));  // null
+
+// A single shared address gives a one-address range
+echo (new IPRange('192.0.2.0', '192.0.2.8'))->intersection(new IPRange('192.0.2.8', '192.0.2.15'));  // 192.0.2.8 - 192.0.2.8
+```
+
+##### isAdjacent()
+```php
+isAdjacent(IPRange $other): bool
+```
+Check if the two ranges are disjoint and contiguous: one ends immediately before the other starts, in either order. Overlapping and identical ranges are not adjacent, matching `Subnet::isAdjacent()`. The address space does not wrap, so a range ending at `255.255.255.255` is not adjacent to one starting at `0.0.0.0`.
+
+**Examples:**
+```php
+$first = new IPRange('192.168.20.10', '192.168.20.99');
+$second = new IPRange('192.168.20.100', '192.168.20.199');
+$first->isAdjacent($second);  // true
+$second->isAdjacent($first);  // true
+
+// Consecutive /32s and /31s are adjacent
+(new IPRange('192.0.2.7', '192.0.2.7'))->isAdjacent(new IPRange('192.0.2.8', '192.0.2.8'));  // true
+(new IPRange('192.0.2.6', '192.0.2.7'))->isAdjacent(new IPRange('192.0.2.8', '192.0.2.9'));  // true
+
+(new IPRange('0.0.0.0', '0.0.0.0'))->isAdjacent(new IPRange('255.255.255.255', '255.255.255.255'));  // false (no wrap)
+```
 
 ##### equals()
 ```php

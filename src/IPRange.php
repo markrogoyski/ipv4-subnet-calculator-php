@@ -22,25 +22,31 @@ final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable
 {
     private readonly int $startInt;
     private readonly int $endInt;
+    private readonly IPAddress $start;
+    private readonly IPAddress $end;
 
     /**
      * Create an IP range from start and end addresses.
      *
-     * @param IPAddress $start First IP in range
-     * @param IPAddress $end   Last IP in range
+     * Each address may be a dotted-quad string or an IPAddress, in any combination.
+     * IPAddress instances are stored as given.
      *
-     * @throws \InvalidArgumentException If start is greater than end
+     * @param string|IPAddress $start First IP in range
+     * @param string|IPAddress $end   Last IP in range
+     *
+     * @throws \InvalidArgumentException If start or end is a string that is not a valid IPv4 address,
+     *                                   or start is greater than end
      */
-    public function __construct(
-        private readonly IPAddress $start,
-        private readonly IPAddress $end,
-    ) {
-        $this->startInt = $start->asInteger();
-        $this->endInt = $end->asInteger();
+    public function __construct(string|IPAddress $start, string|IPAddress $end)
+    {
+        $this->start = \is_string($start) ? new IPAddress($start) : $start;
+        $this->end = \is_string($end) ? new IPAddress($end) : $end;
+        $this->startInt = $this->start->asInteger();
+        $this->endInt = $this->end->asInteger();
 
         if ($this->startInt > $this->endInt) {
             throw new \InvalidArgumentException(
-                "Start IP '{$start}' is greater than end IP '{$end}'"
+                "Start IP '{$this->start}' is greater than end IP '{$this->end}'"
             );
         }
     }
@@ -134,6 +140,71 @@ final class IPRange implements \IteratorAggregate, \Countable, \JsonSerializable
         $ipInt = $ip->asInteger();
 
         return $ipInt >= $this->startInt && $ipInt <= $this->endInt;
+    }
+
+    /**
+     * Check if another range lies entirely within this range.
+     *
+     * Containment is inclusive: a range contains itself, and shared endpoints count.
+     *
+     * @param self $other Range to check
+     *
+     * @return bool True if every address of $other is in this range
+     */
+    public function containsRange(self $other): bool
+    {
+        return $this->startInt <= $other->startInt && $other->endInt <= $this->endInt;
+    }
+
+    /**
+     * Check if this range shares at least one address with another range.
+     *
+     * Symmetric: $a->overlaps($b) === $b->overlaps($a). A single shared endpoint counts.
+     *
+     * @param self $other Range to check
+     *
+     * @return bool True if the ranges have any address in common
+     */
+    public function overlaps(self $other): bool
+    {
+        return $this->startInt <= $other->endInt && $other->startInt <= $this->endInt;
+    }
+
+    /**
+     * Get the addresses shared by this range and another range.
+     *
+     * The result runs from the larger of the two starts to the smaller of the two ends.
+     *
+     * @param self $other Range to intersect with
+     *
+     * @return self|null The shared range, or null if the ranges are disjoint
+     */
+    public function intersection(self $other): ?self
+    {
+        if (!$this->overlaps($other)) {
+            return null;
+        }
+
+        return new self(
+            $this->startInt >= $other->startInt ? $this->start : $other->start,
+            $this->endInt <= $other->endInt ? $this->end : $other->end,
+        );
+    }
+
+    /**
+     * Check if this range and another range are disjoint and contiguous.
+     *
+     * True when one range ends immediately before the other starts, in either order.
+     * Overlapping or identical ranges are not adjacent, and the address space does not
+     * wrap: 255.255.255.255 is not adjacent to 0.0.0.0.
+     *
+     * @param self $other Range to check
+     *
+     * @return bool True if the ranges touch without overlapping
+     */
+    public function isAdjacent(self $other): bool
+    {
+        return $this->endInt + 1 === $other->startInt || $other->endInt + 1 === $this->startInt;
     }
 
     /**

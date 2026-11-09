@@ -899,4 +899,492 @@ class IPRangeTest extends \PHPUnit\Framework\TestCase
             'entire IPv4 space /0' => ['0.0.0.0', '255.255.255.255', '{"start":"0.0.0.0","end":"255.255.255.255"}'],
         ];
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForDottedQuadStringRanges')]
+    public function testConstructorAcceptsDottedQuadStrings(string $start, string $end, int $expectedCount): void
+    {
+        // Given dotted-quad $start and $end strings
+
+        // When
+        $range = new IPRange($start, $end);
+
+        // Then
+        $this->assertSame(
+            [$start, $end, $expectedCount],
+            [$range->start()->asQuads(), $range->end()->asQuads(), $range->count()]
+        );
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function dataProviderForDottedQuadStringRanges(): array
+    {
+        return [
+            'DHCP pool'              => ['192.168.10.100', '192.168.10.199', 100],
+            'RFC 3021 /31'           => ['192.0.2.6', '192.0.2.7', 2],
+            'single host /32'        => ['192.0.2.7', '192.0.2.7', 1],
+            'entire IPv4 space'      => ['0.0.0.0', '255.255.255.255', 4294967296],
+            'start of address space' => ['0.0.0.0', '0.0.0.3', 4],
+            'end of address space'   => ['255.255.255.252', '255.255.255.255', 4],
+        ];
+    }
+
+    #[Test]
+    public function testConstructorAcceptsStringStartAndIPAddressEnd(): void
+    {
+        // Given
+        $end = new IPAddress('10.0.0.10');
+
+        // When
+        $range = new IPRange('10.0.0.1', $end);
+
+        // Then
+        $this->assertSame('10.0.0.1', $range->start()->asQuads());
+        $this->assertSame($end, $range->end());
+    }
+
+    #[Test]
+    public function testConstructorAcceptsIPAddressStartAndStringEnd(): void
+    {
+        // Given
+        $start = new IPAddress('10.0.0.1');
+
+        // When
+        $range = new IPRange($start, '10.0.0.10');
+
+        // Then
+        $this->assertSame($start, $range->start());
+        $this->assertSame('10.0.0.10', $range->end()->asQuads());
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForInvalidAddressStrings')]
+    public function testConstructorRejectsInvalidAddressStrings(string $start, string $end, string $expectedMessage): void
+    {
+        // Given a $start or $end string that is not a valid IPv4 address
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/\A' . \preg_quote($expectedMessage, '/') . '\z/');
+
+        // When
+        new IPRange($start, $end);
+    }
+
+    /**
+     * @return array<string, array{string, string, string}>
+     */
+    public static function dataProviderForInvalidAddressStrings(): array
+    {
+        return [
+            'start octet out of range' => ['256.0.0.1', '10.0.0.10', "Invalid IPv4 address: '256.0.0.1'"],
+            'start not an address'     => ['not-an-ip', '10.0.0.10', "Invalid IPv4 address: 'not-an-ip'"],
+            'start empty'              => ['', '10.0.0.10', "Invalid IPv4 address: ''"],
+            'start truncated'          => ['10.0.0', '10.0.0.10', "Invalid IPv4 address: '10.0.0'"],
+            'end octet out of range'   => ['10.0.0.1', '10.0.0.256', "Invalid IPv4 address: '10.0.0.256'"],
+            'both invalid'             => ['not-an-ip', '10.0.0.256', "Invalid IPv4 address: 'not-an-ip'"],
+        ];
+    }
+
+    #[Test]
+    public function testConstructorRejectsReversedStringRange(): void
+    {
+        // Given
+        $start = '192.168.1.100';
+        $end = '192.168.1.50';
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches(
+            '/\A' . \preg_quote("Start IP '192.168.1.100' is greater than end IP '192.168.1.50'", '/') . '\z/'
+        );
+
+        // When
+        new IPRange($start, $end);
+    }
+
+    #[Test]
+    public function testConstructorAcceptsNamedStringArguments(): void
+    {
+        // Given
+        $start = '10.0.0.1';
+        $end = '10.0.0.10';
+
+        // When
+        $range = new IPRange(end: $end, start: $start);
+
+        // Then
+        $this->assertSame('10.0.0.1 - 10.0.0.10', (string) $range);
+    }
+
+    #[Test]
+    public function testConstructorStoresSameIPAddressInstanceForSingleAddressRange(): void
+    {
+        // Given
+        $ip = new IPAddress('192.0.2.7');
+
+        // When
+        $range = new IPRange($ip, $ip);
+
+        // Then
+        $this->assertSame($ip, $range->start());
+        $this->assertSame($ip, $range->end());
+        $this->assertSame(1, $range->count());
+    }
+
+    #[Test]
+    public function testConstructorAcceptsNamedIPAddressArguments(): void
+    {
+        // Given
+        $start = new IPAddress('10.0.0.1');
+        $end = new IPAddress('10.0.0.10');
+
+        // When
+        $inOrder = new IPRange(start: $start, end: $end);
+        $reversed = new IPRange(end: $end, start: $start);
+
+        // Then
+        $this->assertSame(
+            ['10.0.0.1 - 10.0.0.10', '10.0.0.1 - 10.0.0.10'],
+            [(string) $inOrder, (string) $reversed]
+        );
+        $this->assertSame($start, $reversed->start());
+        $this->assertSame($end, $reversed->end());
+    }
+
+    #[Test]
+    public function testContainsAcceptsNamedIpArgument(): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress('10.0.0.1'), new IPAddress('10.0.0.10'));
+
+        // When
+        $results = [$range->contains(ip: '10.0.0.1'), $range->contains(ip: new IPAddress('10.0.0.11'))];
+
+        // Then
+        $this->assertSame([true, false], $results);
+    }
+
+    #[Test]
+    public function testNativeSerializationKeepsPropertyLayout(): void
+    {
+        // Given
+        $range = new IPRange(new IPAddress('192.0.2.0'), new IPAddress('192.0.2.255'));
+
+        // When
+        $keys = \array_keys(\get_mangled_object_vars($range));
+        $restored = \unserialize(\serialize($range));
+
+        // Then
+        $this->assertSame(
+            ["\0IPv4\IPRange\0startInt", "\0IPv4\IPRange\0endInt", "\0IPv4\IPRange\0start", "\0IPv4\IPRange\0end"],
+            $keys
+        );
+        $this->assertInstanceOf(IPRange::class, $restored);
+        $this->assertTrue($restored->equals($range));
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForContainsRange')]
+    public function testContainsRangeChecksWhetherOtherRangeIsInside(
+        string $aStart,
+        string $aEnd,
+        string $bStart,
+        string $bEnd,
+        bool $aContainsB,
+        bool $bContainsA
+    ): void {
+        // Given
+        $a = new IPRange($aStart, $aEnd);
+        $b = new IPRange($bStart, $bEnd);
+
+        // When
+        $results = [$a->containsRange($b), $b->containsRange($a)];
+
+        // Then
+        $this->assertSame([$aContainsB, $bContainsA], $results);
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, bool, bool}>
+     */
+    public static function dataProviderForContainsRange(): array
+    {
+        return [
+            'identical'                      => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.255',     true, true],
+            'nested'                         => ['192.0.2.0',       '192.0.2.255',     '192.0.2.64',      '192.0.2.127',     true, false],
+            'shared start'                   => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.15',      true, false],
+            'shared end'                     => ['192.0.2.0',       '192.0.2.255',     '192.0.2.240',     '192.0.2.255',     true, false],
+            'partial overlap on the left'    => ['192.0.2.4',       '192.0.2.11',      '192.0.2.0',       '192.0.2.7',       false, false],
+            'partial overlap on the right'   => ['192.0.2.0',       '192.0.2.7',       '192.0.2.4',       '192.0.2.11',      false, false],
+            'overlap of one shared endpoint' => ['192.0.2.0',       '192.0.2.8',       '192.0.2.8',       '192.0.2.15',      false, false],
+            'touching'                       => ['192.0.2.0',       '192.0.2.7',       '192.0.2.8',       '192.0.2.15',      false, false],
+            'touching across an octet'       => ['192.0.2.128',     '192.0.2.255',     '192.0.3.0',       '192.0.3.127',     false, false],
+            'one-address gap'                => ['192.0.2.0',       '192.0.2.7',       '192.0.2.9',       '192.0.2.15',      false, false],
+            'wide gap'                       => ['10.0.0.0',        '10.0.0.255',      '192.0.2.0',       '192.0.2.255',     false, false],
+            'single address inside'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.100',     '192.0.2.100',     true, false],
+            'single address at start'        => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.0',       true, false],
+            'single address at end'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.255',     '192.0.2.255',     true, false],
+            'single address just before'     => ['192.0.2.10',      '192.0.2.20',      '192.0.2.9',       '192.0.2.9',       false, false],
+            'single address just after'      => ['192.0.2.10',      '192.0.2.20',      '192.0.2.21',      '192.0.2.21',      false, false],
+            'single address vs itself'       => ['198.51.100.1',    '198.51.100.1',    '198.51.100.1',    '198.51.100.1',    true, true],
+            '/31 vs member /32'              => ['192.0.2.6',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       true, false],
+            '/31 vs next /31'                => ['192.0.2.6',       '192.0.2.7',       '192.0.2.8',       '192.0.2.9',       false, false],
+            '/32 vs itself'                  => ['192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       true, true],
+            'consecutive /32s'               => ['192.0.2.7',       '192.0.2.7',       '192.0.2.8',       '192.0.2.8',       false, false],
+            'full range vs inner range'      => ['0.0.0.0',         '255.255.255.255', '192.0.2.0',       '192.0.2.255',     true, false],
+            'full range vs full range'       => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '255.255.255.255', true, true],
+            'full range vs 0.0.0.0'          => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '0.0.0.0',         true, false],
+            'full range vs 255.255.255.255'  => ['0.0.0.0',         '255.255.255.255', '255.255.255.255', '255.255.255.255', true, false],
+            'overlapping ranges at 0.0.0.0'  => ['0.0.0.0',         '0.0.0.7',         '0.0.0.4',         '0.0.0.15',        false, false],
+            'touching ranges at 0.0.0.0'     => ['0.0.0.0',         '0.0.0.3',         '0.0.0.4',         '0.0.0.7',         false, false],
+            'overlapping ranges at top'      => ['255.255.255.240', '255.255.255.255', '255.255.255.252', '255.255.255.255', true, false],
+            'touching ranges at top'         => ['255.255.255.248', '255.255.255.251', '255.255.255.252', '255.255.255.255', false, false],
+            '0.0.0.0 vs 255.255.255.255'     => ['0.0.0.0',         '0.0.0.0',         '255.255.255.255', '255.255.255.255', false, false],
+            'first /24 vs last /24'          => ['0.0.0.0',         '0.0.0.255',       '255.255.255.0',   '255.255.255.255', false, false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForOverlaps')]
+    public function testOverlapsChecksForSharedAddressesInEitherOrder(
+        string $aStart,
+        string $aEnd,
+        string $bStart,
+        string $bEnd,
+        bool $expected
+    ): void {
+        // Given
+        $a = new IPRange($aStart, $aEnd);
+        $b = new IPRange($bStart, $bEnd);
+
+        // When
+        $results = [$a->overlaps($b), $b->overlaps($a)];
+
+        // Then
+        $this->assertSame([$expected, $expected], $results);
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, bool}>
+     */
+    public static function dataProviderForOverlaps(): array
+    {
+        return [
+            'identical'                      => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.255',     true],
+            'nested'                         => ['192.0.2.0',       '192.0.2.255',     '192.0.2.64',      '192.0.2.127',     true],
+            'shared start'                   => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.15',      true],
+            'shared end'                     => ['192.0.2.0',       '192.0.2.255',     '192.0.2.240',     '192.0.2.255',     true],
+            'partial overlap on the left'    => ['192.0.2.4',       '192.0.2.11',      '192.0.2.0',       '192.0.2.7',       true],
+            'partial overlap on the right'   => ['192.0.2.0',       '192.0.2.7',       '192.0.2.4',       '192.0.2.11',      true],
+            'overlap of one shared endpoint' => ['192.0.2.0',       '192.0.2.8',       '192.0.2.8',       '192.0.2.15',      true],
+            'touching'                       => ['192.0.2.0',       '192.0.2.7',       '192.0.2.8',       '192.0.2.15',      false],
+            'touching across an octet'       => ['192.0.2.128',     '192.0.2.255',     '192.0.3.0',       '192.0.3.127',     false],
+            'one-address gap'                => ['192.0.2.0',       '192.0.2.7',       '192.0.2.9',       '192.0.2.15',      false],
+            'wide gap'                       => ['10.0.0.0',        '10.0.0.255',      '192.0.2.0',       '192.0.2.255',     false],
+            'single address inside'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.100',     '192.0.2.100',     true],
+            'single address at start'        => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.0',       true],
+            'single address at end'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.255',     '192.0.2.255',     true],
+            'single address just before'     => ['192.0.2.10',      '192.0.2.20',      '192.0.2.9',       '192.0.2.9',       false],
+            'single address just after'      => ['192.0.2.10',      '192.0.2.20',      '192.0.2.21',      '192.0.2.21',      false],
+            'single address vs itself'       => ['198.51.100.1',    '198.51.100.1',    '198.51.100.1',    '198.51.100.1',    true],
+            '/31 vs member /32'              => ['192.0.2.6',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       true],
+            '/31 vs next /31'                => ['192.0.2.6',       '192.0.2.7',       '192.0.2.8',       '192.0.2.9',       false],
+            '/32 vs itself'                  => ['192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       true],
+            'consecutive /32s'               => ['192.0.2.7',       '192.0.2.7',       '192.0.2.8',       '192.0.2.8',       false],
+            'full range vs inner range'      => ['0.0.0.0',         '255.255.255.255', '192.0.2.0',       '192.0.2.255',     true],
+            'full range vs full range'       => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '255.255.255.255', true],
+            'full range vs 0.0.0.0'          => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '0.0.0.0',         true],
+            'full range vs 255.255.255.255'  => ['0.0.0.0',         '255.255.255.255', '255.255.255.255', '255.255.255.255', true],
+            'overlapping ranges at 0.0.0.0'  => ['0.0.0.0',         '0.0.0.7',         '0.0.0.4',         '0.0.0.15',        true],
+            'touching ranges at 0.0.0.0'     => ['0.0.0.0',         '0.0.0.3',         '0.0.0.4',         '0.0.0.7',         false],
+            'overlapping ranges at top'      => ['255.255.255.240', '255.255.255.255', '255.255.255.252', '255.255.255.255', true],
+            'touching ranges at top'         => ['255.255.255.248', '255.255.255.251', '255.255.255.252', '255.255.255.255', false],
+            '0.0.0.0 vs 255.255.255.255'     => ['0.0.0.0',         '0.0.0.0',         '255.255.255.255', '255.255.255.255', false],
+            'first /24 vs last /24'          => ['0.0.0.0',         '0.0.0.255',       '255.255.255.0',   '255.255.255.255', false],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIntersection')]
+    public function testIntersectionReturnsSharedAddressesInEitherOrder(
+        string $aStart,
+        string $aEnd,
+        string $bStart,
+        string $bEnd,
+        ?string $expected
+    ): void {
+        // Given
+        $a = new IPRange($aStart, $aEnd);
+        $b = new IPRange($bStart, $bEnd);
+
+        // When
+        $results = [$a->intersection($b)?->__toString(), $b->intersection($a)?->__toString()];
+
+        // Then
+        $this->assertSame([$expected, $expected], $results);
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, ?string}>
+     */
+    public static function dataProviderForIntersection(): array
+    {
+        return [
+            'identical'                      => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.255',     '192.0.2.0 - 192.0.2.255'],
+            'nested'                         => ['192.0.2.0',       '192.0.2.255',     '192.0.2.64',      '192.0.2.127',     '192.0.2.64 - 192.0.2.127'],
+            'shared start'                   => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.15',      '192.0.2.0 - 192.0.2.15'],
+            'shared end'                     => ['192.0.2.0',       '192.0.2.255',     '192.0.2.240',     '192.0.2.255',     '192.0.2.240 - 192.0.2.255'],
+            'partial overlap on the left'    => ['192.0.2.4',       '192.0.2.11',      '192.0.2.0',       '192.0.2.7',       '192.0.2.4 - 192.0.2.7'],
+            'partial overlap on the right'   => ['192.0.2.0',       '192.0.2.7',       '192.0.2.4',       '192.0.2.11',      '192.0.2.4 - 192.0.2.7'],
+            'overlap of one shared endpoint' => ['192.0.2.0',       '192.0.2.8',       '192.0.2.8',       '192.0.2.15',      '192.0.2.8 - 192.0.2.8'],
+            'touching'                       => ['192.0.2.0',       '192.0.2.7',       '192.0.2.8',       '192.0.2.15',      null],
+            'touching across an octet'       => ['192.0.2.128',     '192.0.2.255',     '192.0.3.0',       '192.0.3.127',     null],
+            'one-address gap'                => ['192.0.2.0',       '192.0.2.7',       '192.0.2.9',       '192.0.2.15',      null],
+            'wide gap'                       => ['10.0.0.0',        '10.0.0.255',      '192.0.2.0',       '192.0.2.255',     null],
+            'single address inside'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.100',     '192.0.2.100',     '192.0.2.100 - 192.0.2.100'],
+            'single address at start'        => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.0',       '192.0.2.0 - 192.0.2.0'],
+            'single address at end'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.255',     '192.0.2.255',     '192.0.2.255 - 192.0.2.255'],
+            'single address just before'     => ['192.0.2.10',      '192.0.2.20',      '192.0.2.9',       '192.0.2.9',       null],
+            'single address just after'      => ['192.0.2.10',      '192.0.2.20',      '192.0.2.21',      '192.0.2.21',      null],
+            'single address vs itself'       => ['198.51.100.1',    '198.51.100.1',    '198.51.100.1',    '198.51.100.1',    '198.51.100.1 - 198.51.100.1'],
+            '/31 vs member /32'              => ['192.0.2.6',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7 - 192.0.2.7'],
+            '/31 vs next /31'                => ['192.0.2.6',       '192.0.2.7',       '192.0.2.8',       '192.0.2.9',       null],
+            '/32 vs itself'                  => ['192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7 - 192.0.2.7'],
+            'consecutive /32s'               => ['192.0.2.7',       '192.0.2.7',       '192.0.2.8',       '192.0.2.8',       null],
+            'full range vs inner range'      => ['0.0.0.0',         '255.255.255.255', '192.0.2.0',       '192.0.2.255',     '192.0.2.0 - 192.0.2.255'],
+            'full range vs full range'       => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '255.255.255.255', '0.0.0.0 - 255.255.255.255'],
+            'full range vs 0.0.0.0'          => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '0.0.0.0',         '0.0.0.0 - 0.0.0.0'],
+            'full range vs 255.255.255.255'  => ['0.0.0.0',         '255.255.255.255', '255.255.255.255', '255.255.255.255', '255.255.255.255 - 255.255.255.255'],
+            'overlapping ranges at 0.0.0.0'  => ['0.0.0.0',         '0.0.0.7',         '0.0.0.4',         '0.0.0.15',        '0.0.0.4 - 0.0.0.7'],
+            'touching ranges at 0.0.0.0'     => ['0.0.0.0',         '0.0.0.3',         '0.0.0.4',         '0.0.0.7',         null],
+            'overlapping ranges at top'      => ['255.255.255.240', '255.255.255.255', '255.255.255.252', '255.255.255.255', '255.255.255.252 - 255.255.255.255'],
+            'touching ranges at top'         => ['255.255.255.248', '255.255.255.251', '255.255.255.252', '255.255.255.255', null],
+            '0.0.0.0 vs 255.255.255.255'     => ['0.0.0.0',         '0.0.0.0',         '255.255.255.255', '255.255.255.255', null],
+            'first /24 vs last /24'          => ['0.0.0.0',         '0.0.0.255',       '255.255.255.0',   '255.255.255.255', null],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForIsAdjacent')]
+    public function testIsAdjacentChecksWhetherDisjointRangesTouchInEitherOrder(
+        string $aStart,
+        string $aEnd,
+        string $bStart,
+        string $bEnd,
+        bool $expected
+    ): void {
+        // Given
+        $a = new IPRange($aStart, $aEnd);
+        $b = new IPRange($bStart, $bEnd);
+
+        // When
+        $results = [$a->isAdjacent($b), $b->isAdjacent($a)];
+
+        // Then
+        $this->assertSame([$expected, $expected], $results);
+    }
+
+    /**
+     * @return array<string, array{string, string, string, string, bool}>
+     */
+    public static function dataProviderForIsAdjacent(): array
+    {
+        return [
+            'identical'                      => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.255',     false],
+            'nested'                         => ['192.0.2.0',       '192.0.2.255',     '192.0.2.64',      '192.0.2.127',     false],
+            'shared start'                   => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.15',      false],
+            'shared end'                     => ['192.0.2.0',       '192.0.2.255',     '192.0.2.240',     '192.0.2.255',     false],
+            'partial overlap on the left'    => ['192.0.2.4',       '192.0.2.11',      '192.0.2.0',       '192.0.2.7',       false],
+            'partial overlap on the right'   => ['192.0.2.0',       '192.0.2.7',       '192.0.2.4',       '192.0.2.11',      false],
+            'overlap of one shared endpoint' => ['192.0.2.0',       '192.0.2.8',       '192.0.2.8',       '192.0.2.15',      false],
+            'touching'                       => ['192.0.2.0',       '192.0.2.7',       '192.0.2.8',       '192.0.2.15',      true],
+            'touching across an octet'       => ['192.0.2.128',     '192.0.2.255',     '192.0.3.0',       '192.0.3.127',     true],
+            'one-address gap'                => ['192.0.2.0',       '192.0.2.7',       '192.0.2.9',       '192.0.2.15',      false],
+            'wide gap'                       => ['10.0.0.0',        '10.0.0.255',      '192.0.2.0',       '192.0.2.255',     false],
+            'single address inside'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.100',     '192.0.2.100',     false],
+            'single address at start'        => ['192.0.2.0',       '192.0.2.255',     '192.0.2.0',       '192.0.2.0',       false],
+            'single address at end'          => ['192.0.2.0',       '192.0.2.255',     '192.0.2.255',     '192.0.2.255',     false],
+            'single address just before'     => ['192.0.2.10',      '192.0.2.20',      '192.0.2.9',       '192.0.2.9',       true],
+            'single address just after'      => ['192.0.2.10',      '192.0.2.20',      '192.0.2.21',      '192.0.2.21',      true],
+            'single address vs itself'       => ['198.51.100.1',    '198.51.100.1',    '198.51.100.1',    '198.51.100.1',    false],
+            '/31 vs member /32'              => ['192.0.2.6',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       false],
+            '/31 vs next /31'                => ['192.0.2.6',       '192.0.2.7',       '192.0.2.8',       '192.0.2.9',       true],
+            '/32 vs itself'                  => ['192.0.2.7',       '192.0.2.7',       '192.0.2.7',       '192.0.2.7',       false],
+            'consecutive /32s'               => ['192.0.2.7',       '192.0.2.7',       '192.0.2.8',       '192.0.2.8',       true],
+            'full range vs inner range'      => ['0.0.0.0',         '255.255.255.255', '192.0.2.0',       '192.0.2.255',     false],
+            'full range vs full range'       => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '255.255.255.255', false],
+            'full range vs 0.0.0.0'          => ['0.0.0.0',         '255.255.255.255', '0.0.0.0',         '0.0.0.0',         false],
+            'full range vs 255.255.255.255'  => ['0.0.0.0',         '255.255.255.255', '255.255.255.255', '255.255.255.255', false],
+            'overlapping ranges at 0.0.0.0'  => ['0.0.0.0',         '0.0.0.7',         '0.0.0.4',         '0.0.0.15',        false],
+            'touching ranges at 0.0.0.0'     => ['0.0.0.0',         '0.0.0.3',         '0.0.0.4',         '0.0.0.7',         true],
+            'overlapping ranges at top'      => ['255.255.255.240', '255.255.255.255', '255.255.255.252', '255.255.255.255', false],
+            'touching ranges at top'         => ['255.255.255.248', '255.255.255.251', '255.255.255.252', '255.255.255.255', true],
+            '0.0.0.0 vs 255.255.255.255'     => ['0.0.0.0',         '0.0.0.0',         '255.255.255.255', '255.255.255.255', false],
+            'first /24 vs last /24'          => ['0.0.0.0',         '0.0.0.255',       '255.255.255.0',   '255.255.255.255', false],
+        ];
+    }
+
+    #[Test]
+    public function testIntersectionReusesBoundaryAddressInstances(): void
+    {
+        // Given
+        $a = new IPRange('192.0.2.0', '192.0.2.7');
+        $b = new IPRange('192.0.2.4', '192.0.2.11');
+
+        // When
+        $intersection = $a->intersection($b);
+
+        // Then
+        $this->assertNotNull($intersection);
+        $this->assertSame($b->start(), $intersection->start());
+        $this->assertSame($a->end(), $intersection->end());
+    }
+
+    #[Test]
+    public function testRelationsAcceptSubnetAddressRanges(): void
+    {
+        // Given
+        $block = Subnet::fromCidr('192.0.2.0/24')->addressRange();
+        $lower = Subnet::fromCidr('192.0.2.0/25')->addressRange();
+        $upper = Subnet::fromCidr('192.0.2.128/25')->addressRange();
+        $p2p = Subnet::fromCidr('192.0.2.6/31');
+        $host = Subnet::fromCidr('192.0.2.7/32');
+
+        // When
+        $results = [
+            $block->containsRange($lower),
+            $block->containsRange($upper),
+            $lower->isAdjacent($upper),
+            $lower->overlaps($upper),
+            $p2p->hostRange()->equals($p2p->addressRange()),
+            $p2p->hostRange()->containsRange($p2p->addressRange()),
+            $host->hostRange()->equals($host->addressRange()),
+            $host->hostRange()->containsRange($host->addressRange()),
+        ];
+
+        // Then
+        $this->assertSame([true, true, true, false, true, true, true, true], $results);
+    }
+
+    #[Test]
+    public function testIntersectionReportsOverlappingDhcpPools(): void
+    {
+        // Given
+        $engineering = new IPRange('192.168.10.100', '192.168.10.199');
+        $sales = new IPRange('192.168.10.150', '192.168.10.250');
+        $guest = new IPRange('192.168.11.10', '192.168.11.254');
+        $scope = Subnet::fromCidr('192.168.10.0/24')->hostRange();
+
+        // When
+        $overlap = $engineering->intersection($sales);
+
+        // Then
+        $this->assertNotNull($overlap);
+        $this->assertSame(['192.168.10.150 - 192.168.10.199', 50], [(string) $overlap, $overlap->count()]);
+        $this->assertSame([null, null], [$engineering->intersection($guest), $sales->intersection($guest)]);
+        $this->assertSame([true, false], [$scope->containsRange($sales), $scope->containsRange($guest)]);
+    }
 }

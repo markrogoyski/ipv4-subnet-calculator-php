@@ -4,6 +4,11 @@
 
 ### New Features
 - **`SubnetAllocator::allocateByPrefix()`**: Allocates named subnets by CIDR prefix instead of host count, so blocks such as a `/30` link can be requested; mix both sizings with `SubnetParser::optimalPrefixForHosts()`
+- **`IPRange` constructor**: Accepts dotted-quad strings as well as `IPAddress` objects for the start and end, in any combination
+- **`IPRange::containsRange()`**: Checks whether another range lies entirely within the range
+- **`IPRange::overlaps()`**: Checks whether two ranges share at least one address
+- **`IPRange::intersection()`**: Returns the addresses two ranges share, or `null` if they are disjoint
+- **`IPRange::isAdjacent()`**: Checks whether two disjoint ranges are contiguous
 
 ## v5.2.0 - 2026-11-07
 
