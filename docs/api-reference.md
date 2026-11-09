@@ -935,6 +935,35 @@ $summary = Subnets::summarize([
 // Returns: Subnet: 192.168.0.0/23
 ```
 
+#### longestPrefixMatch()
+```php
+Subnets::longestPrefixMatch(array $subnets, string|IPAddress $ip): ?Subnet
+```
+Find the most specific subnet containing an IP address: of the subnets whose range includes `$ip`, the one with the largest prefix (`networkSize()`). Host bits in the inputs are ignored, so `0.0.0.0/0` acts as a default route. When several containing subnets share the largest prefix, the first in iteration order wins.
+
+The matching element itself is returned, not a canonical copy, so `\array_search($match, $subnets, true)` recovers its array key. This is a linear O(n) scan, not a routing trie.
+
+Throws `\InvalidArgumentException` if any element is not a `Subnet` or the IP address is invalid.
+
+**Parameters:**
+- `$subnets` - Array of Subnet objects, with any keys
+- `$ip` - IP address to match (string or IPAddress)
+
+**Returns:** The most specific containing Subnet from `$subnets`, or `null` if the array is empty or no subnet contains the address
+
+**Example:**
+```php
+$routes = [
+    Subnet::fromCidr('0.0.0.0/0'),
+    Subnet::fromCidr('10.0.0.0/8'),
+    Subnet::fromCidr('10.1.0.0/16'),
+];
+Subnets::longestPrefixMatch($routes, '10.1.2.3');   // Subnet: 10.1.0.0/16
+Subnets::longestPrefixMatch($routes, '10.200.0.1'); // Subnet: 10.0.0.0/8
+Subnets::longestPrefixMatch($routes, '8.8.8.8');    // Subnet: 0.0.0.0/0
+Subnets::longestPrefixMatch([], '8.8.8.8');         // null
+```
+
 ### Set Operations
 
 These methods treat each array as the set of addresses its subnets cover, including network and broadcast addresses. Inputs may contain duplicate, nested, unsorted or adjacent subnets, with any array keys; host bits are ignored. Every element of both arrays is validated before any result is computed, so an invalid element throws `\InvalidArgumentException` even when the other array is empty. Inputs are sorted and merged into address intervals in O(n log n + m log m) time, then swept once; no addresses are enumerated. Results take additional time and space proportional to the number of returned blocks.

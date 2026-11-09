@@ -330,6 +330,30 @@ foreach ($candidates as $cidr) {
 
 The relation is symmetric and permits unequal prefixes; host bits in `$current` do not change its range. Touching blocks need not merge: `10.0.1.0/24` and `10.0.2.0/24` are adjacent but are not aligned siblings. `/0` has no adjacent block; consecutive `/31` or `/32` blocks can touch, and the maximum IPv4 address never wraps to zero.
 
+### Find the VLAN for a Client Address
+
+Keep VLANs in an array keyed by name. `Subnets::longestPrefixMatch()` returns the most specific block containing the client, and because it returns that element itself, `\array_search()` recovers the VLAN name:
+
+```php
+$vlans = [
+    'campus' => IPv4\Subnet::fromCidr('10.20.0.0/16'),
+    'staff'  => IPv4\Subnet::fromCidr('10.20.10.0/24'),
+    'voice'  => IPv4\Subnet::fromCidr('10.20.20.0/24'),
+];
+
+foreach (['10.20.10.17', '10.20.20.5', '10.20.99.5', '192.0.2.1'] as $client) {
+    $match = IPv4\Subnets::longestPrefixMatch($vlans, $client);
+    $vlan = $match === null ? 'none' : \array_search($match, $vlans, true);
+    echo "{$client}: {$vlan}\n";
+}
+// 10.20.10.17: staff
+// 10.20.20.5: voice
+// 10.20.99.5: campus
+// 192.0.2.1: none
+```
+
+The `/24` VLANs win over the enclosing `/16`, which catches every other campus address. Pass `true` as the third argument to `\array_search()` so it compares identity rather than equal field values. The search is a linear scan over the array, which suits VLAN and site tables; it is not a routing trie.
+
 ---
 
 ## Firewall and Security

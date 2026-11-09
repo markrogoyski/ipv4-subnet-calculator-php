@@ -16,6 +16,7 @@ use IPv4\Internal\RangeDecomposer;
  *  - Aggregate multiple subnets into minimal CIDR blocks
  *  - Summarize subnets into a single supernet
  *  - Intersect, subtract and compare coverage of subnet collections as address sets
+ *  - Find the most specific subnet containing an address (longest-prefix match)
  *
  * @link https://datatracker.ietf.org/doc/html/rfc4632 RFC 4632 - CIDR
  */
@@ -156,6 +157,42 @@ final class Subnets
         Assert::allSubnets($required);
 
         return self::subtractIntervals(self::toIntervals($required), self::toIntervals($covering)) === [];
+    }
+
+    /**
+     * Find the most specific subnet that contains an IP address (longest-prefix match).
+     *
+     * The most specific subnet is the containing one with the largest networkSize(). When several
+     * containing subnets share that prefix, the first in iteration order wins.
+     *
+     * The matched element is returned unchanged, not a canonical copy, so its key can be recovered
+     * with \array_search($match, $subnets, true): for example, to find which VLAN a client is in.
+     *
+     * This is a linear O(n) scan, not a routing trie.
+     *
+     * @param Subnet[]         $subnets Subnets to search
+     * @param string|IPAddress $ip      Address to match
+     *
+     * @return Subnet|null The most specific containing subnet, or null if none contains the address
+     *
+     * @throws \InvalidArgumentException If any element is not a Subnet or the IP address is invalid
+     */
+    public static function longestPrefixMatch(array $subnets, string|IPAddress $ip): ?Subnet
+    {
+        Assert::allSubnets($subnets);
+
+        if (\is_string($ip)) {
+            $ip = new IPAddress($ip);
+        }
+
+        $match = null;
+        foreach ($subnets as $subnet) {
+            if ($subnet->containsIP($ip) && ($match === null || $subnet->networkSize() > $match->networkSize())) {
+                $match = $subnet;
+            }
+        }
+
+        return $match;
     }
 
     /**

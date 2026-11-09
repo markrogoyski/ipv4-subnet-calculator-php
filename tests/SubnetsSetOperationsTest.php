@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace IPv4\Tests;
 
+use IPv4\IPAddress;
 use IPv4\Subnet;
 use IPv4\Subnets;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -12,6 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * Tests for set operations on subnet collections: intersection, difference and coverage.
+ * Also covers longest-prefix matching of an address against a collection.
  */
 class SubnetsSetOperationsTest extends TestCase
 {
@@ -156,6 +158,169 @@ class SubnetsSetOperationsTest extends TestCase
             'two halves cover entire space'      => [['128.0.0.0/1', '0.0.0.0/1'], ['0.0.0.0/0'], true],
             'point-to-point needs both hosts'    => [['192.0.2.6/32'], ['192.0.2.6/31'], false],
             'host covers itself'                 => [['255.255.255.255/32'], ['255.255.255.255/32'], true],
+        ];
+    }
+
+    /* ************************** *
+     * longestPrefixMatch()
+     * ************************** */
+
+    /**
+     * @param array<string> $cidrs
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLongestPrefixMatch')]
+    public function testLongestPrefixMatch(array $cidrs, string $ip, int|string|null $expectedKey): void
+    {
+        // Given
+        $subnets = self::subnets($cidrs);
+        $expected = $expectedKey === null ? null : $subnets[$expectedKey];
+
+        // When
+        $fromString = Subnets::longestPrefixMatch($subnets, $ip);
+        $fromIPAddress = Subnets::longestPrefixMatch($subnets, new IPAddress($ip));
+
+        // Then
+        $this->assertSame($expected, $fromString);
+        $this->assertSame($expected, $fromIPAddress);
+    }
+
+    /**
+     * @return array<string, array{array<string>, string, int|string|null}>
+     */
+    public static function dataProviderForLongestPrefixMatch(): array
+    {
+        return [
+            'nested picks the /24'            => [['10.0.0.0/8', '10.1.0.0/16', '10.1.2.0/24'], '10.1.2.3', 2],
+            'unsorted nested picks the /24'   => [['10.1.2.0/24', '10.0.0.0/8', '10.1.0.0/16'], '10.1.2.3', 0],
+            'nested falls back to the /16'    => [['10.0.0.0/8', '10.1.0.0/16', '10.1.2.0/24'], '10.1.3.1', 1],
+            'nested falls back to the /8'     => [['10.0.0.0/8', '10.1.0.0/16', '10.1.2.0/24'], '10.200.0.1', 0],
+            'outside all blocks'              => [['10.0.0.0/8', '192.168.0.0/16'], '172.16.0.1', null],
+            'empty array'                     => [[], '10.0.0.1', null],
+            'default route fallback'          => [['0.0.0.0/0', '10.0.0.0/8'], '8.8.8.8', 0],
+            'default route loses to /8'       => [['0.0.0.0/0', '10.0.0.0/8'], '10.0.0.1', 1],
+            'default route at first address'  => [['0.0.0.0/0'], '0.0.0.0', 0],
+            'default route at last address'   => [['0.0.0.0/0'], '255.255.255.255', 0],
+            '/31 matches its lower member'    => [['192.0.2.0/24', '192.0.2.6/31'], '192.0.2.6', 1],
+            '/31 matches its upper member'    => [['192.0.2.0/24', '192.0.2.6/31'], '192.0.2.7', 1],
+            '/31 neighbor falls back to /24'  => [['192.0.2.0/24', '192.0.2.6/31'], '192.0.2.5', 0],
+            '/32 beats /31 and /24'           => [['192.0.2.0/24', '192.0.2.6/31', '192.0.2.7/32'], '192.0.2.7', 2],
+            '/32 partner falls back to /31'   => [['192.0.2.0/24', '192.0.2.6/31', '192.0.2.7/32'], '192.0.2.6', 1],
+            'lone /32 does not match other'   => [['192.0.2.7/32'], '192.0.2.8', null],
+            '/32 at last address'             => [['255.255.255.0/24', '255.255.255.255/32'], '255.255.255.255', 1],
+            'duplicate tie keeps the first'   => [['10.0.0.0/24', '10.0.0.0/24'], '10.0.0.1', 0],
+            'host bit tie keeps the first'    => [['10.0.0.77/24', '10.0.0.200/24'], '10.0.0.1', 0],
+            'equal pair after shorter prefix' => [['10.0.0.0/8', '10.1.0.0/16', '10.1.0.0/16'], '10.1.0.1', 1],
+            'host bits are ignored'           => [['10.0.0.77/24'], '10.0.0.1', 0],
+            'keyed input returns the key'     => [['wan' => '0.0.0.0/0', 'lan' => '192.168.1.0/24'], '192.168.1.10', 'lan'],
+        ];
+    }
+
+    /**
+     * The match is the caller's own instance, so host bits in it survive.
+     */
+    #[Test]
+    public function testLongestPrefixMatchReturnsInputInstanceWithHostBits(): void
+    {
+        // Given
+        $subnet = Subnet::fromCidr('10.0.0.77/24');
+
+        // When
+        $match = Subnets::longestPrefixMatch([$subnet], '10.0.0.1');
+
+        // Then
+        $this->assertSame($subnet, $match);
+        $this->assertSame('10.0.0.77/24', $match->cidr());
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForLongestPrefixMatchKeyRecovery')]
+    public function testLongestPrefixMatchKeyIsRecoverableWithArraySearch(string $ip, string|false $expectedKey): void
+    {
+        // Given
+        $vlans = [
+            'campus' => Subnet::fromCidr('10.20.0.0/16'),
+            'staff'  => Subnet::fromCidr('10.20.10.0/24'),
+            'voice'  => Subnet::fromCidr('10.20.20.0/24'),
+        ];
+
+        // When
+        $match = Subnets::longestPrefixMatch($vlans, $ip);
+        $key = \array_search($match, $vlans, true);
+
+        // Then
+        $this->assertSame($expectedKey, $key);
+    }
+
+    /**
+     * @return array<string, array{string, string|false}>
+     */
+    public static function dataProviderForLongestPrefixMatchKeyRecovery(): array
+    {
+        return [
+            'staff VLAN'   => ['10.20.10.17', 'staff'],
+            'voice VLAN'   => ['10.20.20.5', 'voice'],
+            'campus block' => ['10.20.99.5', 'campus'],
+            'no VLAN'      => ['192.0.2.1', false],
+        ];
+    }
+
+    /**
+     * @param array<mixed> $subnets
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLongestPrefixMatchInvalidElements')]
+    public function testLongestPrefixMatchRejectsNonSubnetElement(array $subnets, string $message): void
+    {
+        // Given - $subnets from the data provider contains a non-Subnet element
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        // When
+        Subnets::longestPrefixMatch($subnets, '10.0.0.1');
+    }
+
+    /**
+     * @return array<string, array{array<mixed>, string}>
+     */
+    public static function dataProviderForLongestPrefixMatchInvalidElements(): array
+    {
+        $subnet = Subnet::fromCidr('10.0.0.0/8');
+
+        return [
+            'string element'                => [['nope'], 'Expected Subnet at index 0, got string'],
+            'keyed null element'            => [['a' => $subnet, 'b' => null], 'Expected Subnet at index b, got null'],
+            'invalid element after a match' => [[$subnet, 42], 'Expected Subnet at index 1, got int'],
+        ];
+    }
+
+    /**
+     * @param array<Subnet> $subnets
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLongestPrefixMatchInvalidIp')]
+    public function testLongestPrefixMatchRejectsInvalidIpAddress(array $subnets, string $ip): void
+    {
+        // Given - $subnets and an invalid IPv4 address string $ip from the data provider
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid IPv4 address');
+
+        // When
+        Subnets::longestPrefixMatch($subnets, $ip);
+    }
+
+    /**
+     * @return array<string, array{array<Subnet>, string}>
+     */
+    public static function dataProviderForLongestPrefixMatchInvalidIp(): array
+    {
+        return [
+            'empty array'   => [[], '10.0.0.256'],
+            'default route' => [[Subnet::fromCidr('0.0.0.0/0')], 'not an ip'],
         ];
     }
 
