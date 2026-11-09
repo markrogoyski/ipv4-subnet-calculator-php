@@ -16,7 +16,7 @@ namespace IPv4;
  *
  * @link https://www.rfc-editor.org/rfc/rfc2317
  */
-final class ReverseDnsDelegation
+final class ReverseDnsDelegation implements \JsonSerializable
 {
     private readonly string $parentZone;
     private readonly string $childZone;
@@ -96,6 +96,22 @@ final class ReverseDnsDelegation
     public function cnameRecords(): array
     {
         return $this->cnameRecords;
+    }
+
+    /**
+     * JSON serialization: the parent zone, child zone and parent-zone CNAME records.
+     *
+     * The CNAME records are owner => target in ascending address order, as returned by cnameRecords().
+     *
+     * @return array{parent_zone: string, child_zone: string, cname_records: array<string, string>} e.g., ['parent_zone' => '2.0.192.in-addr.arpa', 'child_zone' => '6-7.2.0.192.in-addr.arpa', 'cname_records' => ['6.2.0.192.in-addr.arpa' => '6.6-7.2.0.192.in-addr.arpa', ...]]
+     */
+    public function jsonSerialize(): array
+    {
+        return [
+            'parent_zone'   => $this->parentZone,
+            'child_zone'    => $this->childZone,
+            'cname_records' => $this->cnameRecords,
+        ];
     }
 
     /**

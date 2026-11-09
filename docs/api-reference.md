@@ -1089,7 +1089,7 @@ SubnetAllocator::allocateByPrefix(Subnet::fromCidr('10.0.0.0/24'), ['x' => 23]);
 
 ## Value Object Classes
 
-All value objects are immutable (readonly). `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload. `ReverseDnsDelegation` and `AllocationPlan` implement neither; use their accessor methods.
+All value objects are immutable (readonly). `IPAddress`, `SubnetMask`, `WildcardMask` and `IPRange` implement `Stringable` and `JsonSerializable`, so they can be placed directly in a `json_encode()` payload. `ReverseDnsDelegation` and `AllocationPlan` implement `JsonSerializable` but not `Stringable`.
 
 ### IPAddress Class
 
@@ -1607,7 +1607,7 @@ Implement JsonSerializable interface. Encodes only the start and end addresses, 
 
 ### ReverseDnsDelegation Class
 
-`IPv4\ReverseDnsDelegation` - Immutable [RFC 2317](https://www.rfc-editor.org/rfc/rfc2317.html) classless delegation data for a `/25`–`/32` block. All names omit trailing dots. NS, SOA and PTR records, parent-zone cooperation and DNS publishing remain the caller's responsibility.
+`IPv4\ReverseDnsDelegation` - Immutable [RFC 2317](https://www.rfc-editor.org/rfc/rfc2317.html) classless delegation data for a `/25`–`/32` block. Implements `JsonSerializable`. All names omit trailing dots. NS, SOA and PTR records, parent-zone cooperation and DNS publishing remain the caller's responsibility.
 
 #### Construction
 
@@ -1645,11 +1645,23 @@ Subnet::fromCidr('192.0.2.6/31')->classlessDelegation()->cnameRecords();
 // ]
 ```
 
+##### jsonSerialize()
+```php
+jsonSerialize(): array{parent_zone: string, child_zone: string, cname_records: array<string, string>}
+```
+Implement JsonSerializable interface. Encodes the parent zone, the child zone and the CNAME records (owner => target, in the same order as `cnameRecords()`).
+
+**Example:**
+```php
+\json_encode(Subnet::fromCidr('192.0.2.6/31')->classlessDelegation());
+// {"parent_zone":"2.0.192.in-addr.arpa","child_zone":"6-7.2.0.192.in-addr.arpa","cname_records":{"6.2.0.192.in-addr.arpa":"6.6-7.2.0.192.in-addr.arpa","7.2.0.192.in-addr.arpa":"7.6-7.2.0.192.in-addr.arpa"}}
+```
+
 ---
 
 ### AllocationPlan Class
 
-`IPv4\AllocationPlan` - Immutable result of [`SubnetAllocator::allocate()`](#allocate) or [`allocateByPrefix()`](#allocatebyprefix). Its allocations, reservations and remaining space are disjoint and together cover exactly the parent network. All subnets are canonical.
+`IPv4\AllocationPlan` - Immutable result of [`SubnetAllocator::allocate()`](#allocate) or [`allocateByPrefix()`](#allocatebyprefix). Its allocations, reservations and remaining space are disjoint and together cover exactly the parent network. All subnets are canonical. Implements `JsonSerializable`.
 
 #### Construction
 
@@ -1679,6 +1691,21 @@ The free space left after reservations and allocations as the fewest CIDR blocks
 $plan = SubnetAllocator::allocate(Subnet::fromCidr('192.0.2.0/29'), ['link' => 2], [Subnet::fromCidr('192.0.2.0/31')]);
 $plan->allocations(); // ['link' => Subnet: 192.0.2.2/31]
 $plan->remaining();   // [Subnet: 192.0.2.4/30]
+```
+
+##### jsonSerialize()
+```php
+jsonSerialize(): array // array<string, mixed>: allocations, reserved, remaining
+```
+Implement JsonSerializable interface. Encodes each subnet as its network CIDR string rather than a full subnet report: `allocations` as an object of name => CIDR in requirement order, and `reserved` and `remaining` as lists of CIDRs in ascending order. `allocations` is always a JSON object, `{}` when the plan has no allocations. Each CIDR parses back with `Subnet::fromNetworkCidr()`.
+
+**Example:**
+```php
+\json_encode($plan, JSON_UNESCAPED_SLASHES);
+// {"allocations":{"link":"192.0.2.2/31"},"reserved":["192.0.2.0/31"],"remaining":["192.0.2.4/30"]}
+
+\json_encode(SubnetAllocator::allocate(Subnet::fromCidr('10.0.0.0/24'), []), JSON_UNESCAPED_SLASHES);
+// {"allocations":{},"reserved":[],"remaining":["10.0.0.0/24"]}
 ```
 
 ---

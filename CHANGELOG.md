@@ -15,6 +15,9 @@
 - **`Subnet::supernet()`**: Returns the canonical enclosing block at a shorter or equal prefix (e.g., `192.168.1.0/24` to `/16` gives `192.168.0.0/16`); throws `\InvalidArgumentException` for a prefix outside 0 to the current prefix
 - **`Subnets::longestPrefixMatch()`**: Returns the most specific subnet in an array that contains an IP address, or `null` if none does; the matching element itself is returned, so `\array_search()` recovers its key
 
+### Fixed
+- **JSON serialization**: `AllocationPlan` encodes as `allocations` (name => network CIDR), `reserved` and `remaining` (lists of network CIDRs), and `ReverseDnsDelegation` as `parent_zone`, `child_zone` and `cname_records` (owner => target), instead of `{}`
+
 ## v5.2.0 - 2026-11-07
 
 ### New Features

@@ -352,4 +352,78 @@ class ReverseDnsDelegationTest extends \PHPUnit\Framework\TestCase
             $this->assertStringEndsNotWith('.', $delegation->childZone(), "{$cidr} child zone has a trailing dot");
         }
     }
+
+    /**
+     * json_encode of a delegation emits the parent zone, child zone and owner => target CNAME records
+     *
+     * @param string      $cidr
+     * @param string|null $label
+     * @param string      $expectedJson
+     */
+    #[Test]
+    #[DataProvider('dataProviderForDelegationJson')]
+    public function jsonEncodeOfDelegationEmitsZonesAndCnameRecords(string $cidr, ?string $label, string $expectedJson): void
+    {
+        // Given
+        $delegation = Subnet::fromCidr($cidr)->classlessDelegation($label);
+
+        // When
+        $json = \json_encode($delegation, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+
+        // Then
+        $this->assertSame($expectedJson, $json);
+    }
+
+    /**
+     * @return array<string, array{string, string|null, string}>
+     */
+    public static function dataProviderForDelegationJson(): array
+    {
+        return [
+            '/32'                            => ['192.0.2.5/32', null, '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"5-5.2.0.192.in-addr.arpa","cname_records":{"5.2.0.192.in-addr.arpa":"5.5-5.2.0.192.in-addr.arpa"}}'],
+            '/32 custom label'               => ['192.0.2.5/32', 'host5', '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"host5.2.0.192.in-addr.arpa","cname_records":{"5.2.0.192.in-addr.arpa":"5.host5.2.0.192.in-addr.arpa"}}'],
+            '/32 lowest address of the /24'  => ['192.0.2.0/32', null, '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"0-0.2.0.192.in-addr.arpa","cname_records":{"0.2.0.192.in-addr.arpa":"0.0-0.2.0.192.in-addr.arpa"}}'],
+            '/32 highest address of the /24' => ['192.0.2.255/32', null, '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"255-255.2.0.192.in-addr.arpa","cname_records":{"255.2.0.192.in-addr.arpa":"255.255-255.2.0.192.in-addr.arpa"}}'],
+            '/31'                            => ['192.0.2.6/31', null, '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"6-7.2.0.192.in-addr.arpa","cname_records":{"6.2.0.192.in-addr.arpa":"6.6-7.2.0.192.in-addr.arpa","7.2.0.192.in-addr.arpa":"7.6-7.2.0.192.in-addr.arpa"}}'],
+            '/30'                            => ['192.0.2.8/30', null, '{"parent_zone":"2.0.192.in-addr.arpa","child_zone":"8-11.2.0.192.in-addr.arpa","cname_records":{"8.2.0.192.in-addr.arpa":"8.8-11.2.0.192.in-addr.arpa","9.2.0.192.in-addr.arpa":"9.8-11.2.0.192.in-addr.arpa","10.2.0.192.in-addr.arpa":"10.8-11.2.0.192.in-addr.arpa","11.2.0.192.in-addr.arpa":"11.8-11.2.0.192.in-addr.arpa"}}'],
+        ];
+    }
+
+    /**
+     * Decoded delegation JSON for larger blocks holds the zones and exactly the records cnameRecords() returns
+     *
+     * @param string      $cidr
+     * @param string|null $label
+     * @param string      $expectedChild
+     * @param int         $expectedCount
+     */
+    #[Test]
+    #[DataProvider('dataProviderForLargeDelegationJson')]
+    public function jsonEncodeOfLargeDelegationMatchesAccessors(string $cidr, ?string $label, string $expectedChild, int $expectedCount): void
+    {
+        // Given
+        $delegation = Subnet::fromCidr($cidr)->classlessDelegation($label);
+
+        // When
+        $decoded = \json_decode(\json_encode($delegation, \JSON_THROW_ON_ERROR), true, 512, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame(
+            [['parent_zone' => '2.0.192.in-addr.arpa', 'child_zone' => $expectedChild, 'cname_records' => $delegation->cnameRecords()], $expectedCount],
+            [$decoded, \count($delegation->cnameRecords())]
+        );
+    }
+
+    /**
+     * @return array<string, array{string, string|null, string, int}>
+     */
+    public static function dataProviderForLargeDelegationJson(): array
+    {
+        return [
+            '/25 lower half'    => ['192.0.2.0/25', null, '0-127.2.0.192.in-addr.arpa', 128],
+            '/25 upper half'    => ['192.0.2.128/25', null, '128-255.2.0.192.in-addr.arpa', 128],
+            '/26 nonzero start' => ['192.0.2.64/26', null, '64-127.2.0.192.in-addr.arpa', 64],
+            '/25 custom label'  => ['192.0.2.0/25', 'pool', 'pool.2.0.192.in-addr.arpa', 128],
+        ];
+    }
 }

@@ -12,7 +12,7 @@ use IPv4\Internal\Assert;
  * Partitions the parent network into three disjoint sets that together cover it exactly:
  * named allocations, the normalized reservations, and the remaining free space.
  */
-final class AllocationPlan
+final class AllocationPlan implements \JsonSerializable
 {
     /**
      * Create a plan from already computed parts.
@@ -65,6 +65,41 @@ final class AllocationPlan
     public function remaining(): array
     {
         return $this->remaining;
+    }
+
+    /**
+     * JSON serialization: each subnet as its network CIDR string, not a nested subnet report.
+     *
+     * Allocations map name => network CIDR in the caller's requirement order; reserved and remaining
+     * are lists of network CIDRs in ascending address order. Each string parses back with
+     * Subnet::fromNetworkCidr(). An empty allocations map is returned as an empty \stdClass so that it
+     * encodes as a JSON object ({}) rather than an empty array ([]).
+     *
+     * @return array<string, mixed> e.g., ['allocations' => ['lan' => '10.0.0.0/26'], 'reserved' => ['10.0.0.128/25'], 'remaining' => ['10.0.0.64/26']]
+     */
+    public function jsonSerialize(): array
+    {
+        $allocations = self::networkCidrs($this->allocations);
+
+        return [
+            'allocations' => $allocations === [] ? new \stdClass() : $allocations,
+            'reserved'    => self::networkCidrs($this->reserved),
+            'remaining'   => self::networkCidrs($this->remaining),
+        ];
+    }
+
+    /**
+     * Map subnets to their network CIDR strings, preserving keys and order.
+     *
+     * @template K of array-key
+     *
+     * @param array<K, Subnet> $subnets
+     *
+     * @return array<K, string>
+     */
+    private static function networkCidrs(array $subnets): array
+    {
+        return \array_map(static fn (Subnet $subnet): string => $subnet->networkCidr(), $subnets);
     }
 
     /**

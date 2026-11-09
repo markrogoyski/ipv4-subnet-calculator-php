@@ -775,6 +775,134 @@ class SubnetAllocatorTest extends TestCase
     }
 
     /* ************************** *
+     * JSON serialization
+     * ************************** */
+
+    /**
+     * json_encode of a plan emits allocations as an object of name => network CIDR, and reserved and remaining as lists
+     *
+     * @param string             $parentCidr
+     * @param array<string, int> $prefixes
+     * @param array<string>      $reservedCidrs
+     * @param string             $expectedJson
+     */
+    #[Test]
+    #[DataProvider('dataProviderForPlanJson')]
+    public function jsonEncodeOfAllocationPlanEmitsNetworkCidrStrings(string $parentCidr, array $prefixes, array $reservedCidrs, string $expectedJson): void
+    {
+        // Given
+        $plan = SubnetAllocator::allocateByPrefix(Subnet::fromCidr($parentCidr), $prefixes, self::subnets($reservedCidrs));
+
+        // When
+        $json = \json_encode($plan, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+
+        // Then
+        $this->assertSame($expectedJson, $json);
+    }
+
+    /**
+     * @return array<string, array{string, array<string, int>, array<string>, string}>
+     */
+    public static function dataProviderForPlanJson(): array
+    {
+        return [
+            'allocation beside a reservation'  => ['192.0.2.0/29', ['link' => 31], ['192.0.2.0/31'], '{"allocations":{"link":"192.0.2.2/31"},"reserved":["192.0.2.0/31"],"remaining":["192.0.2.4/30"]}'],
+            'requirement order kept'           => ['10.0.0.0/24', ['small' => 30, 'big' => 25], [], '{"allocations":{"small":"10.0.0.128/30","big":"10.0.0.0/25"},"reserved":[],"remaining":["10.0.0.132/30","10.0.0.136/29","10.0.0.144/28","10.0.0.160/27","10.0.0.192/26"]}'],
+            '/31 point-to-point link'          => ['192.0.2.6/31', ['link' => 31], [], '{"allocations":{"link":"192.0.2.6/31"},"reserved":[],"remaining":[]}'],
+            '/31 two single hosts'             => ['192.0.2.6/31', ['b' => 32, 'a' => 32], [], '{"allocations":{"b":"192.0.2.7/32","a":"192.0.2.6/32"},"reserved":[],"remaining":[]}'],
+            '/32 single host'                  => ['192.0.2.7/32', ['h' => 32], [], '{"allocations":{"h":"192.0.2.7/32"},"reserved":[],"remaining":[]}'],
+            'empty plan'                       => ['10.0.0.0/24', [], [], '{"allocations":{},"reserved":[],"remaining":["10.0.0.0/24"]}'],
+            'empty plan with reserved /32'     => ['192.0.2.7/32', [], ['192.0.2.7/32'], '{"allocations":{},"reserved":["192.0.2.7/32"],"remaining":[]}'],
+            'empty plan of the /0 whole space' => ['0.0.0.0/0', [], [], '{"allocations":{},"reserved":[],"remaining":["0.0.0.0/0"]}'],
+        ];
+    }
+
+    /**
+     * A plan with no allocations, reservations or free space still encodes allocations as a JSON object
+     */
+    #[Test]
+    public function jsonEncodeOfEmptyAllocationPlanEmitsAllocationsAsObject(): void
+    {
+        // Given
+        $plan = new AllocationPlan([], [], []);
+
+        // When
+        $json = \json_encode($plan, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame(
+            ['{"allocations":{},"reserved":[],"remaining":[]}', []],
+            [$json, $plan->allocations()]
+        );
+    }
+
+    /**
+     * Decoded plan JSON holds the same network CIDRs, in the same order, as the plan's accessors
+     *
+     * @param string                $parentCidr
+     * @param array<string, int>    $requirements
+     * @param array<string>         $reservedCidrs
+     * @param array<string, string> $expectedAllocations
+     * @param list<string>          $expectedReserved
+     * @param list<string>          $expectedRemaining
+     */
+    #[Test]
+    #[DataProvider('dataProviderForPlans')]
+    public function allocationPlanJsonDecodesToTheExpectedCidrs(
+        string $parentCidr,
+        array $requirements,
+        array $reservedCidrs,
+        array $expectedAllocations,
+        array $expectedReserved,
+        array $expectedRemaining
+    ): void {
+        // Given
+        $plan = SubnetAllocator::allocate(Subnet::fromCidr($parentCidr), $requirements, self::subnets($reservedCidrs));
+
+        // When
+        $decoded = \json_decode(\json_encode($plan, \JSON_THROW_ON_ERROR), true, 512, \JSON_THROW_ON_ERROR);
+
+        // Then
+        $this->assertSame(
+            ['allocations' => $expectedAllocations, 'reserved' => $expectedReserved, 'remaining' => $expectedRemaining],
+            $decoded
+        );
+    }
+
+    /**
+     * json_encode emits network CIDRs even when a directly constructed plan holds subnets with host bits set
+     *
+     * @param array<string, string> $allocationCidrs
+     * @param list<string>          $reservedCidrs
+     * @param list<string>          $remainingCidrs
+     * @param string                $expectedJson
+     */
+    #[Test]
+    #[DataProvider('dataProviderForHostBitPlanJson')]
+    public function jsonEncodeOfAllocationPlanCanonicalizesHostBits(array $allocationCidrs, array $reservedCidrs, array $remainingCidrs, string $expectedJson): void
+    {
+        // Given
+        $plan = new AllocationPlan(self::subnets($allocationCidrs), self::subnets($reservedCidrs), self::subnets($remainingCidrs));
+
+        // When
+        $json = \json_encode($plan, \JSON_THROW_ON_ERROR | \JSON_UNESCAPED_SLASHES);
+
+        // Then
+        $this->assertSame($expectedJson, $json);
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, list<string>, list<string>, string}>
+     */
+    public static function dataProviderForHostBitPlanJson(): array
+    {
+        return [
+            'host bits in every part'          => [['web' => '10.0.0.77/26'], ['10.0.0.131/31'], ['10.0.0.205/29'], '{"allocations":{"web":"10.0.0.64/26"},"reserved":["10.0.0.130/31"],"remaining":["10.0.0.200/29"]}'],
+            '/31 and /32 allocations in order' => [['p2p' => '192.0.2.7/31', 'host' => '192.0.2.9/32'], ['192.0.2.1/30'], ['198.51.100.99/24'], '{"allocations":{"p2p":"192.0.2.6/31","host":"192.0.2.9/32"},"reserved":["192.0.2.0/30"],"remaining":["198.51.100.0/24"]}'],
+        ];
+    }
+
+    /* ************************** *
      * Helpers
      * ************************** */
 
