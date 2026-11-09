@@ -134,6 +134,21 @@ $wildcardMaskInteger = $wildcard->asInteger();  // 511
 
 // Or use string casting
 echo $wildcard;  // "0.0.1.255"
+
+// Create one directly from a prefix or a dotted quad
+$wildcard = new IPv4\WildcardMask(23);
+$wildcard = IPv4\WildcardMask::fromString('0.0.1.255');
+$wildcard->prefix();  // 23
+
+// Or build a subnet from an IP address and a wildcard mask
+$subnet = IPv4\SubnetParser::fromWildcardMask('192.168.112.0', '0.0.1.255');  // 192.168.112.0/23
+```
+
+Only wildcards whose set bits are contiguous low-order bits are accepted. Cisco ACLs also allow arbitrary wildcard bits: `0.0.255.0` matches any third octet with a fixed fourth octet, such as `10.1.0.5`, `10.1.1.5`, … `10.1.255.5`. Those addresses are scattered, not one contiguous block, so no subnet (and no prefix) can express them, and parsing such a wildcard throws:
+
+```php
+IPv4\WildcardMask::fromString('0.0.255.0');
+// \InvalidArgumentException: Invalid wildcard mask: non-contiguous mask '0.0.255.0'
 ```
 
 **Use Cases:**

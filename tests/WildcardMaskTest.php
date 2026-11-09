@@ -655,4 +655,218 @@ class WildcardMaskTest extends \PHPUnit\Framework\TestCase
             'Single host /32' => [32, '"0.0.0.0"'],
         ];
     }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringAllPrefixes')]
+    public function testFromStringParsesEveryPrefix(string $wildcardMask, int $expectedPrefix): void
+    {
+        // Given - A contiguous dotted-quad wildcard mask
+
+        // When
+        $mask = WildcardMask::fromString($wildcardMask);
+
+        // Then
+        $this->assertSame($expectedPrefix, $mask->prefix());
+        $this->assertSame($wildcardMask, $mask->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, int}>
+     */
+    public static function dataProviderForFromStringAllPrefixes(): array
+    {
+        return [
+            '/0'              => ['255.255.255.255', 0],
+            '/1'              => ['127.255.255.255', 1],
+            '/2'              => ['63.255.255.255', 2],
+            '/3'              => ['31.255.255.255', 3],
+            '/4'              => ['15.255.255.255', 4],
+            '/5'              => ['7.255.255.255', 5],
+            '/6'              => ['3.255.255.255', 6],
+            '/7'              => ['1.255.255.255', 7],
+            '/8'              => ['0.255.255.255', 8],
+            '/9'              => ['0.127.255.255', 9],
+            '/10'             => ['0.63.255.255', 10],
+            '/11'             => ['0.31.255.255', 11],
+            '/12'             => ['0.15.255.255', 12],
+            '/13'             => ['0.7.255.255', 13],
+            '/14'             => ['0.3.255.255', 14],
+            '/15'             => ['0.1.255.255', 15],
+            '/16'             => ['0.0.255.255', 16],
+            '/17'             => ['0.0.127.255', 17],
+            '/18'             => ['0.0.63.255', 18],
+            '/19'             => ['0.0.31.255', 19],
+            '/20'             => ['0.0.15.255', 20],
+            '/21'             => ['0.0.7.255', 21],
+            '/22'             => ['0.0.3.255', 22],
+            '/23'             => ['0.0.1.255', 23],
+            '/24'             => ['0.0.0.255', 24],
+            '/25'             => ['0.0.0.127', 25],
+            '/26'             => ['0.0.0.63', 26],
+            '/27'             => ['0.0.0.31', 27],
+            '/28'             => ['0.0.0.15', 28],
+            '/29'             => ['0.0.0.7', 29],
+            '/30'             => ['0.0.0.3', 30],
+            'RFC 3021 /31'    => ['0.0.0.1', 31],
+            'Single host /32' => ['0.0.0.0', 32],
+        ];
+    }
+
+    #[Test]
+    public function testFromStringParsesAllZerosAsSingleHost(): void
+    {
+        // Given - The all-zeros wildcard matches exactly one address
+
+        // When
+        $mask = WildcardMask::fromString('0.0.0.0');
+
+        // Then
+        $this->assertSame(32, $mask->prefix());
+        $this->assertSame('255.255.255.255', $mask->subnetMask()->asQuads());
+    }
+
+    #[Test]
+    public function testFromStringParsesLowBitAsPointToPoint(): void
+    {
+        // Given - The lowest bit alone matches an RFC 3021 point-to-point pair
+
+        // When
+        $mask = WildcardMask::fromString('0.0.0.1');
+
+        // Then
+        $this->assertSame(31, $mask->prefix());
+        $this->assertSame('255.255.255.254', $mask->subnetMask()->asQuads());
+    }
+
+    #[Test]
+    public function testFromStringParsesAllOnesAsEntireAddressSpace(): void
+    {
+        // Given - The all-ones wildcard matches the entire IPv4 space
+
+        // When
+        $mask = WildcardMask::fromString('255.255.255.255');
+
+        // Then
+        $this->assertSame(0, $mask->prefix());
+        $this->assertSame('0.0.0.0', $mask->subnetMask()->asQuads());
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringNonContiguous')]
+    public function testFromStringThrowsExceptionForNonContiguousMask(string $wildcardMask): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExactExceptionMessage("Invalid wildcard mask: non-contiguous mask '{$wildcardMask}'");
+
+        // When
+        WildcardMask::fromString($wildcardMask);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForFromStringNonContiguous(): array
+    {
+        return [
+            'ACL third-octet match'   => ['0.0.255.0'],
+            'alternating octets'      => ['0.255.0.255'],
+            'subnet mask as wildcard' => ['255.255.255.0'],
+            'lone second-lowest bit'  => ['0.0.0.2'],
+            'low bit clear'           => ['0.0.0.254'],
+            'lone high bit'           => ['128.0.0.0'],
+            'all ones but lowest bit' => ['255.255.255.254'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringInvalidFormat')]
+    public function testFromStringThrowsExceptionForInvalidFormat(string $wildcardMask): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExactExceptionMessage("Invalid wildcard mask format: '{$wildcardMask}'");
+
+        // When
+        WildcardMask::fromString($wildcardMask);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForFromStringInvalidFormat(): array
+    {
+        return [
+            'too few octets'     => ['0.0.255'],
+            'too many octets'    => ['0.0.0.255.0'],
+            'octet > 255'        => ['0.0.0.256'],
+            'negative octet'     => ['0.0.-1.255'],
+            'non-decimal octet'  => ['0.0.0.ff'],
+            'surrounding spaces' => [' 0.0.0.255 '],
+            'empty string'       => [''],
+            'CIDR notation'      => ['/24'],
+            'single number'      => ['255'],
+            'numeric exponent'   => ['0e0.0.0.0'],
+            'plus-signed octet'  => ['+0.0.0.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringLeadingZero')]
+    public function testFromStringRejectsLeadingZeroOctets(string $wildcardMask): void
+    {
+        // Given - Each mask would be a valid contiguous wildcard without its leading zero
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExactExceptionMessage("Invalid wildcard mask format: '{$wildcardMask}'");
+
+        // When
+        WildcardMask::fromString($wildcardMask);
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function dataProviderForFromStringLeadingZero(): array
+    {
+        return [
+            'double zero last octet'   => ['0.0.0.00'],
+            'leading zero /31'         => ['0.0.0.01'],
+            'leading zero /29'         => ['0.0.0.07'],
+            'leading zero /24'         => ['0.0.0.0255'],
+            'leading zero first octet' => ['00.0.0.255'],
+            'leading zero third octet' => ['0.0.03.255'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromStringInvalidFormat')]
+    #[DataProvider('dataProviderForFromStringLeadingZero')]
+    public function testFromStringChainsIpAddressException(string $wildcardMask): void
+    {
+        // Given - A wildcard mask that is not a valid dotted quad
+
+        // When
+        $exception = null;
+        try {
+            WildcardMask::fromString($wildcardMask);
+        } catch (\InvalidArgumentException $e) {
+            $exception = $e;
+        }
+
+        // Then
+        $this->assertInstanceOf(\InvalidArgumentException::class, $exception);
+        $previous = $exception->getPrevious();
+        $this->assertInstanceOf(\InvalidArgumentException::class, $previous);
+        $this->assertSame("Invalid IPv4 address: '{$wildcardMask}'", $previous->getMessage());
+    }
+
+    /**
+     * Expect the thrown exception's message to equal $message exactly, not merely contain it.
+     */
+    private function expectExactExceptionMessage(string $message): void
+    {
+        $this->expectExceptionMessageMatches('/\A' . \preg_quote($message, '/') . '\z/');
+    }
 }

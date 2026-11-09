@@ -11,6 +11,7 @@ use IPv4\Internal\IPv4;
  *
  * Provides methods for complex subnet creation scenarios:
  *  - From IP address and subnet mask string
+ *  - From IP address and wildcard mask string
  *  - From IP address range
  *  - From host count requirements
  *
@@ -33,6 +34,25 @@ final class SubnetParser
         $networkSize = $subnetMask instanceof SubnetMask
             ? $subnetMask->prefix()
             : SubnetMask::fromString($subnetMask)->prefix();
+
+        return new Subnet($ipAddress, $networkSize);
+    }
+
+    /**
+     * Create a Subnet from an IP address and wildcard mask.
+     *
+     * @param string|IPAddress    $ipAddress    IP address in dotted quad notation, or an IPAddress
+     * @param string|WildcardMask $wildcardMask Wildcard mask in dotted quad notation (e.g., "0.0.0.255"), or a WildcardMask
+     *
+     * @return Subnet
+     *
+     * @throws \InvalidArgumentException If wildcard mask is invalid or non-contiguous
+     */
+    public static function fromWildcardMask(string|IPAddress $ipAddress, string|WildcardMask $wildcardMask): Subnet
+    {
+        $networkSize = $wildcardMask instanceof WildcardMask
+            ? $wildcardMask->prefix()
+            : WildcardMask::fromString($wildcardMask)->prefix();
 
         return new Subnet($ipAddress, $networkSize);
     }

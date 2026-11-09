@@ -14,6 +14,8 @@
 - **`IPAddress::previous()`**: Returns the preceding address, carrying across octet boundaries; throws `\RuntimeException` at `0.0.0.0`
 - **`Subnet::supernet()`**: Returns the canonical enclosing block at a shorter or equal prefix (e.g., `192.168.1.0/24` to `/16` gives `192.168.0.0/16`); throws `\InvalidArgumentException` for a prefix outside 0 to the current prefix
 - **`Subnets::longestPrefixMatch()`**: Returns the most specific subnet in an array that contains an IP address, or `null` if none does; the matching element itself is returned, so `\array_search()` recovers its key
+- **`WildcardMask::fromString()`**: Parses a dotted-quad wildcard mask (e.g., `0.0.0.255` to `/24`); throws `\InvalidArgumentException` for malformed or non-contiguous masks such as the ACL-only `0.0.255.0`
+- **`SubnetParser::fromWildcardMask()`**: Creates a subnet from an IP address and a wildcard mask, as `fromMask()` does from a subnet mask; accepts strings or `IPAddress`/`WildcardMask` objects
 
 ### Fixed
 - **JSON serialization**: `AllocationPlan` encodes as `allocations` (name => network CIDR), `reserved` and `remaining` (lists of network CIDRs), and `ReverseDnsDelegation` as `parent_zone`, `child_zone` and `cname_records` (owner => target), instead of `{}`

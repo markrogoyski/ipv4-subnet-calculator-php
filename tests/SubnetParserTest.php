@@ -8,6 +8,7 @@ use IPv4\IPAddress;
 use IPv4\Subnet;
 use IPv4\SubnetMask;
 use IPv4\SubnetParser;
+use IPv4\WildcardMask;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -596,5 +597,119 @@ class SubnetParserTest extends TestCase
         // Then
         $this->assertSame('10.0.0.0', $subnet->ipAddress()->asQuads());
         $this->assertSame(25, $subnet->networkSize());
+    }
+
+    /* ******************** *
+     * fromWildcardMask()
+     * ******************** */
+
+    #[Test]
+    #[DataProvider('dataProviderForFromWildcardMask')]
+    public function testFromWildcardMaskCreatesSubnet(
+        string $ipAddress,
+        string $wildcardMask,
+        int $expectedSize
+    ): void {
+        // Given - An IP address and a contiguous wildcard mask
+
+        // When
+        $subnet = SubnetParser::fromWildcardMask($ipAddress, $wildcardMask);
+
+        // Then
+        $this->assertSame($expectedSize, $subnet->networkSize());
+        $this->assertSame($wildcardMask, $subnet->wildcardMask()->asQuads());
+        $this->assertSame($ipAddress, $subnet->ipAddress()->asQuads());
+    }
+
+    /**
+     * @return array<string, array{string, string, int}>
+     */
+    public static function dataProviderForFromWildcardMask(): array
+    {
+        return [
+            '/0 entire space' => ['0.0.0.0', '255.255.255.255', 0],
+            '/8'              => ['10.0.0.0', '0.255.255.255', 8],
+            '/16'             => ['172.16.0.0', '0.0.255.255', 16],
+            '/23 host input'  => ['192.168.112.203', '0.0.1.255', 23],
+            '/24'             => ['192.168.1.0', '0.0.0.255', 24],
+            '/30'             => ['192.168.1.0', '0.0.0.3', 30],
+            '/31 RFC 3021'    => ['10.0.0.0', '0.0.0.1', 31],
+            '/32 single host' => ['10.0.0.1', '0.0.0.0', 32],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromWildcardMaskArgumentTypes')]
+    public function testFromWildcardMaskAcceptsObjectArguments(
+        string|IPAddress $ipAddress,
+        string|WildcardMask $wildcardMask
+    ): void {
+        // Given - Each combination of string and object arguments
+
+        // When
+        $subnet = SubnetParser::fromWildcardMask($ipAddress, $wildcardMask);
+
+        // Then
+        $this->assertSame('192.168.1.7', $subnet->ipAddress()->asQuads());
+        $this->assertSame(24, $subnet->networkSize());
+    }
+
+    /**
+     * @return array<string, array{string|IPAddress, string|WildcardMask}>
+     */
+    public static function dataProviderForFromWildcardMaskArgumentTypes(): array
+    {
+        return [
+            'string and string'          => ['192.168.1.7', '0.0.0.255'],
+            'IPAddress and string'       => [new IPAddress('192.168.1.7'), '0.0.0.255'],
+            'string and WildcardMask'    => ['192.168.1.7', new WildcardMask(24)],
+            'IPAddress and WildcardMask' => [new IPAddress('192.168.1.7'), new WildcardMask(24)],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('dataProviderForFromWildcardMaskInvalid')]
+    public function testFromWildcardMaskThrowsExceptionForInvalidWildcardMask(
+        string $wildcardMask,
+        string $expectedMessage
+    ): void {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExactExceptionMessage($expectedMessage);
+
+        // When
+        SubnetParser::fromWildcardMask('192.168.1.0', $wildcardMask);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function dataProviderForFromWildcardMaskInvalid(): array
+    {
+        return [
+            'ACL-only wildcard'       => ['0.0.255.0', "Invalid wildcard mask: non-contiguous mask '0.0.255.0'"],
+            'subnet mask as wildcard' => ['255.255.255.0', "Invalid wildcard mask: non-contiguous mask '255.255.255.0'"],
+            'too few octets'          => ['0.0.0', "Invalid wildcard mask format: '0.0.0'"],
+            'leading-zero octet'      => ['0.0.0.0255', "Invalid wildcard mask format: '0.0.0.0255'"],
+        ];
+    }
+
+    #[Test]
+    public function testFromWildcardMaskThrowsExceptionForInvalidIpAddress(): void
+    {
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExactExceptionMessage("Invalid IPv4 address: 'invalid'");
+
+        // When
+        SubnetParser::fromWildcardMask('invalid', '0.0.0.255');
+    }
+
+    /**
+     * Expect the thrown exception's message to equal $message exactly, not merely contain it.
+     */
+    private function expectExactExceptionMessage(string $message): void
+    {
+        $this->expectExceptionMessageMatches('/\A' . \preg_quote($message, '/') . '\z/');
     }
 }

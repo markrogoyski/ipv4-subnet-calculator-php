@@ -840,6 +840,19 @@ Throws `\InvalidArgumentException` if the subnet mask is invalid or non-contiguo
 $subnet = SubnetParser::fromMask('192.168.1.0', '255.255.255.0');
 ```
 
+#### fromWildcardMask()
+```php
+SubnetParser::fromWildcardMask(string|IPAddress $ipAddress, string|WildcardMask $wildcardMask): Subnet
+```
+Create subnet from an IP address and wildcard mask. Each argument may be a string or an `IPAddress`/`WildcardMask` object.
+
+Throws `\InvalidArgumentException` if the wildcard mask is invalid or non-contiguous.
+
+**Example:**
+```php
+$subnet = SubnetParser::fromWildcardMask('192.168.1.0', '0.0.0.255');  // 192.168.1.0/24
+```
+
 #### fromRange()
 ```php
 SubnetParser::fromRange(string|IPAddress $startIp, string|IPAddress $endIp): Subnet
@@ -1312,6 +1325,20 @@ $wildcard = new WildcardMask(24);  // Creates 0.0.0.255
 ```
 
 #### Methods
+
+##### fromString()
+```php
+WildcardMask::fromString(string $wildcardMask): WildcardMask
+```
+Create a wildcard mask from dotted-quad notation.
+
+Throws `\InvalidArgumentException` if the mask is not a valid dotted quad or is non-contiguous. Non-contiguous ACL wildcards such as `0.0.255.0` are rejected because they do not describe a single subnet; see [Wildcard Mask](core-features.md#wildcard-mask).
+
+**Example:**
+```php
+$wildcard = WildcardMask::fromString('0.0.0.255');
+$wildcard->prefix();  // 24
+```
 
 ##### prefix()
 ```php

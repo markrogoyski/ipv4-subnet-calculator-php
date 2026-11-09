@@ -15,6 +15,10 @@ namespace IPv4;
  *   /16 → 0.0.255.255   (matches last 16 bits)
  *   /8  → 0.255.255.255 (matches last 24 bits)
  *
+ * Only contiguous low-order wildcards are representable. ACLs also allow
+ * non-contiguous wildcards such as 0.0.255.0, but no prefix expresses them,
+ * so they are rejected.
+ *
  * @link https://www.cisco.com/c/en/us/support/docs/security/ios-firewall/23602-confaccesslists.html
  */
 final class WildcardMask implements Mask
@@ -39,6 +43,36 @@ final class WildcardMask implements Mask
         }
 
         $this->maskBits = (1 << (32 - $prefix)) - 1;
+    }
+
+    /**
+     * Create a wildcard mask from dotted-quad notation.
+     *
+     * @param string $wildcardMask Wildcard mask in dotted quad notation (e.g., "0.0.0.255")
+     *
+     * @return self
+     *
+     * @throws \InvalidArgumentException If the mask is not a dotted quad or is non-contiguous
+     */
+    public static function fromString(string $wildcardMask): self
+    {
+        try {
+            $maskInt = (new IPAddress($wildcardMask))->asInteger();
+        } catch (\InvalidArgumentException $e) {
+            throw new \InvalidArgumentException(
+                "Invalid wildcard mask format: '{$wildcardMask}'",
+                0,
+                $e
+            );
+        }
+
+        if (($maskInt & ($maskInt + 1)) !== 0) {
+            throw new \InvalidArgumentException(
+                "Invalid wildcard mask: non-contiguous mask '{$wildcardMask}'"
+            );
+        }
+
+        return new self(32 - \substr_count(\decbin($maskInt), '1'));
     }
 
     /**
