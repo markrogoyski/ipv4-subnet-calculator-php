@@ -5,3 +5,4 @@ composer.phar
 .phpunit.result.cache
 tests/.phpunit.cache/test-results
 tests/.phpunit.cache/
+*_PLAN.md
