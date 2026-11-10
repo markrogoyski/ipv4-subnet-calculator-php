@@ -1,6 +1,6 @@
 # IPv4 SubnetCalculator Change Log
 
-## v5.3.0 - Unreleased
+## v5.3.0 - 2026-11-09
 
 ### New Features
 - **`SubnetAllocator::allocateByPrefix()`**: Allocates named subnets by CIDR prefix instead of host count, so blocks such as a `/30` link can be requested; mix both sizings with `SubnetParser::optimalPrefixForHosts()`
