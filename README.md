@@ -331,8 +331,7 @@ Unit Tests
 ----------
 
 ```bash
-cd tests
-phpunit
+vendor/bin/phpunit --configuration tests/phpunit.xml
 ```
 
 [![Coverage Status](https://coveralls.io/repos/github/markrogoyski/ipv4-subnet-calculator-php/badge.svg?branch=master)](https://coveralls.io/github/markrogoyski/ipv4-subnet-calculator-php?branch=master)

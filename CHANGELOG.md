@@ -4,6 +4,7 @@
 
 ### Fixed
 - **`SubnetAllocator` performance**: `allocate()` and `allocateByPrefix()` update the free space in place after each placement instead of recomputing it, so large allocations in fragmented free space (many scattered reservations) no longer slow down quadratically; plans and exception messages are unchanged
+- **64-bit check on masks**: `SubnetMask` and `WildcardMask` constructors throw `\RuntimeException` on 32-bit PHP, as `IPAddress` already did, instead of computing wrong masks (e.g., `new WildcardMask(0)` gave `-1`)
 
 ## v5.3.0 - 2026-11-09
 

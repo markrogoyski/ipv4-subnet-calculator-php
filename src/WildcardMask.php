@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace IPv4;
 
+use IPv4\Internal\Platform;
+
 /**
  * Immutable value object representing an IPv4 wildcard mask.
  *
@@ -33,9 +35,12 @@ final class WildcardMask implements Mask
      * @param int $prefix CIDR prefix length (0-32)
      *
      * @throws \InvalidArgumentException If prefix is not 0-32
+     * @throws \RuntimeException If running on 32-bit PHP
      */
     public function __construct(private readonly int $prefix)
     {
+        Platform::ensure64Bit();
+
         if ($prefix < 0 || $prefix > 32) {
             throw new \InvalidArgumentException(
                 "Prefix must be between 0 and 32, got {$prefix}"

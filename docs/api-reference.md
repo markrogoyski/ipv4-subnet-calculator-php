@@ -1692,7 +1692,7 @@ Implement JsonSerializable interface. Encodes the parent zone, the child zone an
 
 #### Construction
 
-Obtain plans from `SubnetAllocator::allocate()` or `allocateByPrefix()`. The constructor is internal. It checks only the shape of its arguments, throwing `\InvalidArgumentException` if an allocation key is not a string, the reserved or remaining array is not a list, or any element is not a `Subnet`. It does not check that the parts are disjoint, canonical or cover a parent network; only plans from `allocate()` or `allocateByPrefix()` are guaranteed to.
+Obtain plans from `SubnetAllocator::allocate()` or `allocateByPrefix()`. The constructor is internal. It checks only the shape of its arguments, throwing `\InvalidArgumentException` if an allocation key is not a nonempty string, the reserved or remaining array is not a list, or any element is not a `Subnet`. It does not check that the parts are disjoint, canonical or cover a parent network; only plans from `allocate()` or `allocateByPrefix()` are guaranteed to.
 
 #### Methods
 
