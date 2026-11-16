@@ -627,7 +627,8 @@ class DHCPScopePlanner {
         // would round its network address backward into space already in use.
         \uasort($departments, fn($a, $b) => $b['hosts'] <=> $a['hosts']);
 
-        $currentNetwork = $baseSubnet->networkAddress();
+        // Next free address as an integer, so it can step past 255.255.255.255
+        $cursor = $baseSubnet->networkAddress()->asInteger();
 
         foreach ($departments as $dept => $requirements) {
             $requiredHosts = $requirements['hosts'];
@@ -635,10 +636,14 @@ class DHCPScopePlanner {
                 throw new \InvalidArgumentException("{$dept}: Host requirement must be a positive integer");
             }
 
+            if ($cursor > $baseSubnet->broadcastAddress()->asInteger()) {
+                throw new \RuntimeException("Insufficient space in {$baseNetwork} for {$dept}");
+            }
+
             // Size the scope so the DHCP pool still holds every required host
             // after the static and gateway reservations are taken out
             $reserved = self::STATIC_RESERVED + self::GATEWAY_RESERVED;
-            $scope = IPv4\SubnetParser::fromHostCount($currentNetwork, $requiredHosts + $reserved);
+            $scope = IPv4\SubnetParser::fromHostCount(IPv4\IPAddress::fromInteger($cursor), $requiredHosts + $reserved);
 
             // Verify scope fits within base network
             if (!$baseSubnet->contains($scope)) {
@@ -661,7 +666,8 @@ class DHCPScopePlanner {
                 'dns' => $dns,
             ];
 
-            $currentNetwork = $scope->next()->networkAddress();
+            // The next scope starts right after this one's broadcast address
+            $cursor = $scope->broadcastAddress()->asInteger() + 1;
         }
 
         $unassignable = [(string) $baseSubnet->networkAddress(), (string) $baseSubnet->broadcastAddress()];

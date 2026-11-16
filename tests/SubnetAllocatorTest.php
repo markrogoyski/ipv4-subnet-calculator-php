@@ -775,6 +775,108 @@ class SubnetAllocatorTest extends TestCase
     }
 
     /* ************************** *
+     * Free space bookkeeping
+     * ************************** */
+
+    /**
+     * allocateByPrefix leaves exactly the parent minus the reservations and allocations as remaining free space
+     *
+     * @param string             $parentCidr
+     * @param array<string, int> $prefixes
+     * @param array<string>      $reservedCidrs
+     */
+    #[Test]
+    #[DataProvider('dataProviderForRemainingEquivalence')]
+    public function allocateByPrefixLeavesExactlyTheDifferenceOfParentAndUsedSpace(string $parentCidr, array $prefixes, array $reservedCidrs): void
+    {
+        // Given
+        $parent = Subnet::fromCidr($parentCidr);
+        $reserved = self::subnets($reservedCidrs);
+
+        // When
+        $plan = SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+
+        // Then
+        $used = \array_merge(Subnets::aggregate($reserved), \array_values($plan->allocations()));
+        $this->assertSame(self::cidrs(Subnets::difference([$parent], $used)), self::cidrs($plan->remaining()));
+    }
+
+    /**
+     * @return array<string, array{string, array<string, int>, array<string>}>
+     */
+    public static function dataProviderForRemainingEquivalence(): array
+    {
+        // 64 scattered /32 reservations and 96 requests from /24 to /32, repeating each prefix
+        $scatteredReserved = [];
+        for ($i = 0; $i < 64; $i++) {
+            $scatteredReserved[] = '10.0.' . (($i * 37) % 256) . '.' . (($i * 101 + 7) % 256) . '/32';
+        }
+        $mixedPrefixes = [];
+        for ($i = 0; $i < 96; $i++) {
+            $mixedPrefixes["r{$i}"] = 24 + ($i * 7) % 9;
+        }
+
+        return [
+            '/0 parent, no reservations'            => ['0.0.0.0/0', ['a' => 1, 'b' => 8, 'c' => 8, 'd' => 32], []],
+            '/0 parent around private space'        => ['0.0.0.0/0', ['a' => 2, 'b' => 9, 'c' => 9, 'd' => 31, 'e' => 32, 'f' => 32], ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '255.255.255.255/32']],
+            '/31 parent with two /32s'              => ['192.0.2.6/31', ['a' => 32, 'b' => 32], []],
+            '/31 parent with one /32 reserved'      => ['192.0.2.6/31', ['a' => 32], ['192.0.2.6/32']],
+            '/31 parent as one /31'                 => ['192.0.2.6/31', ['a' => 31], []],
+            '/32 parent with one /32'               => ['192.0.2.7/32', ['a' => 32], []],
+            '/32 parent fully reserved'             => ['192.0.2.7/32', [], ['192.0.2.7/32']],
+            'equal prefixes around scattered /32s'  => ['10.0.0.0/24', ['h1' => 32, 'h2' => 32, 'h3' => 32, 'h4' => 32, 'l1' => 30, 'l2' => 30, 'l3' => 30], ['10.0.0.1/32', '10.0.0.6/32', '10.0.0.9/32', '10.0.0.130/32', '10.0.0.255/32']],
+            'interleaved differing prefixes'        => ['10.0.0.0/22', ['k' => 32, 'a' => 24, 'f' => 31, 'b' => 26, 'e' => 30, 'c' => 26, 'd' => 27, 'x' => 28, 'g' => 31], ['10.0.0.64/27', '10.0.1.3/32', '10.0.2.128/26']],
+            'nested and overlapping reservations'   => ['10.0.0.0/24', ['a' => 26, 'b' => 27, 'c' => 32], ['10.0.0.0/26', '10.0.0.16/28', '10.0.0.0/25', '10.0.0.200/29', '10.0.0.200/30']],
+            'empty requirements'                    => ['10.0.0.0/24', [], ['10.0.0.17/32']],
+            'scattered /32s with mixed prefixes'    => ['10.0.0.0/16', $mixedPrefixes, $scatteredReserved],
+        ];
+    }
+
+    /**
+     * allocateByPrefix names the unplaceable request and describes the whole free list at that point
+     *
+     * @param string             $parentCidr
+     * @param array<string, int> $prefixes
+     * @param array<string>      $reservedCidrs
+     * @param string             $expectedMessage
+     */
+    #[Test]
+    #[DataProvider('dataProviderForExactPlacementFailures')]
+    public function allocateByPrefixFailureNamesTheRequestAndTheWholeFreeList(string $parentCidr, array $prefixes, array $reservedCidrs, string $expectedMessage): void
+    {
+        // Given
+        $parent = Subnet::fromCidr($parentCidr);
+        $reserved = self::subnets($reservedCidrs);
+
+        // When
+        $message = null;
+        try {
+            SubnetAllocator::allocateByPrefix($parent, $prefixes, $reserved);
+        } catch (\RuntimeException $e) {
+            $message = $e->getMessage();
+        }
+
+        // Then
+        $this->assertSame($expectedMessage, $message);
+    }
+
+    /**
+     * @return array<string, array{string, array<string, int>, array<string>, string}>
+     */
+    public static function dataProviderForExactPlacementFailures(): array
+    {
+        return [
+            'failure after equal-prefix placements' => ['10.0.0.0/24', ['a' => 26, 'b' => 26, 'c' => 26], ['10.0.0.0/26', '10.0.0.128/27'], "Cannot allocate 'c' as a /26: largest free block is a /27 (32 free addresses in 1 block)"],
+            'failure in a later prefix group'       => ['10.0.0.0/28', ['p' => 29, 'q' => 30, 'r' => 30], ['10.0.0.5/32'], "Cannot allocate 'r' as a /30: largest free block is a /31 (3 free addresses in 2 blocks)"],
+            'equal prefixes exhaust the parent'     => ['10.0.0.0/24', ['a' => 25, 'b' => 25, 'c' => 25], [], "Cannot allocate 'c' as a /25: no free space remains"],
+            '/0 parent filled by a /0'              => ['0.0.0.0/0', ['all' => 0, 'one' => 32], [], "Cannot allocate 'one' as a /32: no free space remains"],
+            '/31 parent with three /32s'            => ['192.0.2.6/31', ['a' => 32, 'b' => 32, 'c' => 32], [], "Cannot allocate 'c' as a /32: no free space remains"],
+            '/32 parent with two /32s'              => ['192.0.2.7/32', ['a' => 32, 'b' => 32], [], "Cannot allocate 'b' as a /32: no free space remains"],
+            'larger block after scattered /32s'     => ['10.0.0.0/29', ['h' => 32, 'w' => 30], ['10.0.0.1/32', '10.0.0.6/32'], "Cannot allocate 'w' as a /30: largest free block is a /31 (6 free addresses in 4 blocks)"],
+        ];
+    }
+
+    /* ************************** *
      * JSON serialization
      * ************************** */
 

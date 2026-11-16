@@ -1,5 +1,10 @@
 # IPv4 SubnetCalculator Change Log
 
+## v5.3.1 - Unreleased
+
+### Fixed
+- **`SubnetAllocator` performance**: `allocate()` and `allocateByPrefix()` update the free space in place after each placement instead of recomputing it, so large allocations in fragmented free space (many scattered reservations) no longer slow down quadratically; plans and exception messages are unchanged
+
 ## v5.3.0 - 2026-11-09
 
 ### New Features

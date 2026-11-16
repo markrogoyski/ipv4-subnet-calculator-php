@@ -102,11 +102,37 @@ final class SubnetAllocator
 
         $reservedUnion = Subnets::aggregate($reserved);
         $free = Subnets::difference([$parent], $reservedUnion);
+
+        // The free list is held as a gap buffer at a scan cursor: $before holds the blocks left of
+        // the cursor in ascending order and $after the rest in descending order, so the free list
+        // is $before followed by \array_reverse($after) and the block at the cursor is $after's
+        // last element. Requests come in non-decreasing prefix order, and for one prefix the first
+        // fit never moves left (the block left at the cursor after a placement is exactly the
+        // placed size), so the cursor rewinds to the start only when the prefix changes.
+        $before = [];
+        $after = \array_reverse($free);
+        $cursorPrefix = null;
         $placed = [];
         foreach ($order as $name) {
-            $placed[$name] = self::firstFit($free, $name, $prefixes[$name]);
-            $free = Subnets::difference($free, [$placed[$name]]);
+            $prefix = $prefixes[$name];
+            if ($prefix !== $cursorPrefix) {
+                $after = \array_merge($after, \array_reverse($before));
+                $before = [];
+                $cursorPrefix = $prefix;
+            }
+
+            $block = self::firstFit($before, $after, $name, $prefix);
+            $placed[$name] = new Subnet($block->networkAddress(), $prefix);
+
+            // Replace the block by its remainder: the buddies /P+1 at a+B/2 down to /prefix at a+s,
+            // pushed largest address first so the lowest lands at the cursor. This is the minimal
+            // ascending decomposition of the block minus the placed subnet at its start.
+            $start = $block->networkAddress()->asInteger();
+            for ($buddyPrefix = $block->networkSize() + 1; $buddyPrefix <= $prefix; $buddyPrefix++) {
+                $after[] = new Subnet(IPAddress::fromInteger($start + (1 << (32 - $buddyPrefix))), $buddyPrefix);
+            }
         }
+        $free = \array_merge($before, \array_reverse($after));
 
         $allocations = [];
         foreach (\array_keys($prefixes) as $name) {
@@ -219,27 +245,37 @@ final class SubnetAllocator
     }
 
     /**
-     * Find the lowest-address aligned block of the given prefix in the free space.
+     * Advance the scan cursor to the first free block that can hold the given prefix and remove it.
      *
      * Free blocks are minimal and ascending, so any aligned fit lies inside one block at least
-     * as large, and the first such block's network address is the lowest fit.
+     * as large, and the first such block's network address is the lowest fit. The free list is
+     * $before followed by \array_reverse($after), with the cursor between them; blocks too small
+     * for the prefix move from $after to $before as the cursor passes them. The caller must have
+     * no fitting block in $before, which holds while the prefix is unchanged since the last rewind.
      *
-     * @param list<Subnet> $free   Minimal free blocks in ascending order
+     * @param list<Subnet> $before Free blocks left of the cursor, ascending
+     * @param list<Subnet> $after  Free blocks from the cursor on, descending
      * @param string       $name   Requirement name, for the failure message
      * @param int          $prefix Required prefix
      *
-     * @return Subnet
+     * @param-out list<Subnet> $before
+     * @param-out list<Subnet> $after
+     *
+     * @return Subnet The free block at the cursor, no longer in either list
      *
      * @throws \RuntimeException If no free block is large enough
      */
-    private static function firstFit(array $free, string $name, int $prefix): Subnet
+    private static function firstFit(array &$before, array &$after, string $name, int $prefix): Subnet
     {
-        foreach ($free as $block) {
+        while (($block = \array_pop($after)) !== null) {
             if ($block->networkSize() <= $prefix) {
-                return new Subnet($block->networkAddress(), $prefix);
+                return $block;
             }
+            $before[] = $block;
         }
 
+        // The cursor passed every block, so $before is the whole free list
+        $free = $before;
         if ($free === []) {
             throw new \RuntimeException("Cannot allocate '{$name}' as a /{$prefix}: no free space remains");
         }
