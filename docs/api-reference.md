@@ -1724,11 +1724,11 @@ $plan->remaining();   // [Subnet: 192.0.2.4/30]
 ```php
 jsonSerialize(): array // array<string, mixed>: allocations, reserved, remaining
 ```
-Implement JsonSerializable interface. Encodes each subnet as its network CIDR string rather than a full subnet report: `allocations` as an object of name => CIDR in requirement order, and `reserved` and `remaining` as lists of CIDRs in ascending order. `allocations` is always a JSON object, `{}` when the plan has no allocations. Each CIDR parses back with `Subnet::fromNetworkCidr()`.
+Implement JsonSerializable interface. Encodes each subnet as its network CIDR string rather than a full subnet report: `allocations` as an object of name => CIDR in requirement order, and `reserved` and `remaining` as lists of CIDRs in ascending order. `allocations` is always a JSON object, `{}` when the plan has no allocations. Each CIDR parses back with `Subnet::fromNetworkCidr()`. Names are encoded as given, so `json_encode()` fails on a name that is not valid UTF-8; pass `JSON_THROW_ON_ERROR` to get an exception instead of `false`.
 
 **Example:**
 ```php
-\json_encode($plan, JSON_UNESCAPED_SLASHES);
+\json_encode($plan, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 // {"allocations":{"link":"192.0.2.2/31"},"reserved":["192.0.2.0/31"],"remaining":["192.0.2.4/30"]}
 
 \json_encode(SubnetAllocator::allocate(Subnet::fromCidr('10.0.0.0/24'), []), JSON_UNESCAPED_SLASHES);
