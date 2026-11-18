@@ -1,5 +1,9 @@
 .PHONY : lint tests style phpstan phpmd psalm composer-unused composer-require-checker composer-audit coverage
 
+# Composer command: composer.phar run through php if present, otherwise composer on PATH. Override with
+# COMPOSER_BIN=... (not COMPOSER, which Composer itself reads as the path to composer.json)
+COMPOSER_BIN ?= $(if $(wildcard composer.phar),php composer.phar,composer)
+
 all : lint tests style phpstan psalm composer-unused composer-require-checker
 
 tests :
@@ -27,7 +31,7 @@ composer-require-checker :
 	vendor/bin/composer-require-checker check composer.json
 
 composer-audit :
-	./composer.phar audit
+	$(COMPOSER_BIN) audit
 
 coverage :
 	vendor/bin/phpunit tests/ --configuration=tests/phpunit.xml --coverage-text=php://stdout
