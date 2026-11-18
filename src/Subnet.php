@@ -88,8 +88,10 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        // Range-check here so an oversized prefix, which (int) clamps to PHP_INT_MAX, is reported as typed
-        if ($digits !== $prefix || (int) $digits > 32) {
+        // Range-check the digits before casting: (int) clamps a long prefix to PHP_INT_MAX, but one beyond float
+        // range (e.g., 309 nines) overflows to INF, which casts to 0; with leading zeros rejected, a valid prefix
+        // has at most two digits
+        if ($digits !== $prefix || \strlen($digits) > 2 || (int) $digits > 32) {
             throw new \InvalidArgumentException(
                 "Invalid CIDR notation: prefix must be between 0 and 32 in '{$cidr}'"
             );
