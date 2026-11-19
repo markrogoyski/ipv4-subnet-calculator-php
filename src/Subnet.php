@@ -70,7 +70,9 @@ final class Subnet implements \JsonSerializable, \Stringable
             );
         }
 
-        $parts = \explode('/', $cidr);
+        // Limit the split: a third part already proves a second '/', and an unbounded explode() of input made of
+        // slashes allocates an array many times the input's size before the count check can reject it
+        $parts = \explode('/', $cidr, 3);
 
         if (\count($parts) !== 2) {
             throw new \InvalidArgumentException(

@@ -670,6 +670,28 @@ class SubnetBasicTest extends \PHPUnit\Framework\TestCase
     }
 
     #[Test]
+    public function testFromCidrRejectsManySlashesWithoutExhaustingMemory(): void
+    {
+        // Given - 8 MiB of slashes, which an unbounded split would expand to an array of about 256 MiB
+        $cidr = \str_repeat('/', 8 * 1024 * 1024);
+
+        // And - A memory limit with 64 MiB of headroom, so an unbounded split fails fatally instead of throwing
+        $originalLimit = \ini_get('memory_limit');
+        \ini_set('memory_limit', (string) (\memory_get_usage() + 64 * 1024 * 1024));
+
+        // Then
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage("multiple '/'");
+
+        // When
+        try {
+            Subnet::fromCidr($cidr);
+        } finally {
+            \ini_set('memory_limit', $originalLimit);
+        }
+    }
+
+    #[Test]
     public function testFromCidrThrowsExceptionWhenPrefixIsNotAnInteger(): void
     {
         // Given - A CIDR string with non-integer prefix
