@@ -364,8 +364,10 @@ v5 recognizes five IANA special-purpose ranges that v4 classified as public. For
 | Range | v4 `getAddressType()` | v5 `addressType()` |
 |-------|-----------------------|--------------------|
 | `192.0.0.0/24` | `'public'` | `AddressType::IetfProtocol` (`'ietf-protocol'`) |
-| `192.88.99.0/24` | `'public'` | `AddressType::Deprecated6to4` (`'deprecated-6to4'`) |
-| `192.31.196.0/24`, `192.52.193.0/24`, `192.175.48.0/24` | `'public'` | `AddressType::IanaReserved` (`'iana-reserved'`) |
+| `192.88.99.0/24` excluding `192.88.99.2` | `'public'` | `AddressType::Deprecated6to4` (`'deprecated-6to4'`) |
+| `192.31.196.0/24`, `192.52.193.0/24`, `192.175.48.0/24`, `192.88.99.2/32` | `'public'` | `AddressType::IanaReserved` (`'iana-reserved'`) |
+
+The `192.88.99.2/32` exception for the 6a44 relay anycast address was added in v5.1.0.
 
 ### Network Operations (Unchanged)
 

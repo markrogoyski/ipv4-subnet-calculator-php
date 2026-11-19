@@ -621,6 +621,17 @@ class DHCPScopePlanner {
     public function planScopes($baseNetwork, array $departments) {
         $baseSubnet = IPv4\Subnet::fromCidr($baseNetwork);
         $scopes = [];
+        $reserved = self::STATIC_RESERVED + self::GATEWAY_RESERVED;
+
+        foreach ($departments as $dept => $requirements) {
+            $requiredHosts = \is_array($requirements) ? ($requirements['hosts'] ?? null) : null;
+            if (!\is_int($requiredHosts) || $requiredHosts < 1) {
+                throw new \InvalidArgumentException("{$dept}: Host requirement must be a positive integer");
+            }
+            if ($requiredHosts > PHP_INT_MAX - $reserved) {
+                throw new \InvalidArgumentException("{$dept}: Host requirement is too large after reservations");
+            }
+        }
 
         // Allocate largest scopes first (VLSM) so each scope starts on a boundary
         // aligned to its size. Allocating a larger scope after a smaller one
@@ -632,9 +643,6 @@ class DHCPScopePlanner {
 
         foreach ($departments as $dept => $requirements) {
             $requiredHosts = $requirements['hosts'];
-            if (!\is_int($requiredHosts) || $requiredHosts < 1) {
-                throw new \InvalidArgumentException("{$dept}: Host requirement must be a positive integer");
-            }
 
             if ($cursor > $baseSubnet->broadcastAddress()->asInteger()) {
                 throw new \RuntimeException("Insufficient space in {$baseNetwork} for {$dept}");
@@ -642,7 +650,6 @@ class DHCPScopePlanner {
 
             // Size the scope so the DHCP pool still holds every required host
             // after the static and gateway reservations are taken out
-            $reserved = self::STATIC_RESERVED + self::GATEWAY_RESERVED;
             $scope = IPv4\SubnetParser::fromHostCount(IPv4\IPAddress::fromInteger($cursor), $requiredHosts + $reserved);
 
             // Verify scope fits within base network
@@ -790,6 +797,9 @@ $scope = IPv4\Subnet::fromCidr('192.168.10.0/24')->hostRange();
 $first = new IPv4\IPRange('192.168.20.10', '192.168.20.99');
 $second = new IPv4\IPRange('192.168.20.100', '192.168.20.199');
 if ($first->isAdjacent($second)) {
+    if ($first->start()->compare($second->start()) > 0) {
+        [$first, $second] = [$second, $first];
+    }
     echo new IPv4\IPRange($first->start(), $second->end()) . "\n";  // 192.168.20.10 - 192.168.20.199
 }
 ```
@@ -802,7 +812,7 @@ if ($first->isAdjacent($second)) {
 
 ### Reverse DNS Zone Generator
 
-Generate reverse DNS zone files, one per zone origin.
+Generate reverse DNS zone files, one per zone origin. Pass a nonempty array of nameservers. The first entry is used as the SOA primary nameserver.
 
 `reverseZones()` returns the octet-aligned zone origins that exactly cover a network, without trailing dots. A /8, /16 or /24 has one origin; a /20 has sixteen /24 origins; a /25–/32 has one /32 origin per address, never the enclosing /24. To delegate a /25–/32 as one child zone instead, see [classless reverse DNS delegation](#classless-reverse-dns-delegation). The generator appends the trailing dot only when it writes absolute names in zone-file syntax.
 
@@ -813,12 +823,15 @@ Secondary servers compare the SOA serial to decide whether to transfer the zone 
 
 class ReverseDNSZoneGenerator {
     // Returns zone file text keyed by zone origin
-    public function generateZones($cidr, $nameservers, $serial, $hostnames = []) {
-        $subnet = IPv4\Subnet::fromCidr($cidr);
+    public function generateZones($cidr, array $nameservers, $serial, $hostnames = []) {
+        $subnet = \IPv4\Subnet::fromCidr($cidr);
 
         // SOA serials are unsigned 32-bit values (RFC 1982)
         if (!\is_int($serial) || $serial < 0 || $serial > 0xFFFFFFFF) {
-            throw new InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
+            throw new \InvalidArgumentException("Serial must be an integer from 0 to 4294967295");
+        }
+        if ($nameservers === []) {
+            throw new \InvalidArgumentException("At least one nameserver is required");
         }
 
         $zones = [];
@@ -836,7 +849,8 @@ class ReverseDNSZoneGenerator {
 
         $zone .= "\$ORIGIN {$this->absolute($origin)}\n";
         $zone .= "\$TTL 86400\n";
-        $zone .= "@    IN    SOA    {$this->absolute($nameservers[0])} hostmaster.example.com. (\n";
+        $primary = $this->absolute($nameservers[\array_key_first($nameservers)]);
+        $zone .= "@    IN    SOA    {$primary} hostmaster.example.com. (\n";
         $zone .= "            " . \str_pad((string) $serial, 18) . "; Serial\n";
         $zone .= "            3600              ; Refresh\n";
         $zone .= "            1800              ; Retry\n";
@@ -852,7 +866,7 @@ class ReverseDNSZoneGenerator {
         // PTR records use absolute owner names (trailing dot); an address belongs
         // to this zone when its PTR name ends with the origin
         foreach ($hostnames as $ip => $hostname) {
-            $ptrRecord = (new IPv4\IPAddress($ip))->arpaDomain();
+            $ptrRecord = (new \IPv4\IPAddress($ip))->arpaDomain();
             if (\str_ends_with(".{$ptrRecord}", ".{$origin}")) {
                 $zone .= "{$this->absolute($ptrRecord)}    IN    PTR    {$this->absolute($hostname)}\n";
             }

@@ -10,16 +10,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 class SubnetIpFormatsTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var Subnet */
-    private $sub;
-
-    /**
-     * Set up test Subnet
-     */
-    public function setUp(): void
-    {
-        $this->sub = new Subnet('192.168.112.203', 23);
-    }
     /**
      * getIPAddressQuads
      * @param        string   $ip_address
@@ -133,7 +123,7 @@ class SubnetIpFormatsTest extends \PHPUnit\Framework\TestCase
     }
 
     /**
-     * @return string[][] [ip_address, int]
+     * @return array<int, array{string, int}>
      */
     public static function dataProviderForIpAddressInteger(): array
     {

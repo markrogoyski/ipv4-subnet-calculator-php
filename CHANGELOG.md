@@ -4,7 +4,7 @@
 
 ### Fixed
 - **`SubnetAllocator` performance**: `allocate()` and `allocateByPrefix()` update the free space in place after each placement instead of recomputing it, so large allocations in fragmented free space (many scattered reservations) no longer slow down quadratically; plans and exception messages are unchanged
-- **64-bit check on masks**: `SubnetMask` and `WildcardMask` constructors throw `\RuntimeException` on 32-bit PHP, as `IPAddress` already did, instead of computing wrong masks (e.g., `new WildcardMask(0)` gave `-1`)
+- **64-bit runtime check**. Like `IPAddress`, the `SubnetMask` and `WildcardMask` constructors throw `\RuntimeException` on 32-bit PHP before computing masks. Previously, `new WildcardMask(0)` could produce `-1`. `SubnetParser::optimalPrefixForHosts()` and `SubnetParser::fromHostCount()` now throw the same exception before performing host-count arithmetic.
 - **`Subnet::fromCidr()` and `fromNetworkCidr()`**: Reject prefixes beyond float range (e.g., 309 nines) instead of accepting the CIDR as `0.0.0.0/0`; such prefixes overflowed to `INF`, which casts to `0`
 - **`Subnet::fromCidr()` and `fromNetworkCidr()` memory use**: Reject input with many `/` separators by throwing `\InvalidArgumentException` without first splitting it at every `/`; an 8 MiB string of slashes previously allocated about 256 MiB and could exhaust `memory_limit` with a fatal error
 

@@ -1018,17 +1018,18 @@ echo "172.16.0.0/12 is classful: " . ($supernettedB->isClassful() ? 'Yes' : 'No'
 // Subnet analysis tool for learning classful networking
 function analyzeSubnet($cidr) {
     $subnet = IPv4\Subnet::fromCidr($cidr);
+    $classfulPrefix = $subnet->defaultClassPrefix();
+    $classfulMask = $classfulPrefix === null ? 'N/A' : "{$subnet->defaultClassMask()} (/{$classfulPrefix})";
 
     echo "Subnet: {$subnet->cidr()}\n";
     echo "Class: {$subnet->networkClass()->value}\n";  // Use ->value for string
-    echo "Default classful mask: {$subnet->defaultClassMask()} (/{$subnet->defaultClassPrefix()})\n";
+    echo "Default classful mask: {$classfulMask}\n";
     echo "Actual mask: {$subnet->mask()} (/{$subnet->networkSize()})\n";
 
     if ($subnet->isClassful()) {
         echo "This subnet uses its natural classful boundary.\n";
-    } else {
+    } elseif ($classfulPrefix !== null) {
         $actualPrefix = $subnet->networkSize();
-        $classfulPrefix = $subnet->defaultClassPrefix();
 
         if ($actualPrefix > $classfulPrefix) {
             $bits = $actualPrefix - $classfulPrefix;

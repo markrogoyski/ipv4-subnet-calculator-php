@@ -1,4 +1,4 @@
-.PHONY : lint tests style phpstan phpmd psalm composer-unused composer-require-checker composer-audit coverage
+.PHONY : all lint tests style phpstan phpmd psalm composer-unused composer-require-checker composer-audit coverage
 
 # Composer command: composer.phar run through php if present, otherwise composer on PATH. Override with
 # COMPOSER_BIN=... (not COMPOSER, which Composer itself reads as the path to composer.json)

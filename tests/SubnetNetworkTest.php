@@ -10,17 +10,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 class SubnetNetworkTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var Subnet */
-    private $sub;
-
-    /**
-     * Set up test Subnet
-     */
-    public function setUp(): void
-    {
-        $this->sub = new Subnet('192.168.112.203', 23);
-    }
-
     /**
      * getNumberIpAddresses returns the number of IP addresses
      * @param        string $ip_address

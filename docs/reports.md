@@ -544,10 +544,8 @@ function compareSubnets($cidr1, $cidr2) {
 
         if ($subnet1->contains($subnet2)) {
             echo "  → {$cidr1} contains {$cidr2}\n";
-        } elseif ($subnet2->contains($subnet1)) {
-            echo "  → {$cidr2} contains {$cidr1}\n";
         } else {
-            echo "  → Partial overlap detected\n";
+            echo "  → {$cidr2} contains {$cidr1}\n";
         }
     } else {
         echo "✓ Subnets do not overlap - no conflict\n";

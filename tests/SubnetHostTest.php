@@ -10,17 +10,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 class SubnetHostTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var Subnet */
-    private $sub;
-
-    /**
-     * Set up test Subnet
-     */
-    public function setUp(): void
-    {
-        $this->sub = new Subnet('192.168.112.203', 23);
-    }
-
     /**
      * hostRange returns the correct range of addressable hosts
      * @param        string $ip_address

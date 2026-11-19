@@ -874,7 +874,7 @@ SubnetParser::fromHostCount(string|IPAddress $ipAddress, int $hostCount): Subnet
 ```
 Create smallest subnet that accommodates the required host count. The address may be a string or an `IPAddress`.
 
-Throws `\InvalidArgumentException` if the host count is invalid.
+Throws `\InvalidArgumentException` if the host count is invalid and `\RuntimeException` on 32-bit PHP.
 
 **Example:**
 ```php
@@ -889,7 +889,7 @@ SubnetParser::optimalPrefixForHosts(int $hostCount): int
 ```
 Calculate optimal CIDR prefix for a given host count.
 
-Throws `\InvalidArgumentException` if the host count is invalid.
+Throws `\InvalidArgumentException` if the host count is invalid and `\RuntimeException` on 32-bit PHP.
 
 **Example:**
 ```php
@@ -1285,6 +1285,20 @@ $mask = new SubnetMask(24);  // Creates 255.255.255.0
 
 #### Methods
 
+##### fromString()
+```php
+SubnetMask::fromString(string $subnetMask): SubnetMask
+```
+Create a subnet mask from dotted-quad notation.
+
+Throws `\InvalidArgumentException` if the mask is malformed or has non-contiguous bits and `\RuntimeException` on 32-bit PHP.
+
+**Example:**
+```php
+$mask = SubnetMask::fromString('255.255.255.0');
+$mask->prefix();  // 24
+```
+
 ##### prefix()
 ```php
 prefix(): int
@@ -1574,7 +1588,7 @@ Compare with another IPRange.
 
 ##### getIterator()
 ```php
-getIterator(): \Generator<IPAddress>
+getIterator(): \Generator<int, IPAddress>
 ```
 Get iterator for foreach loops. Because IPRange implements `IteratorAggregate`, you can iterate directly without calling this method explicitly.
 
@@ -1753,7 +1767,7 @@ Implement JsonSerializable interface. Encodes each subnet as its network CIDR st
 - `AddressType::Documentation` - RFC 5737 TEST-NET ranges
 - `AddressType::Benchmarking` - RFC 2544 benchmarking addresses
 - `AddressType::IetfProtocol` - RFC 5735/6890 IETF protocol assignments (192.0.0.0/24)
-- `AddressType::Deprecated6to4` - RFC 3068/7526 deprecated 6to4 relay (192.88.99.0/24)
+- `AddressType::Deprecated6to4` - RFC 3068/7526 deprecated 6to4 relay (192.88.99.0/24, excluding 192.88.99.2)
 - `AddressType::Reserved` - 240.0.0.0/4 reserved for future use
 - `AddressType::LimitedBroadcast` - 255.255.255.255 limited broadcast
 - `AddressType::IanaReserved` - IANA Special-Purpose assignments (192.31.196.0/24, 192.52.193.0/24, 192.175.48.0/24, 192.88.99.2/32)

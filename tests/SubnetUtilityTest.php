@@ -443,11 +443,16 @@ class SubnetUtilityTest extends \PHPUnit\Framework\TestCase
      * @param string $inputString
      * @param int    $networkSize
      * @param int    $newNetworkSize
-     * @param mixed  $expectedMessage
+     * @param string $expectedMessage
      */
+    #[Test]
     #[DataProvider('invalidIPV4Provider')]
-    public function testInvalidSplitIPV4(string $inputString, int $networkSize, int $newNetworkSize, string $expectedMessage)
-    {
+    public function testInvalidSplitIPV4(
+        string $inputString,
+        int $networkSize,
+        int $newNetworkSize,
+        string $expectedMessage
+    ): void {
         // Given
         $subnet = new Subnet($inputString, $networkSize);
 

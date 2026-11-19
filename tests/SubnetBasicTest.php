@@ -11,17 +11,6 @@ use PHPUnit\Framework\Attributes\Test;
 
 class SubnetBasicTest extends \PHPUnit\Framework\TestCase
 {
-    /** @var Subnet */
-    private Subnet $sub;
-
-    /**
-     * Set up test Subnet
-     */
-    public function setUp(): void
-    {
-        $this->sub = new Subnet('192.168.112.203', 23);
-    }
-
     #[Test]
     public function testLibraryRequires64BitPhp(): void
     {

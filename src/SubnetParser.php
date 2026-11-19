@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace IPv4;
 
 use IPv4\Internal\IPv4;
+use IPv4\Internal\Platform;
 
 /**
  * Parser for creating Subnet instances from various input formats.
@@ -115,6 +116,7 @@ final class SubnetParser
      * @return Subnet
      *
      * @throws \InvalidArgumentException If host count is invalid
+     * @throws \RuntimeException If running on 32-bit PHP
      */
     public static function fromHostCount(string|IPAddress $ipAddress, int $hostCount): Subnet
     {
@@ -129,9 +131,12 @@ final class SubnetParser
      * @return int Optimal CIDR prefix
      *
      * @throws \InvalidArgumentException If host count is invalid
+     * @throws \RuntimeException If running on 32-bit PHP
      */
     public static function optimalPrefixForHosts(int $hostCount): int
     {
+        Platform::ensure64Bit();
+
         if ($hostCount <= 0) {
             throw new \InvalidArgumentException(
                 "Host count must be positive, got {$hostCount}"
